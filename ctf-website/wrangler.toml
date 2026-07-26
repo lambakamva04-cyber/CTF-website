@@ -1,6 +1,0 @@
-name = "ctf-website"
-type = "javascript"
-pages_build_output_dir = "public"
-
-[env.production]
-name = "ctf-website"
