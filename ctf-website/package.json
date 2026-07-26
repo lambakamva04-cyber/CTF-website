@@ -1,0 +1,12 @@
+{
+  "name": "ctf-website",
+  "version": "1.0.0",
+  "description": "CTF - Cut Through Faster | AI Receptionist for SA Businesses",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler pages deploy public"
+  },
+  "devDependencies": {
+    "wrangler": "^3.60.0"
+  }
+}
