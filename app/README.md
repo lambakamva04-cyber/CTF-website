@@ -157,6 +157,38 @@ npm run typecheck
 npm run build
 ```
 
+### If wrangler will not start
+
+```
+Error: The package "@cloudflare/workerd-<platform>" could not be found,
+and is needed by workerd.
+```
+
+`npm install` skipped an optional dependency — a long-standing npm bug
+([npm/cli#4828](https://github.com/npm/cli/issues/4828)), most often seen on
+Windows. The lockfile is not the problem: it pins all five `workerd` platform
+binaries, and `npm ls @cloudflare/workerd-windows-64` will confirm which one is
+missing from the installed tree.
+
+Reinstall cleanly from the lockfile rather than deleting it — regenerating the
+lockfile on one platform is what causes the mirror-image failure elsewhere:
+
+```bash
+rm -rf node_modules
+npm ci
+```
+
+Failing that, add the one binary without touching the lockfile, matching the
+`workerd` version exactly:
+
+```bash
+npm install @cloudflare/workerd-windows-64@<workerd version> --no-save
+```
+
+Also check `npm config get omit` — if it prints `optional`, every optional
+dependency is being skipped by configuration; clear it with
+`npm config delete omit`.
+
 ## Security model
 
 - **Sessions** are opaque 256-bit tokens in an `HttpOnly; Secure; SameSite=Lax`
