@@ -49,6 +49,12 @@ export interface CreatedTeamMember {
 export interface AuthMethodsResponse {
   /** False when GOOGLE_CLIENT_ID/SECRET are unset, so the button stays hidden. */
   google: boolean;
+  /**
+   * The exact callback this hostname will send to Google. Must be registered
+   * verbatim as an authorised redirect URI, or Google refuses the sign-in with
+   * `redirect_uri_mismatch`.
+   */
+  redirectUri: string;
 }
 
 export interface SessionOrg {

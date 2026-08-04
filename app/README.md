@@ -204,6 +204,18 @@ hidden and the routes return 404, so password sign-in is unaffected.
    - `http://localhost:8787/api/auth/google/callback` for local development
 3. `npx wrangler secret put GOOGLE_CLIENT_ID` and the same for the secret.
 
+To see exactly what a given hostname will send, open `/api/auth/methods` on it:
+
+```json
+{ "google": true, "redirectUri": "https://app.cutthroughfaster.com/api/auth/google/callback" }
+```
+
+`Error 400: redirect_uri_mismatch` means that string is not registered on the
+OAuth client. Two things to check before anything else: it must go under
+**Authorised redirect URIs**, not *Authorised JavaScript origins* — they are
+different fields and the second one does not satisfy this — and it must match
+character for character, including scheme and any trailing slash.
+
 **Google sign-in never creates an account.** It matches the verified Google
 email against a login that already exists, and refuses anything else — the
 dashboard exposes live calls and caller phone numbers, so having a Google

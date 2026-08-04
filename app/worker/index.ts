@@ -78,7 +78,7 @@ async function handleApi(
   // Which sign-in methods this deployment offers. Public: the answer is visible
   // on the sign-in screen anyway, and it carries no account information.
   if (path === '/api/auth/methods' && method === 'GET') {
-    return json(googleAvailability(env));
+    return json(googleAvailability(env, url));
   }
 
   // The Google leg is driven by top-level browser redirects, not fetch(), so

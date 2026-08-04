@@ -155,7 +155,19 @@ export async function handleGoogleCallback(request: Request, env: Env): Promise<
   return redirect('/', { 'set-cookie': sessionCookie(token, maxAgeSeconds) });
 }
 
-/** Lets the sign-in screen show the Google button only when it will work. */
-export function googleAvailability(env: Env): { google: boolean } {
-  return { google: googleConfigured(env) };
+/**
+ * Lets the sign-in screen show the Google button only when it will work, and
+ * reports the exact callback this deployment will send to Google.
+ *
+ * The callback is derived from the request origin, so it differs between the
+ * custom domain and the workers.dev URL — and Google rejects the whole sign-in
+ * with `redirect_uri_mismatch` if the one it receives is not registered
+ * verbatim. Publishing it here turns that into a copy-and-paste rather than a
+ * guess. It is a public URL and discloses nothing.
+ */
+export function googleAvailability(env: Env, requestUrl: URL): {
+  google: boolean;
+  redirectUri: string;
+} {
+  return { google: googleConfigured(env), redirectUri: redirectUriFor(requestUrl) };
 }
