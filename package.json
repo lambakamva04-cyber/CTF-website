@@ -4,7 +4,8 @@
   "description": "CTF - Cut Through Faster | AI Receptionist for SA Businesses",
   "private": true,
   "scripts": {
-    "deploy": "wrangler pages deploy public"
+    "deploy": "wrangler pages deploy public",
+    "deploy:app": "npm --prefix app install && npm --prefix app run deploy"
   },
   "devDependencies": {
     "wrangler": "^3.60.0"
