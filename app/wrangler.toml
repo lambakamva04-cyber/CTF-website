@@ -44,6 +44,9 @@ ALLOWED_ORIGINS = "https://app.cutthroughfaster.com"
 #   VAPI_PRIVATE_KEY        Vapi private API key (server-side call control)
 #   VAPI_WEBHOOK_SECRET     Value configured as server.secret in Vapi; arrives as x-vapi-secret
 #   VAPI_WEBHOOK_HMAC_SECRET  (optional) enables x-vapi-signature HMAC verification
+#   GOOGLE_CLIENT_ID        OAuth client id; "Continue with Google" is hidden without it
+#   GOOGLE_CLIENT_SECRET    OAuth client secret
+#   PBKDF2_ITERATIONS       (optional) lower the password work factor — see README
 
 [env.staging]
 name = "ctf-app-staging"

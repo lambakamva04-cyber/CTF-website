@@ -1,13 +1,18 @@
 import type {
   ApiErrorBody,
+  AuthMethodsResponse,
   CallDetail,
   CallsResponse,
+  CreatedTeamMember,
   LiveResponse,
   MeResponse,
   MetricsResponse,
   Period,
   TakeoverResponse,
+  TeamMember,
+  TeamResponse,
   TranscriptResponse,
+  UserRole,
 } from '../../shared/types';
 
 export class ApiError extends Error {
@@ -72,6 +77,33 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
 export const api = {
   me: (signal?: AbortSignal) => request<MeResponse>('/api/me', { signal }),
+
+  authMethods: (signal?: AbortSignal) =>
+    request<AuthMethodsResponse>('/api/auth/methods', { signal }),
+
+  team: (signal?: AbortSignal) => request<TeamResponse>('/api/users', { signal }),
+
+  createTeamMember: (member: {
+    email: string;
+    name: string;
+    role: UserRole;
+    phone?: string;
+  }) => request<CreatedTeamMember>('/api/users', { method: 'POST', body: member }),
+
+  updateTeamMember: (
+    userId: string,
+    changes: { role?: UserRole; disabled?: boolean; name?: string; phone?: string | null },
+  ) =>
+    request<TeamMember>(`/api/users/${encodeURIComponent(userId)}`, {
+      method: 'PATCH',
+      body: changes,
+    }),
+
+  resetTeamMemberPassword: (userId: string) =>
+    request<CreatedTeamMember>(`/api/users/${encodeURIComponent(userId)}`, {
+      method: 'PATCH',
+      body: { resetPassword: true },
+    }),
 
   login: (email: string, password: string) =>
     request<MeResponse>('/api/auth/login', { method: 'POST', body: { email, password } }),

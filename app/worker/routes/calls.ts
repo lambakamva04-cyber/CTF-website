@@ -17,6 +17,7 @@ import {
   notFound,
   readJson,
 } from '../lib/http';
+import { requirePermission } from '../lib/permissions';
 import { endCall, toE164, transferCall } from '../lib/vapi';
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -189,6 +190,10 @@ export async function handleTakeover(
   auth: AuthContext,
   callId: string,
 ): Promise<Response> {
+  // Interrupting a live conversation is a privileged action, checked before the
+  // call is even looked up.
+  requirePermission(auth.user.role, 'calls:control');
+
   const call = await loadCall(env, auth.org.id, callId);
 
   if (call.status === 'ended') throw conflict('That call has already ended.');
@@ -254,6 +259,8 @@ export async function handleEndCall(
   auth: AuthContext,
   callId: string,
 ): Promise<Response> {
+  requirePermission(auth.user.role, 'calls:control');
+
   const call = await loadCall(env, auth.org.id, callId);
   if (call.status === 'ended') throw conflict('That call has already ended.');
 

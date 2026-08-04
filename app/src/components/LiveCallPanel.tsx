@@ -67,6 +67,9 @@ export function LiveCallPanel({
 
   const defaultNumber = user.phone ?? org.takeoverNumber ?? '';
   const transferring = call?.status === 'transferring';
+  // The API enforces this too; hiding the buttons just avoids offering an
+  // action that would come back as a 403.
+  const canControl = user.permissions.includes('calls:control');
 
   useEffect(() => {
     setNumberDraft(defaultNumber);
@@ -209,7 +212,13 @@ export function LiveCallPanel({
         {actionError && <Banner tone="error">{actionError}</Banner>}
 
         <div className="space-y-3">
-          {!transferring && (
+          {!canControl && (
+            <p className="text-xs text-gray-400 text-center">
+              You can follow this call, but only staff with call control can take it over or end
+              it.
+            </p>
+          )}
+          {canControl && !transferring && (
             <button
               type="button"
               onClick={() => {
@@ -223,18 +232,20 @@ export function LiveCallPanel({
               Take Over Call
             </button>
           )}
-          <button
-            type="button"
-            onClick={() => {
-              setActionError(null);
-              setEndOpen(true);
-            }}
-            className="w-full border border-gray-200 rounded-xl py-2.5 text-sm font-medium text-gray-600 hover:border-black hover:text-black transition flex items-center justify-center gap-2"
-          >
-            <PhoneOff className="h-4 w-4" aria-hidden="true" />
-            End Call
-          </button>
-          {!call.controllable && !transferring && (
+          {canControl && (
+            <button
+              type="button"
+              onClick={() => {
+                setActionError(null);
+                setEndOpen(true);
+              }}
+              className="w-full border border-gray-200 rounded-xl py-2.5 text-sm font-medium text-gray-600 hover:border-black hover:text-black transition flex items-center justify-center gap-2"
+            >
+              <PhoneOff className="h-4 w-4" aria-hidden="true" />
+              End Call
+            </button>
+          )}
+          {canControl && !call.controllable && !transferring && (
             <p className="text-xs text-gray-400 text-center">
               This call can no longer be controlled — it may be wrapping up.
             </p>

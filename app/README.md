@@ -189,6 +189,56 @@ Also check `npm config get omit` — if it prints `optional`, every optional
 dependency is being skipped by configuration; clear it with
 `npm config delete omit`.
 
+## Sign-in with Google
+
+Optional. Without `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` the button is
+hidden and the routes return 404, so password sign-in is unaffected.
+
+1. Google Cloud console → **APIs & Services → Credentials → Create OAuth client
+   ID → Web application**.
+2. Add every hostname the dashboard is served from as an authorised redirect
+   URI — the callback is derived from the request origin, so each one must be
+   registered separately:
+   - `https://app.cutthroughfaster.com/api/auth/google/callback`
+   - `https://ctf-app.<account>.workers.dev/api/auth/google/callback`
+   - `http://localhost:8787/api/auth/google/callback` for local development
+3. `npx wrangler secret put GOOGLE_CLIENT_ID` and the same for the secret.
+
+**Google sign-in never creates an account.** It matches the verified Google
+email against a login that already exists, and refuses anything else — the
+dashboard exposes live calls and caller phone numbers, so having a Google
+account must not be a way in. On first successful use the Google subject id is
+bound to the login, so a later change of email address at Google still matches.
+
+An unverified Google email is rejected outright: it proves nothing about who
+controls the mailbox.
+
+## Who can do what
+
+Roles are enforced in the Worker, on every request. The permissions the client
+receives in `/api/me` only drive what the UI offers; the API re-checks each one.
+
+| | Owner | Staff |
+| --- | :---: | :---: |
+| See calls, transcripts, recordings, metrics | ✅ | ✅ |
+| Take a call over onto a phone, end a call | ✅ | ✅ |
+| Add, edit, disable logins | ✅ | — |
+| Reset another user's password | ✅ | — |
+| Change organization settings | ✅ | — |
+
+Both are scoped to their own organization: tenancy is enforced separately, by
+passing `org_id` into every query, and is not something a role can widen.
+
+Guards worth knowing about:
+
+- An owner cannot disable or demote themselves, and the last active owner in an
+  organization cannot be removed — otherwise a client could lock themselves out
+  of their own dashboard.
+- Disabling a login, or resetting its password, revokes that user's sessions
+  immediately rather than waiting for them to expire.
+- Temporary passwords are shown exactly once, at the moment they are issued.
+  They are never stored in readable form and cannot be retrieved afterwards.
+
 ## Security model
 
 - **Sessions** are opaque 256-bit tokens in an `HttpOnly; Secure; SameSite=Lax`
@@ -233,11 +283,12 @@ These are deliberate omissions, not oversights — each is a decision to make
 before or shortly after launch:
 
 - **No self-service password reset.** There is no email sender wired up, so a
-  forgotten password is an operator action (see above). Add a reset flow once an
-  email provider is chosen.
-- **No admin UI.** Adding clients and staff logins is the seed script plus
-  `wrangler d1 execute`. Fine for the first handful of clients; it will not scale
-  past a few dozen.
+  forgotten password is reset by an owner from the Team panel, which issues a
+  new temporary password. A client whose only owner is locked out still needs
+  you to reset it via `wrangler d1 execute`.
+- **No cross-client admin UI.** Owners manage logins inside their own
+  organization, but creating a new *client* is still the seed script plus
+  `wrangler d1 execute`. Fine for the first handful of clients.
 - **No live audio.** Staff read the transcript and take over by phone; they
   cannot listen in from the browser. Vapi exposes a `listenUrl` websocket (it is
   already stored on each call) if you later want monitoring.

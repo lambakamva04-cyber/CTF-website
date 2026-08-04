@@ -25,9 +25,18 @@ export interface UserRow {
   must_change_password: number;
   disabled: number;
   last_login_at: number | null;
+  google_sub: string | null;
+  google_linked_at: number | null;
   created_at: number;
   updated_at: number;
 }
+
+/**
+ * Stored in `password_hash` for logins that exist only for Google sign-in.
+ * `verifyPassword` rejects anything that is not five `$`-separated fields, so
+ * this can never be matched by a submitted password.
+ */
+export const UNUSABLE_PASSWORD_HASH = '!';
 
 export interface CallRow {
   id: string;

@@ -14,4 +14,8 @@ export interface Env {
 
   /** Override PBKDF2 work factor. Defaults to 210_000 (OWASP guidance). */
   PBKDF2_ITERATIONS?: string;
+
+  /** Google OAuth client. Both must be set for "Continue with Google" to appear. */
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_CLIENT_SECRET?: string;
 }

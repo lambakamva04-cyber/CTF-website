@@ -7,6 +7,8 @@ export type Speaker = 'ai' | 'caller' | 'human' | 'system';
 export type UserRole = 'owner' | 'staff';
 export type Period = 'today' | 'week' | 'month';
 
+export type Permission = 'calls:read' | 'calls:control' | 'users:manage' | 'org:manage';
+
 export interface SessionUser {
   id: string;
   email: string;
@@ -14,6 +16,39 @@ export interface SessionUser {
   role: UserRole;
   phone: string | null;
   mustChangePassword: boolean;
+  /** Whether this login has a Google account bound to it. */
+  googleLinked: boolean;
+  /** Resolved from the role; the UI hides what the API would refuse anyway. */
+  permissions: Permission[];
+}
+
+export interface TeamMember {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  phone: string | null;
+  disabled: boolean;
+  googleLinked: boolean;
+  lastLoginAt: number | null;
+  createdAt: number;
+  /** True for the row belonging to the requester, which the UI must not disable. */
+  isSelf: boolean;
+}
+
+export interface TeamResponse {
+  members: TeamMember[];
+}
+
+export interface CreatedTeamMember {
+  member: TeamMember;
+  /** Shown once, never retrievable again. */
+  temporaryPassword: string;
+}
+
+export interface AuthMethodsResponse {
+  /** False when GOOGLE_CLIENT_ID/SECRET are unset, so the button stays hidden. */
+  google: boolean;
 }
 
 export interface SessionOrg {

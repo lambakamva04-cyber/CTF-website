@@ -8,6 +8,7 @@ import type {
 } from '../../shared/types';
 import { CallRow } from '../components/CallRow';
 import { LiveCallPanel } from '../components/LiveCallPanel';
+import { TeamPanel } from '../components/TeamPanel';
 import { Banner, SegmentedControl, Spinner, StatCard, StatusPill } from '../components/ui';
 import { usePoll } from '../hooks/usePoll';
 import { useTranscript } from '../hooks/useTranscript';
@@ -291,6 +292,10 @@ export function Dashboard({ session, onSignOut, onSessionExpired }: Props) {
             </button>
           )}
         </section>
+
+        {user.permissions.includes('users:manage') && (
+          <TeamPanel currentUser={user} timeZone={org.timezone} />
+        )}
 
         <footer className="text-center pt-4">
           <p className="text-xs text-gray-300">Cut Through Faster · AI Receptionist</p>

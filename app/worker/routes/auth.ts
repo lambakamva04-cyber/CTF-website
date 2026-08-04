@@ -13,6 +13,7 @@ import {
 import { hashPassword, needsRehash, verifyPassword } from '../lib/crypto';
 import { parseServices, writeAudit, type OrgRow, type UserRow } from '../lib/db';
 import { badRequest, clientIp, json, noContent, readJson, unauthorized } from '../lib/http';
+import { permissionsFor } from '../lib/permissions';
 
 const MIN_PASSWORD_LENGTH = 12;
 
@@ -24,6 +25,10 @@ export function toSessionUser(user: UserRow): SessionUser {
     role: user.role,
     phone: user.phone,
     mustChangePassword: user.must_change_password === 1,
+    googleLinked: user.google_sub !== null,
+    // Sent so the UI can hide controls it would be refused anyway. The API
+    // re-checks every one of these; this list is a convenience, not the gate.
+    permissions: permissionsFor(user.role),
   };
 }
 

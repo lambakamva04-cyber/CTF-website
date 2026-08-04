@@ -144,6 +144,8 @@ export async function requireAuth(request: Request, env: Env): Promise<AuthConte
     must_change_password: row.must_change_password as number,
     disabled: row.disabled as number,
     last_login_at: (row.last_login_at as number | null) ?? null,
+    google_sub: (row.google_sub as string | null) ?? null,
+    google_linked_at: (row.google_linked_at as number | null) ?? null,
     created_at: row.created_at as number,
     updated_at: row.updated_at as number,
   };
@@ -208,6 +210,7 @@ export async function pruneExpired(env: Env): Promise<void> {
     env.DB.prepare('DELETE FROM sessions WHERE expires_at < ?').bind(now),
     env.DB.prepare('DELETE FROM login_attempts WHERE created_at < ?').bind(now - LOGIN_WINDOW_MS * 4),
     env.DB.prepare('DELETE FROM webhook_events WHERE received_at < ?').bind(now - 24 * 60 * 60 * 1000),
+    env.DB.prepare('DELETE FROM oauth_states WHERE expires_at < ?').bind(now),
   ]);
 }
 

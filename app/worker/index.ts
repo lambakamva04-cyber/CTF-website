@@ -15,7 +15,17 @@ import {
   handleTakeover,
   handleTranscript,
 } from './routes/calls';
+import {
+  googleAvailability,
+  handleGoogleCallback,
+  handleGoogleStart,
+} from './routes/googleAuth';
 import { handleMetrics } from './routes/metrics';
+import {
+  handleCreateTeamMember,
+  handleListTeam,
+  handleUpdateTeamMember,
+} from './routes/users';
 import { handleVapiWebhook } from './routes/webhook';
 
 /**
@@ -65,6 +75,24 @@ async function handleApi(
     return handleVapiWebhook(request, env);
   }
 
+  // Which sign-in methods this deployment offers. Public: the answer is visible
+  // on the sign-in screen anyway, and it carries no account information.
+  if (path === '/api/auth/methods' && method === 'GET') {
+    return json(googleAvailability(env));
+  }
+
+  // The Google leg is driven by top-level browser redirects, not fetch(), so
+  // there is no Origin header to check. CSRF is handled instead by the
+  // single-use `state` issued at /start and redeemed at /callback.
+  if (path === '/api/auth/google/start') {
+    if (method !== 'GET') return methodNotAllowed('GET');
+    return handleGoogleStart(request, env);
+  }
+  if (path === '/api/auth/google/callback') {
+    if (method !== 'GET') return methodNotAllowed('GET');
+    return handleGoogleCallback(request, env);
+  }
+
   assertTrustedOrigin(request, env);
 
   if (path === '/api/auth/login') {
@@ -93,6 +121,18 @@ async function handleApi(
   if (path === '/api/metrics' && method === 'GET') return handleMetrics(request, env, auth);
   if (path === '/api/calls' && method === 'GET') return handleListCalls(request, env, auth);
   if (path === '/api/calls/live' && method === 'GET') return handleLiveCall(env, auth);
+
+  if (path === '/api/users') {
+    if (method === 'GET') return handleListTeam(env, auth);
+    if (method === 'POST') return handleCreateTeamMember(request, env, auth);
+    return methodNotAllowed('GET, POST');
+  }
+
+  const userMatch = /^\/api\/users\/([^/]+)$/.exec(path);
+  if (userMatch) {
+    if (method !== 'PATCH') return methodNotAllowed('PATCH');
+    return handleUpdateTeamMember(request, env, auth, decodeURIComponent(userMatch[1] as string));
+  }
 
   const callRoute = matchCallRoute(path);
   if (callRoute) return routeCall(request, env, auth, method, callRoute);
