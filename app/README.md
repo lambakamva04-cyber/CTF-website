@@ -34,29 +34,40 @@ Requires a Cloudflare account on the **Workers Paid** plan. Password hashing
 runs 210,000 PBKDF2 iterations, which exceeds the free plan's 10 ms CPU cap on
 the login request. Everything else fits comfortably in the free tier.
 
+**Already done** — the D1 database `ctf-app` exists in the account
+(`2864d4e4-dc2b-4016-8775-6da6f93c0d27`, Western Europe), its schema is applied,
+the migration is recorded in `d1_migrations` so `npm run db:migrate` is a no-op,
+and a first owner login is seeded. `wrangler.toml` already points at it.
+
+What is left is the deploy itself, which needs credentials:
+
 ```bash
 cd app
 npm install
-
-# 1. Create the database and paste the printed id into wrangler.toml
-npx wrangler d1 create ctf-app
-
-# 2. Apply the schema
-npm run db:migrate
-
-# 3. Set secrets (see .dev.vars.example for what each one is)
-npx wrangler secret put VAPI_PRIVATE_KEY
-npx wrangler secret put VAPI_WEBHOOK_SECRET
-
-# 4. Build and ship
+npx wrangler login      # or export CLOUDFLARE_API_TOKEN=...
 npm run deploy
 ```
 
-Then attach the custom domain: Cloudflare dashboard → Workers & Pages → `ctf-app`
-→ Settings → Domains & Routes → add `app.cutthroughfaster.com`. Update
-`ALLOWED_ORIGINS` in `wrangler.toml` if you use a different hostname, and
-redeploy — the API refuses cookie-bearing mutations from origins not on that
-list.
+That publishes the Worker, serves it on `ctf-app.<account>.workers.dev`, and —
+because of the `[[routes]]` block in `wrangler.toml` — creates the DNS record
+and TLS certificate for `app.cutthroughfaster.com` automatically.
+
+> If the deploy fails with an error naming the zone `cutthroughfaster.com`, the
+> domain's DNS is not on this Cloudflare account. Comment out the `[[routes]]`
+> block and re-run; the workers.dev URL still works, and the domain can be
+> attached later from Workers & Pages → `ctf-app` → Settings → Domains & Routes.
+
+Then add the Vapi secrets, without which the webhook fails closed and call
+control is unavailable:
+
+```bash
+npx wrangler secret put VAPI_PRIVATE_KEY
+npx wrangler secret put VAPI_WEBHOOK_SECRET
+```
+
+`ALLOWED_ORIGINS` in `wrangler.toml` lists extra origins permitted to send
+cookie-bearing mutations. Same-origin requests are always allowed, so both the
+workers.dev URL and the custom domain work without changing it.
 
 ## Connecting a client's Vapi assistant
 
