@@ -1,0 +1,19 @@
+# Copy to `.dev.vars` for local development. Never commit `.dev.vars`.
+# In production these are set with `wrangler secret put <NAME>`.
+
+# Vapi private API key. Used to hang up a call when the live control URL has
+# already been torn down. Dashboard → Vapi → API Keys.
+VAPI_PRIVATE_KEY=
+
+# The value you set as `server.secret` on the Vapi assistant. Vapi sends it back
+# on every webhook as the `x-vapi-secret` header. Generate with:
+#   openssl rand -base64 32
+VAPI_WEBHOOK_SECRET=
+
+# Optional. When set, webhooks must ALSO carry a valid `x-vapi-signature`
+# HMAC-SHA256 of the raw body. Leave blank unless you have configured one.
+VAPI_WEBHOOK_HMAC_SECRET=
+
+# Optional. Lowers the password hashing work factor for faster local logins.
+# Leave unset in production so the default 210,000 iterations applies.
+# PBKDF2_ITERATIONS=10000
