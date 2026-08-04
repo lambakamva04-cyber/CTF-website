@@ -4,6 +4,9 @@
   "private": true,
   "description": "Cut Through Faster — client control platform for AI receptionists",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "vite",
     "dev:worker": "wrangler dev",
