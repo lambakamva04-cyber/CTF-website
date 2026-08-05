@@ -120,7 +120,14 @@ export async function handleGoogleCallback(request: Request, env: Env): Promise<
     .bind(identity.sub, identity.email)
     .first<UserRow>();
 
-  if (!user) return redirect('/?auth_error=google_no_account');
+  if (!user) {
+    // Logged, not redirected: signing in with the wrong one of several Google
+    // accounts is the common cause, and the address is otherwise invisible to
+    // whoever has to fix it. Kept out of the redirect so it stays out of
+    // browser history and referrer headers.
+    console.warn('google_no_account', { email: identity.email });
+    return redirect('/?auth_error=google_no_account');
+  }
   if (user.disabled === 1) return redirect('/?auth_error=account_disabled');
 
   const org = await env.DB.prepare('SELECT * FROM organizations WHERE id = ?')
