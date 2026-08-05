@@ -6,6 +6,8 @@ import { clientIp, notFound } from '../lib/http';
 import {
   buildAuthorizeUrl,
   exchangeCodeForIdentity,
+  GoogleAuthError,
+  googleClientDiagnostics,
   googleConfigured,
   redirectUriFor,
 } from '../lib/google';
@@ -92,7 +94,18 @@ export async function handleGoogleCallback(request: Request, env: Env): Promise<
       stateRow.nonce,
     );
   } catch (error) {
-    console.error('google_exchange_failed', error);
+    // Logged in full for `wrangler tail`, including Google's own error code;
+    // the browser only receives the coarse reason, which is enough to know
+    // which step failed without disclosing anything about the configuration.
+    if (error instanceof GoogleAuthError) {
+      console.error('google_signin_failed', {
+        reason: error.reason,
+        message: error.message,
+        detail: error.detail,
+      });
+      return redirect(`/?auth_error=google_${error.reason}`);
+    }
+    console.error('google_signin_failed_unexpected', error);
     return redirect('/?auth_error=google_failed');
   }
 
@@ -168,6 +181,13 @@ export async function handleGoogleCallback(request: Request, env: Env): Promise<
 export function googleAvailability(env: Env, requestUrl: URL): {
   google: boolean;
   redirectUri: string;
+  clientId: string | null;
+  clientIdLooksValid: boolean;
+  secretPresent: boolean;
 } {
-  return { google: googleConfigured(env), redirectUri: redirectUriFor(requestUrl) };
+  return {
+    google: googleConfigured(env),
+    redirectUri: redirectUriFor(requestUrl),
+    ...googleClientDiagnostics(env),
+  };
 }

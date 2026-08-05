@@ -37,6 +37,17 @@ const AUTH_ERRORS: Record<string, string> = {
     'That Google account has an unverified email address, so we cannot use it to sign in.',
   google_expired: 'That sign-in took too long. Please try again.',
   google_failed: 'Google sign-in did not complete. Please try again.',
+
+  // Configuration faults. Worded so whoever set the dashboard up knows exactly
+  // which control to check, rather than being told to "try again" forever.
+  google_token_exchange:
+    'Google refused to complete the sign-in. The client secret on this dashboard is most likely wrong or out of date.',
+  google_audience:
+    'Google signed you in for a different application. The client ID on this dashboard does not match the one that issued the sign-in.',
+  google_token_malformed: 'Google returned a response we could not read. Please try again.',
+  google_issuer: 'That sign-in did not come from Google. Please try again.',
+  google_nonce: 'That sign-in could not be matched to this browser. Please try again.',
+  google_missing_email: 'Google did not share an email address, so we cannot match your login.',
   google_unavailable: 'Google sign-in is not set up for this dashboard yet.',
   account_disabled: 'That login has been disabled. Contact the owner of your dashboard.',
   no_org: 'That login is not linked to a business yet.',

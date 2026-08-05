@@ -1,6 +1,26 @@
 import { describe, expect, it } from 'vitest';
-import { buildAuthorizeUrl, googleConfigured, parseIdToken, redirectUriFor } from '../worker/lib/google';
+import {
+  buildAuthorizeUrl,
+  googleClientDiagnostics,
+  googleConfigured,
+  GoogleAuthError,
+  parseIdToken,
+  redirectUriFor,
+  type GoogleFailureReason,
+} from '../worker/lib/google';
 import type { Env } from '../worker/env';
+
+/** Asserts the thrown failure carries the reason the UI keys its message off. */
+function expectReason(run: () => unknown, reason: GoogleFailureReason): void {
+  try {
+    run();
+  } catch (error) {
+    expect(error).toBeInstanceOf(GoogleAuthError);
+    expect((error as GoogleAuthError).reason).toBe(reason);
+    return;
+  }
+  expect.unreachable(`expected a ${reason} failure`);
+}
 
 const CLIENT_ID = '1234.apps.googleusercontent.com';
 const NONCE = 'nonce-value';
@@ -69,8 +89,10 @@ describe('id token claims', () => {
   });
 
   it('rejects a token minted for a different application', () => {
-    const token = idToken({ ...validClaims, aud: 'someone-else.apps.googleusercontent.com' });
-    expect(() => parseIdToken(token, CLIENT_ID, NONCE)).toThrowError(/different application/);
+    expectReason(
+      () => parseIdToken(idToken({ ...validClaims, aud: 'other.apps.googleusercontent.com' }), CLIENT_ID, NONCE),
+      'audience',
+    );
   });
 
   it('accepts an aud array that contains our client', () => {
@@ -79,18 +101,51 @@ describe('id token claims', () => {
   });
 
   it('rejects an unexpected issuer', () => {
-    const token = idToken({ ...validClaims, iss: 'https://evil.example' });
-    expect(() => parseIdToken(token, CLIENT_ID, NONCE)).toThrowError(/unexpected issuer/);
+    expectReason(
+      () => parseIdToken(idToken({ ...validClaims, iss: 'https://evil.example' }), CLIENT_ID, NONCE),
+      'issuer',
+    );
   });
 
   it('rejects a replayed token whose nonce does not match this sign-in', () => {
-    const token = idToken({ ...validClaims, nonce: 'a-different-nonce' });
-    expect(() => parseIdToken(token, CLIENT_ID, NONCE)).toThrowError(/expired/);
+    expectReason(
+      () => parseIdToken(idToken({ ...validClaims, nonce: 'other-nonce' }), CLIENT_ID, NONCE),
+      'nonce',
+    );
   });
 
   it('rejects an expired token', () => {
-    const token = idToken({ ...validClaims, exp: Math.floor(Date.now() / 1000) - 3600 });
-    expect(() => parseIdToken(token, CLIENT_ID, NONCE)).toThrowError(/expired/);
+    expectReason(
+      () =>
+        parseIdToken(
+          idToken({ ...validClaims, exp: Math.floor(Date.now() / 1000) - 3600 }),
+          CLIENT_ID,
+          NONCE,
+        ),
+      'expired',
+    );
+  });
+
+  it('distinguishes every failure, so the cause survives the redirect', () => {
+    // Each reason maps to its own message on the sign-in screen; collapsing two
+    // of them would put us back to guessing which step actually broke.
+    const reasons = new Set<string>();
+    const cases: (() => unknown)[] = [
+      () => parseIdToken('not-a-jwt', CLIENT_ID, NONCE),
+      () => parseIdToken(idToken({ ...validClaims, iss: 'https://evil.example' }), CLIENT_ID, NONCE),
+      () => parseIdToken(idToken({ ...validClaims, aud: 'other' }), CLIENT_ID, NONCE),
+      () => parseIdToken(idToken({ ...validClaims, nonce: 'x' }), CLIENT_ID, NONCE),
+      () => parseIdToken(idToken({ ...validClaims, exp: 1 }), CLIENT_ID, NONCE),
+    ];
+
+    for (const run of cases) {
+      try {
+        run();
+      } catch (error) {
+        reasons.add((error as GoogleAuthError).reason);
+      }
+    }
+    expect(reasons.size).toBe(cases.length);
   });
 
   it('reports an unverified email so the caller can refuse it', () => {
@@ -104,13 +159,53 @@ describe('id token claims', () => {
   });
 
   it('rejects structurally invalid tokens', () => {
-    expect(() => parseIdToken('not-a-jwt', CLIENT_ID, NONCE)).toThrowError(/Malformed/);
-    expect(() => parseIdToken('a.b', CLIENT_ID, NONCE)).toThrowError(/Malformed/);
-    expect(() => parseIdToken('a.!!!.c', CLIENT_ID, NONCE)).toThrowError(/Could not read/);
+    expectReason(() => parseIdToken('not-a-jwt', CLIENT_ID, NONCE), 'token_malformed');
+    expectReason(() => parseIdToken('a.b', CLIENT_ID, NONCE), 'token_malformed');
+    expectReason(() => parseIdToken('a.!!!.c', CLIENT_ID, NONCE), 'token_malformed');
   });
 
   it('rejects a token with no subject or email', () => {
     const { sub: _sub, ...withoutSub } = validClaims;
-    expect(() => parseIdToken(idToken(withoutSub), CLIENT_ID, NONCE)).toThrowError(/email address/);
+    expectReason(() => parseIdToken(idToken(withoutSub), CLIENT_ID, NONCE), 'missing_email');
+  });
+});
+
+describe('client diagnostics', () => {
+  it('reports a well-formed client id', () => {
+    const diagnostics = googleClientDiagnostics({
+      GOOGLE_CLIENT_ID: CLIENT_ID,
+      GOOGLE_CLIENT_SECRET: 'secret',
+    } as Env);
+    expect(diagnostics).toEqual({
+      clientId: CLIENT_ID,
+      clientIdLooksValid: true,
+      secretPresent: true,
+    });
+  });
+
+  it('flags a client id that is not a Google client id', () => {
+    expect(
+      googleClientDiagnostics({ GOOGLE_CLIENT_ID: 'oops', GOOGLE_CLIENT_SECRET: 's' } as Env)
+        .clientIdLooksValid,
+    ).toBe(false);
+  });
+
+  it('trims whitespace, which a pasted secret often carries', () => {
+    // `wrangler secret put` reads stdin; a trailing newline here would produce
+    // an `aud` mismatch that looks like a generic failure.
+    const env = {
+      GOOGLE_CLIENT_ID: `  ${CLIENT_ID}\n`,
+      GOOGLE_CLIENT_SECRET: ' secret \n',
+    } as Env;
+    expect(googleClientDiagnostics(env).clientId).toBe(CLIENT_ID);
+    expect(googleClientDiagnostics(env).clientIdLooksValid).toBe(true);
+    expect(googleConfigured(env)).toBe(true);
+  });
+
+  it('does not report a whitespace-only secret as present', () => {
+    expect(
+      googleClientDiagnostics({ GOOGLE_CLIENT_ID: CLIENT_ID, GOOGLE_CLIENT_SECRET: '   ' } as Env)
+        .secretPresent,
+    ).toBe(false);
   });
 });

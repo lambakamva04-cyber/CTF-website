@@ -55,6 +55,11 @@ export interface AuthMethodsResponse {
    * `redirect_uri_mismatch`.
    */
   redirectUri: string;
+  /** Public — it travels in the authorize URL. Echoed back to spot typos. */
+  clientId: string | null;
+  /** False if the id does not end in .apps.googleusercontent.com. */
+  clientIdLooksValid: boolean;
+  secretPresent: boolean;
 }
 
 export interface SessionOrg {
