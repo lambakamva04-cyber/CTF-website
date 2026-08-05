@@ -83,6 +83,8 @@ export function TeamPanel({ currentUser, timeZone }: Props) {
   const [issued, setIssued] = useState<{ email: string; password: string } | null>(null);
   const [confirmDisable, setConfirmDisable] = useState<TeamMember | null>(null);
   const [confirmReset, setConfirmReset] = useState<TeamMember | null>(null);
+  const [editingPhone, setEditingPhone] = useState<string | null>(null);
+  const [phoneDraft, setPhoneDraft] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -117,6 +119,20 @@ export function TeamPanel({ currentUser, timeZone }: Props) {
       await load();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : 'Could not create that login.');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const savePhone = async (member: TeamMember) => {
+    setBusyId(member.id);
+    setError(null);
+    try {
+      await api.updateTeamMember(member.id, { phone: phoneDraft.trim() || null });
+      setEditingPhone(null);
+      await load();
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : 'Could not save that number.');
     } finally {
       setBusyId(null);
     }
@@ -266,6 +282,58 @@ export function TeamPanel({ currentUser, timeZone }: Props) {
                   )}
                   {!member.lastLoginAt && <span>· Never signed in</span>}
                 </p>
+
+                {/* Takeover rings this number. Without one, taking over a live
+                    call is refused — so it is surfaced on the row rather than
+                    hidden behind an edit screen. */}
+                {editingPhone === member.id ? (
+                  <form
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      void savePhone(member);
+                    }}
+                    className="flex items-center gap-2 mt-2"
+                  >
+                    <input
+                      type="tel"
+                      value={phoneDraft}
+                      onChange={(event) => setPhoneDraft(event.target.value)}
+                      placeholder="082 555 0134"
+                      autoFocus
+                      aria-label={`Takeover number for ${member.name}`}
+                      className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-mono-data focus:outline-none focus:border-black w-40"
+                    />
+                    <button
+                      type="submit"
+                      disabled={busyId === member.id}
+                      className="text-xs font-medium underline underline-offset-2 disabled:opacity-40"
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingPhone(null)}
+                      className="text-xs text-gray-400 underline underline-offset-2"
+                    >
+                      Cancel
+                    </button>
+                  </form>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingPhone(member.id);
+                      setPhoneDraft(member.phone ?? '');
+                    }}
+                    className="text-xs mt-1.5 underline underline-offset-2 text-gray-400 hover:text-black transition"
+                  >
+                    {member.phone ? (
+                      <span className="font-mono-data">{member.phone}</span>
+                    ) : (
+                      'Add a mobile for call takeover'
+                    )}
+                  </button>
+                )}
               </div>
 
               <div className="flex flex-col items-end gap-1.5 shrink-0">
