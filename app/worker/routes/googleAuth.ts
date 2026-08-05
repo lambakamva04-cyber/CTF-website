@@ -184,6 +184,8 @@ export function googleAvailability(env: Env, requestUrl: URL): {
   clientId: string | null;
   clientIdLooksValid: boolean;
   secretPresent: boolean;
+  secretLooksValid: boolean;
+  secretHadWhitespace: boolean;
 } {
   return {
     google: googleConfigured(env),

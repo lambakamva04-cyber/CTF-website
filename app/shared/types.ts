@@ -60,6 +60,9 @@ export interface AuthMethodsResponse {
   /** False if the id does not end in .apps.googleusercontent.com. */
   clientIdLooksValid: boolean;
   secretPresent: boolean;
+  /** Hint: current Google secrets are `GOCSPX-` prefixed. Never the value itself. */
+  secretLooksValid: boolean;
+  secretHadWhitespace: boolean;
 }
 
 export interface SessionOrg {

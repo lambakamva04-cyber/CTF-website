@@ -83,12 +83,24 @@ export function googleClientDiagnostics(env: Env): {
   clientId: string | null;
   clientIdLooksValid: boolean;
   secretPresent: boolean;
+  secretLooksValid: boolean;
+  /** True when the raw value had surrounding whitespace, which we trim away. */
+  secretHadWhitespace: boolean;
 } {
   const id = clientId(env);
+  const rawSecret = env.GOOGLE_CLIENT_SECRET ?? '';
+  const secret = rawSecret.trim();
+
   return {
     clientId: id || null,
     clientIdLooksValid: id.endsWith('.apps.googleusercontent.com'),
-    secretPresent: clientSecret(env).length > 0,
+    secretPresent: secret.length > 0,
+    // A hint, not a verdict: the console has issued `GOCSPX-` prefixed secrets
+    // for years, so a value without it is usually a client id pasted into the
+    // wrong box — the single most common cause of `invalid_client`. Older
+    // secrets predate the prefix, hence "looks".
+    secretLooksValid: secret.startsWith('GOCSPX-'),
+    secretHadWhitespace: rawSecret !== secret,
   };
 }
 

@@ -180,7 +180,36 @@ describe('client diagnostics', () => {
       clientId: CLIENT_ID,
       clientIdLooksValid: true,
       secretPresent: true,
+      secretLooksValid: false,
+      secretHadWhitespace: false,
     });
+  });
+
+  it('recognises a current-format client secret', () => {
+    const diagnostics = googleClientDiagnostics({
+      GOOGLE_CLIENT_ID: CLIENT_ID,
+      GOOGLE_CLIENT_SECRET: 'GOCSPX-abcdefghijklmnop',
+    } as Env);
+    expect(diagnostics.secretLooksValid).toBe(true);
+    expect(diagnostics.secretHadWhitespace).toBe(false);
+  });
+
+  it('flags a client id pasted into the secret box — the usual invalid_client', () => {
+    const diagnostics = googleClientDiagnostics({
+      GOOGLE_CLIENT_ID: CLIENT_ID,
+      GOOGLE_CLIENT_SECRET: CLIENT_ID,
+    } as Env);
+    expect(diagnostics.secretPresent).toBe(true);
+    expect(diagnostics.secretLooksValid).toBe(false);
+  });
+
+  it('reports whitespace that was trimmed away', () => {
+    expect(
+      googleClientDiagnostics({
+        GOOGLE_CLIENT_ID: CLIENT_ID,
+        GOOGLE_CLIENT_SECRET: 'GOCSPX-abc\n',
+      } as Env).secretHadWhitespace,
+    ).toBe(true);
   });
 
   it('flags a client id that is not a Google client id', () => {
