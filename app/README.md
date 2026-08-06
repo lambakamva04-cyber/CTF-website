@@ -75,6 +75,22 @@ workers.dev URL and the custom domain work without changing it.
    `https://app.cutthroughfaster.com/api/vapi/webhook`, with **Server Secret**
    set to the same value you put in `VAPI_WEBHOOK_SECRET`.
 
+   If Vapi asks which credential type to use, pick **Bearer Token** (or a plain
+   secret if offered) and paste the same value. Both arrive as a shared secret —
+   `Authorization: Bearer …` or `x-vapi-secret` — and the Worker accepts either.
+
+   **Do not pick OAuth 2.0.** It is meant for calling an API that mints
+   short-lived tokens, which this endpoint does not do; there is nothing for the
+   Worker to validate against and every delivery would be rejected.
+
+   **HMAC** is supported as an *additional* layer, not a replacement: set
+   `VAPI_WEBHOOK_HMAC_SECRET` and an `x-vapi-signature` header covering the raw
+   body is then required as well. It is strictly stronger — a shared secret
+   replayed from a captured request still authenticates, while an HMAC is bound
+   to the exact body — but the header name and digest encoding have not been
+   verified against a live Vapi deployment. Get the shared secret working first,
+   then add HMAC and confirm with `wrangler tail` before relying on it.
+
 2. Subscribe the assistant to these server events. The dashboard is built around
    exactly these three:
 

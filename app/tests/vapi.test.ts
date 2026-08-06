@@ -21,6 +21,40 @@ describe('webhook verification', () => {
     await expect(verifyWebhook(webhookRequest({}), env, '{}')).rejects.toThrow();
   });
 
+  it('accepts the same secret as a bearer token', async () => {
+    // Vapi's dashboard offers the credential as either a plain secret or a
+    // bearer token; picking one must not silently reject every call.
+    await expect(
+      verifyWebhook(webhookRequest({ authorization: 'Bearer shhh' }), env, '{}'),
+    ).resolves.toBeUndefined();
+
+    await expect(
+      verifyWebhook(webhookRequest({ authorization: 'bearer   shhh  ' }), env, '{}'),
+    ).resolves.toBeUndefined();
+  });
+
+  it('rejects a bearer token that is not the secret', async () => {
+    await expect(
+      verifyWebhook(webhookRequest({ authorization: 'Bearer nope' }), env, '{}'),
+    ).rejects.toThrow();
+  });
+
+  it('ignores an Authorization scheme it does not understand', async () => {
+    await expect(
+      verifyWebhook(webhookRequest({ authorization: 'Basic shhh' }), env, '{}'),
+    ).rejects.toThrow();
+  });
+
+  it('still accepts x-vapi-secret when a wrong bearer is also present', async () => {
+    await expect(
+      verifyWebhook(
+        webhookRequest({ 'x-vapi-secret': 'shhh', authorization: 'Bearer wrong' }),
+        env,
+        '{}',
+      ),
+    ).resolves.toBeUndefined();
+  });
+
   it('fails closed when no secret is configured at all', async () => {
     await expect(
       verifyWebhook(webhookRequest({ 'x-vapi-secret': 'anything' }), {} as Env, '{}'),

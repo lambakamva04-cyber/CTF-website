@@ -75,9 +75,35 @@ function toMillis(value: unknown): number | null {
 }
 
 /**
- * Verifies a webhook came from Vapi. `x-vapi-secret` (the `server.secret` you
- * configure on the assistant) is the baseline. If VAPI_WEBHOOK_HMAC_SECRET is
- * also set, an `x-vapi-signature` HMAC over the raw body is required as well.
+ * Where the shared secret may arrive. Vapi's server-URL credential can be
+ * configured as a plain secret or as a bearer token depending on which option
+ * is picked in its dashboard, and both put the same value on the wire — just
+ * under a different header. Accepting either means the choice made there cannot
+ * silently 403 every call.
+ */
+function presentedSecrets(request: Request): string[] {
+  const candidates: string[] = [];
+
+  const vapiSecret = request.headers.get('x-vapi-secret');
+  if (vapiSecret) candidates.push(vapiSecret.trim());
+
+  const authorization = request.headers.get('authorization');
+  if (authorization) {
+    const bearer = /^Bearer\s+(.+)$/i.exec(authorization.trim());
+    if (bearer?.[1]) candidates.push(bearer[1].trim());
+  }
+
+  return candidates;
+}
+
+/**
+ * Verifies a webhook came from Vapi.
+ *
+ * The shared secret is the baseline, accepted from `x-vapi-secret` or an
+ * `Authorization: Bearer` header. If VAPI_WEBHOOK_HMAC_SECRET is also set, an
+ * `x-vapi-signature` HMAC over the raw body is required in addition — that is
+ * strictly stronger, because a shared secret replayed from a captured request
+ * still authenticates, whereas an HMAC is bound to the exact body.
  */
 export async function verifyWebhook(request: Request, env: Env, rawBody: string): Promise<void> {
   const expectedSecret = env.VAPI_WEBHOOK_SECRET;
@@ -86,10 +112,14 @@ export async function verifyWebhook(request: Request, env: Env, rawBody: string)
     throw forbidden('Webhook secret is not configured.');
   }
 
-  const presented = request.headers.get('x-vapi-secret');
-  if (!presented || !(await timingSafeEqual(presented, expectedSecret))) {
-    throw forbidden('Invalid webhook secret.');
-  }
+  const candidates = presentedSecrets(request);
+  if (candidates.length === 0) throw forbidden('Missing webhook credential.');
+
+  // Every candidate is checked, so timing does not reveal which header matched.
+  const matches = await Promise.all(
+    candidates.map((candidate) => timingSafeEqual(candidate, expectedSecret)),
+  );
+  if (!matches.some(Boolean)) throw forbidden('Invalid webhook secret.');
 
   const hmacSecret = env.VAPI_WEBHOOK_HMAC_SECRET;
   if (hmacSecret) {
