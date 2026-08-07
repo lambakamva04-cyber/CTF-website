@@ -88,6 +88,8 @@ export const api = {
     name: string;
     role: UserRole;
     phone?: string;
+    /** Defaults to Google, which needs no password and so no hashing. */
+    signInMethod?: 'google' | 'password';
   }) => request<CreatedTeamMember>('/api/users', { method: 'POST', body: member }),
 
   updateTeamMember: (

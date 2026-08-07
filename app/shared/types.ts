@@ -42,8 +42,11 @@ export interface TeamResponse {
 
 export interface CreatedTeamMember {
   member: TeamMember;
-  /** Shown once, never retrievable again. */
-  temporaryPassword: string;
+  /**
+   * Shown once, never retrievable again. Null for a Google-only login, which
+   * has no password to issue.
+   */
+  temporaryPassword: string | null;
 }
 
 export interface AuthMethodsResponse {

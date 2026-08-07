@@ -40,6 +40,14 @@ describe('password hashing', () => {
     }
   });
 
+  it('never matches the unusable hash given to Google-only logins', async () => {
+    // '!' is stored for logins that sign in with Google and have no password.
+    // Nothing a caller can submit may ever verify against it.
+    for (const attempt of ['', '!', 'password', 'pbkdf2', '!!']) {
+      expect(await verifyPassword(attempt, '!')).toBe(false);
+    }
+  });
+
   it('refuses an absurd iteration count that would hang the worker', async () => {
     const hostile = 'pbkdf2$sha256$999999999$AAAAAAAAAAAAAAAAAAAAAA==$AAAA';
     expect(await verifyPassword('anything', hostile)).toBe(false);

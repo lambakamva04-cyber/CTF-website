@@ -79,7 +79,13 @@ export function TeamPanel({ currentUser, timeZone }: Props) {
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const [adding, setAdding] = useState(false);
-  const [draft, setDraft] = useState({ email: '', name: '', role: 'staff' as UserRole, phone: '' });
+  const [draft, setDraft] = useState({
+    email: '',
+    name: '',
+    role: 'staff' as UserRole,
+    phone: '',
+    signInMethod: 'google' as 'google' | 'password',
+  });
   const [issued, setIssued] = useState<{ email: string; password: string } | null>(null);
   const [confirmDisable, setConfirmDisable] = useState<TeamMember | null>(null);
   const [confirmReset, setConfirmReset] = useState<TeamMember | null>(null);
@@ -111,10 +117,14 @@ export function TeamPanel({ currentUser, timeZone }: Props) {
         email: draft.email.trim(),
         name: draft.name.trim(),
         role: draft.role,
+        signInMethod: draft.signInMethod,
         ...(draft.phone.trim() ? { phone: draft.phone.trim() } : {}),
       });
-      setIssued({ email: result.member.email, password: result.temporaryPassword });
-      setDraft({ email: '', name: '', role: 'staff', phone: '' });
+      // A Google-only login has no password to show, so the panel is skipped.
+      if (result.temporaryPassword) {
+        setIssued({ email: result.member.email, password: result.temporaryPassword });
+      }
+      setDraft({ email: '', name: '', role: 'staff', phone: '', signInMethod: 'google' });
       setAdding(false);
       await load();
     } catch (caught) {
@@ -157,7 +167,11 @@ export function TeamPanel({ currentUser, timeZone }: Props) {
     setError(null);
     try {
       const result = await api.resetTeamMemberPassword(member.id);
-      setIssued({ email: result.member.email, password: result.temporaryPassword });
+      // A reset always issues a password — it is what converts a Google-only
+      // login into one that can also sign in with an email address.
+      if (result.temporaryPassword) {
+        setIssued({ email: result.member.email, password: result.temporaryPassword });
+      }
       await load();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : 'Could not reset that password.');
@@ -240,7 +254,27 @@ export function TeamPanel({ currentUser, timeZone }: Props) {
                 <option value="owner">Owner — also manages logins</option>
               </select>
             </label>
+
+            <label className="block space-y-1.5 sm:col-span-2">
+              <span className="text-xs font-medium text-gray-500">How they sign in</span>
+              <select
+                value={draft.signInMethod}
+                onChange={(event) =>
+                  setDraft({ ...draft, signInMethod: event.target.value as 'google' | 'password' })
+                }
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-black bg-white"
+              >
+                <option value="google">Google — no password needed</option>
+                <option value="password">Email and password</option>
+              </select>
+            </label>
           </div>
+
+          <p className="text-xs text-gray-400">
+            {draft.signInMethod === 'google'
+              ? 'They sign in with the Google account on that email address. Nothing to send them, and no password to leak.'
+              : 'A temporary password is generated and shown to you once. They must replace it the first time they sign in.'}
+          </p>
           <button
             type="submit"
             disabled={busyId === 'new' || !draft.email || !draft.name}
