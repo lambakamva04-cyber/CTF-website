@@ -1,0 +1,61 @@
+name = "ctf-app"
+main = "worker/index.ts"
+compatibility_date = "2025-05-05"
+
+# Also serve on <name>.<account>.workers.dev, so there is a working URL even
+# before DNS is attached. Must stay above the first table header — a bare key
+# after `[assets]` is parsed as a field of that table, not a top-level setting.
+workers_dev = true
+
+# Custom domain. Wrangler creates the DNS record and TLS certificate on deploy,
+# but only if cutthroughfaster.com is a zone in this same Cloudflare account.
+# If it is not, `wrangler deploy` fails naming the zone — comment this block out
+# and use the workers.dev URL until the domain is moved onto Cloudflare.
+[[routes]]
+pattern = "app.cutthroughfaster.com"
+custom_domain = true
+
+# Static assets (the built React SPA). Requests that match a built file are
+# served directly from the edge; everything else falls through to the Worker,
+# which routes /api/* and serves the SPA shell for client-side routes.
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ctf-app"
+database_id = "2864d4e4-dc2b-4016-8775-6da6f93c0d27"
+migrations_dir = "migrations"
+
+[observability]
+enabled = true
+
+# Nightly cleanup of expired sessions, rate-limit rows and webhook dedupe ids.
+[triggers]
+crons = ["17 3 * * *"]
+
+[vars]
+# Comma-separated list of origins allowed to call the API with cookies.
+# Must include every hostname the dashboard is served from.
+ALLOWED_ORIGINS = "https://app.cutthroughfaster.com"
+
+# Secrets — set with `wrangler secret put <NAME>`, never in this file:
+#   VAPI_PRIVATE_KEY        Vapi private API key (server-side call control)
+#   VAPI_WEBHOOK_SECRET     Value configured as server.secret in Vapi; arrives as x-vapi-secret
+#   VAPI_WEBHOOK_HMAC_SECRET  (optional) enables x-vapi-signature HMAC verification
+#   GOOGLE_CLIENT_ID        OAuth client id; "Continue with Google" is hidden without it
+#   GOOGLE_CLIENT_SECRET    OAuth client secret
+#   PBKDF2_ITERATIONS       (optional) lower the password work factor — see README
+
+[env.staging]
+name = "ctf-app-staging"
+
+[env.staging.vars]
+ALLOWED_ORIGINS = "https://ctf-app-staging.workers.dev"
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "ctf-app-staging"
+database_id = "REPLACE_WITH_STAGING_D1_DATABASE_ID"
+migrations_dir = "migrations"

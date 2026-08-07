@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.wrangler/
+
+# Local secrets — never commit.
+.dev.vars
+
+# Generated client onboarding SQL contains password hashes.
+seed-*.sql
+
+*.log
+.DS_Store

@@ -1,0 +1,28 @@
+# Copy to `.dev.vars` for local development. Never commit `.dev.vars`.
+# In production these are set with `wrangler secret put <NAME>`.
+
+# Vapi private API key. Used to hang up a call when the live control URL has
+# already been torn down. Dashboard → Vapi → API Keys.
+VAPI_PRIVATE_KEY=
+
+# The value you set as `server.secret` on the Vapi assistant. Vapi sends it back
+# on every webhook as the `x-vapi-secret` header. Generate with:
+#   openssl rand -base64 32
+VAPI_WEBHOOK_SECRET=
+
+# Optional. When set, webhooks must ALSO carry a valid `x-vapi-signature`
+# HMAC-SHA256 of the raw body. Leave blank unless you have configured one.
+VAPI_WEBHOOK_HMAC_SECRET=
+
+# Google Sign-In. Both must be set for "Continue with Google" to appear; with
+# either missing the button is hidden and the routes return 404.
+# Google Cloud console -> APIs & Services -> Credentials -> OAuth client ID
+# (type: Web application). Register these redirect URIs:
+#   https://app.cutthroughfaster.com/api/auth/google/callback
+#   http://localhost:8787/api/auth/google/callback     (local development)
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+# Optional. Lowers the password hashing work factor for faster local logins.
+# Leave unset in production so the default 210,000 iterations applies.
+# PBKDF2_ITERATIONS=10000

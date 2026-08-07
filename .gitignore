@@ -1,0 +1,9 @@
+node_modules/
+.wrangler/
+dist/
+
+# Local secrets — never commit.
+.dev.vars
+
+*.log
+.DS_Store
