@@ -1,6 +1,8 @@
 // Row shapes as stored in D1. These mirror migrations/0001_init.sql exactly;
 // mapping to the API types in shared/types.ts happens at the route layer.
 
+export type OrgStatus = 'pending' | 'active' | 'suspended';
+
 export interface OrgRow {
   id: string;
   name: string;
@@ -10,6 +12,12 @@ export interface OrgRow {
   vapi_assistant_id: string | null;
   vapi_phone_number_id: string | null;
   takeover_number: string | null;
+  status: OrgStatus;
+  activated_at: number | null;
+  activated_by: string | null;
+  billing_email: string | null;
+  plan: string;
+  signup_note: string | null;
   created_at: number;
   updated_at: number;
 }
@@ -27,6 +35,8 @@ export interface UserRow {
   last_login_at: number | null;
   google_sub: string | null;
   google_linked_at: number | null;
+  /** 'ctf_admin' is a person at CTF, not a client with extra powers. */
+  platform_role: 'none' | 'ctf_admin';
   created_at: number;
   updated_at: number;
 }

@@ -29,6 +29,9 @@ export function toSessionUser(user: UserRow): SessionUser {
     // Sent so the UI can hide controls it would be refused anyway. The API
     // re-checks every one of these; this list is a convenience, not the gate.
     permissions: permissionsFor(user.role),
+    isPlatformAdmin: user.platform_role === 'ctf_admin',
+    // Filled in by the caller, which knows whether consent is current.
+    termsAccepted: true,
   };
 }
 
@@ -41,6 +44,8 @@ export function toSessionOrg(org: OrgRow): SessionOrg {
     services: parseServices(org.services),
     takeoverNumber: org.takeover_number,
     receptionistLinked: Boolean(org.vapi_assistant_id ?? org.vapi_phone_number_id),
+    status: org.status,
+    plan: org.plan,
   };
 }
 
@@ -111,8 +116,11 @@ export async function handleLogout(request: Request, env: Env, auth: AuthContext
   return noContent({ headers: { 'set-cookie': clearedSessionCookie() } });
 }
 
-export function handleMe(auth: AuthContext): Response {
-  const payload: MeResponse = { user: toSessionUser(auth.user), org: toSessionOrg(auth.org) };
+export function handleMe(auth: AuthContext, termsAccepted: boolean): Response {
+  const payload: MeResponse = {
+    user: { ...toSessionUser(auth.user), termsAccepted },
+    org: toSessionOrg(auth.org),
+  };
   return json(payload);
 }
 

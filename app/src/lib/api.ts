@@ -7,7 +7,10 @@ import type {
   LiveResponse,
   MeResponse,
   MetricsResponse,
+  OrgStatus,
   Period,
+  PlatformOverview,
+  SignupStartResponse,
   TakeoverResponse,
   TeamMember,
   TeamResponse,
@@ -80,6 +83,23 @@ export const api = {
 
   authMethods: (signal?: AbortSignal) =>
     request<AuthMethodsResponse>('/api/auth/methods', { signal }),
+
+  startSignup: (orgName: string, note: string) =>
+    request<SignupStartResponse>('/api/auth/signup/start', {
+      method: 'POST',
+      body: { orgName, note, accept: true },
+    }),
+
+  acceptTerms: () => request<void>('/api/auth/accept-terms', { method: 'POST' }),
+
+  platformOverview: (period: string, signal?: AbortSignal) =>
+    request<PlatformOverview>(`/api/platform/overview?period=${period}`, { signal }),
+
+  setOrgStatus: (orgId: string, status: OrgStatus) =>
+    request<void>(`/api/platform/organizations/${encodeURIComponent(orgId)}`, {
+      method: 'PATCH',
+      body: { status },
+    }),
 
   team: (signal?: AbortSignal) => request<TeamResponse>('/api/users', { signal }),
 

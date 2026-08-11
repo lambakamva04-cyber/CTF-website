@@ -1,39 +1,69 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { MeResponse } from '../shared/types';
+import { BrandShell } from './components/Brand';
 import { Spinner } from './components/ui';
 import { api, ApiError } from './lib/api';
+import { AcceptTerms } from './pages/AcceptTerms';
 import { ChangePassword } from './pages/ChangePassword';
 import { Dashboard } from './pages/Dashboard';
+import { Legal } from './pages/Legal';
 import { Login } from './pages/Login';
+import { PendingApproval } from './pages/PendingApproval';
+import { Signup } from './pages/Signup';
 
 type Status = 'loading' | 'signed-out' | 'ready' | 'unavailable';
+
+/**
+ * Routing is a handful of paths matched by hand rather than a router library.
+ * The app has four public screens and one private one; a router would be a
+ * dependency and a bundle cost for something this shape.
+ */
+function currentRoute(): 'terms' | 'privacy' | 'signup' | 'app' {
+  const path = window.location.pathname;
+  if (path === '/terms') return 'terms';
+  if (path === '/privacy') return 'privacy';
+  if (path === '/signup') return 'signup';
+  return 'app';
+}
 
 export default function App() {
   const [session, setSession] = useState<MeResponse | null>(null);
   const [status, setStatus] = useState<Status>('loading');
+  const [route, setRoute] = useState(currentRoute);
+
+  const navigate = useCallback((path: string) => {
+    window.history.pushState({}, '', path);
+    setRoute(currentRoute());
+  }, []);
+
+  useEffect(() => {
+    const onPop = () => setRoute(currentRoute());
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
 
   // The session lives in an HttpOnly cookie, so the only way to know whether
   // the client is signed in is to ask the server on load.
+  const refresh = useCallback(async (signal?: AbortSignal) => {
+    try {
+      const result = await api.me(signal);
+      setSession(result);
+      setStatus('ready');
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+        setStatus('signed-out');
+        return;
+      }
+      setStatus('unavailable');
+    }
+  }, []);
+
   useEffect(() => {
     const controller = new AbortController();
-
-    void (async () => {
-      try {
-        const result = await api.me(controller.signal);
-        setSession(result);
-        setStatus('ready');
-      } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') return;
-        if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
-          setStatus('signed-out');
-          return;
-        }
-        setStatus('unavailable');
-      }
-    })();
-
+    void refresh(controller.signal);
     return () => controller.abort();
-  }, []);
+  }, [refresh]);
 
   const handleSignedIn = useCallback((next: MeResponse) => {
     setSession(next);
@@ -45,49 +75,69 @@ export default function App() {
     setStatus('signed-out');
   }, []);
 
-  const handlePasswordChanged = useCallback(() => {
-    setSession((previous) =>
-      previous ? { ...previous, user: { ...previous.user, mustChangePassword: false } } : previous,
-    );
-  }, []);
+  // The policies are readable without an account — someone deciding whether to
+  // sign up needs to read them before they have one.
+  if (route === 'terms' || route === 'privacy') {
+    return <Legal document={route} onBack={() => navigate('/')} />;
+  }
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen bg-white font-body flex items-center justify-center">
+      <BrandShell>
         <Spinner label="Loading your dashboard" />
-      </div>
+      </BrandShell>
     );
   }
 
   if (status === 'unavailable') {
     return (
-      <div className="min-h-screen bg-white text-black font-body flex items-center justify-center px-6">
-        <div className="max-w-sm text-center space-y-4">
-          <h1 className="font-display text-2xl font-semibold tracking-tight">
-            Dashboard unavailable
-          </h1>
-          <p className="text-sm text-gray-500">
+      <BrandShell>
+        <div className="space-y-4 text-center">
+          <h1 className="text-2xl font-semibold">Dashboard unavailable</h1>
+          <p className="text-sm text-slate">
             We could not reach the server. Your receptionist is still answering calls — this is
             only the dashboard.
           </p>
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="bg-black text-white rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-gray-800 transition"
+            className="bg-ink text-cream rounded-lg px-5 py-2.5 text-sm font-medium hover:bg-ink-soft transition"
           >
             Try again
           </button>
         </div>
-      </div>
+      </BrandShell>
     );
   }
 
   if (status === 'signed-out' || !session) {
-    return <Login onSignedIn={handleSignedIn} />;
+    if (route === 'signup') return <Signup onBackToSignIn={() => navigate('/')} />;
+    return <Login onSignedIn={handleSignedIn} onSignUp={() => navigate('/signup')} />;
+  }
+
+  // Order matters: consent is asked for before anything else, an inactive
+  // organization is told so before it sees an empty dashboard, and a password
+  // flagged for rotation is replaced before the product is reachable.
+  if (!session.user.termsAccepted) {
+    return <AcceptTerms onAccepted={() => void refresh()} />;
+  }
+
+  if (session.org.status !== 'active' && !session.user.isPlatformAdmin) {
+    return <PendingApproval session={session} onSignOut={handleSignedOut} />;
   }
 
   if (session.user.mustChangePassword) {
-    return <ChangePassword onDone={handlePasswordChanged} />;
+    return (
+      <ChangePassword
+        onDone={() =>
+          setSession((previous) =>
+            previous
+              ? { ...previous, user: { ...previous.user, mustChangePassword: false } }
+              : previous,
+          )
+        }
+      />
+    );
   }
 
   return (

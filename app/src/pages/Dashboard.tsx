@@ -8,6 +8,7 @@ import type {
 } from '../../shared/types';
 import { CallRow } from '../components/CallRow';
 import { LiveCallPanel } from '../components/LiveCallPanel';
+import { PlatformPanel } from '../components/PlatformPanel';
 import { TeamPanel } from '../components/TeamPanel';
 import { Banner, SegmentedControl, Spinner, StatCard, StatusPill } from '../components/ui';
 import { usePoll } from '../hooks/usePoll';
@@ -296,6 +297,8 @@ export function Dashboard({ session, onSignOut, onSessionExpired }: Props) {
         {user.permissions.includes('users:manage') && (
           <TeamPanel currentUser={user} timeZone={org.timezone} />
         )}
+
+        {user.isPlatformAdmin && <PlatformPanel timeZone={org.timezone} />}
 
         <footer className="text-center pt-4">
           <p className="text-xs text-gray-300">Cut Through Faster · AI Receptionist</p>

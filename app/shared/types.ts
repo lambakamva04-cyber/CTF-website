@@ -20,6 +20,10 @@ export interface SessionUser {
   googleLinked: boolean;
   /** Resolved from the role; the UI hides what the API would refuse anyway. */
   permissions: Permission[];
+  /** True for Cut Through Faster staff, who can see billing totals. */
+  isPlatformAdmin: boolean;
+  /** False when the current policy versions have not been accepted. */
+  termsAccepted: boolean;
 }
 
 export interface TeamMember {
@@ -68,6 +72,8 @@ export interface AuthMethodsResponse {
   secretHadWhitespace: boolean;
 }
 
+export type OrgStatus = 'pending' | 'active' | 'suspended';
+
 export interface SessionOrg {
   id: string;
   name: string;
@@ -78,6 +84,51 @@ export interface SessionOrg {
   takeoverNumber: string | null;
   /** False when the org has no Vapi assistant or phone number linked yet. */
   receptionistLinked: boolean;
+  /** Only 'active' organizations may reach call data. */
+  status: OrgStatus;
+  plan: string;
+}
+
+export interface SignupStartResponse {
+  authorizeUrl: string;
+}
+
+export interface PlatformOrgSummary {
+  id: string;
+  name: string;
+  slug: string;
+  status: OrgStatus;
+  plan: string;
+  billingEmail: string | null;
+  signupNote: string | null;
+  createdAt: number;
+  activatedAt: number | null;
+  logins: number;
+  calls: number;
+  booked: number;
+  escalated: number;
+  missed: number;
+  /** Rounded up per call — a 20-second call is a billable minute. */
+  minutes: number;
+  bookingRate: number;
+  lastCallAt: number | null;
+}
+
+/**
+ * Billing figures only. Deliberately carries no caller names, numbers,
+ * transcripts or recordings — the privacy policy promises clients as much.
+ */
+export interface PlatformOverview {
+  period: 'this-month' | 'last-month' | 'all-time';
+  organizations: PlatformOrgSummary[];
+  totals: {
+    organizations: number;
+    pending: number;
+    active: number;
+    calls: number;
+    booked: number;
+    minutes: number;
+  };
 }
 
 export interface MeResponse {

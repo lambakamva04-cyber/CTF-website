@@ -1,6 +1,30 @@
+import { PRIVACY, TERMS } from '../shared/legal';
 import type { Env } from './env';
 import { pruneExpired, requireAuth, type AuthContext } from './lib/auth';
-import { assertTrustedOrigin, errorResponse, forbidden, json, notFound } from './lib/http';
+import {
+  assertTrustedOrigin,
+  clientIp,
+  errorResponse,
+  forbidden,
+  json,
+  notFound,
+} from './lib/http';
+import {
+  enforce,
+  READ_RULE,
+  subjectFor,
+  WEBHOOK_RULE,
+  WRITE_RULE,
+} from './lib/rateLimit';
+import {
+  handleAcceptTerms,
+  handleSignupStart,
+  hasCurrentConsent,
+} from './routes/signup';
+import {
+  handlePlatformOverview,
+  handlePlatformSetOrgStatus,
+} from './routes/platform';
 import {
   handleChangePassword,
   handleLogin,
@@ -33,6 +57,21 @@ import { handleVapiWebhook } from './routes/webhook';
  * flagged for rotation — everything else is withheld until they change it.
  */
 const PASSWORD_ROTATION_ALLOWLIST = new Set(['/api/me', '/api/auth/password', '/api/auth/logout']);
+
+/**
+ * Reachable while an organization is pending approval or suspended. Everything
+ * else — every route that touches call data — is closed. A pending client can
+ * sign in and see that they are waiting; they cannot see the product.
+ */
+const INACTIVE_ORG_ALLOWLIST = new Set([
+  '/api/me',
+  '/api/auth/logout',
+  '/api/auth/accept-terms',
+  '/api/platform/overview',
+]);
+
+/** Reachable before the current policy versions have been accepted. */
+const CONSENT_ALLOWLIST = new Set(['/api/me', '/api/auth/logout', '/api/auth/accept-terms']);
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -72,7 +111,14 @@ async function handleApi(
   // it is authenticated inside the handler instead of by the CSRF check.
   if (path === '/api/vapi/webhook') {
     if (method !== 'POST') return methodNotAllowed('POST');
+    // Loose enough not to drop events on a busy line — a dropped webhook loses
+    // a transcript line permanently — but bounded against a runaway loop.
+    await enforce(env, `ip:${clientIp(request)}`, WEBHOOK_RULE);
     return handleVapiWebhook(request, env);
+  }
+
+  if (path === '/api/legal' && method === 'GET') {
+    return json({ terms: TERMS, privacy: PRIVACY });
   }
 
   // Which sign-in methods this deployment offers. Public: the answer is visible
@@ -100,16 +146,65 @@ async function handleApi(
     return handleLogin(request, env);
   }
 
+  if (path === '/api/auth/signup/start') {
+    if (method !== 'POST') return methodNotAllowed('POST');
+    return handleSignupStart(request, env);
+  }
+
   const auth = await requireAuth(request, env);
+
+  // Limited as the user rather than the address, so one client on a shared
+  // office connection cannot exhaust another's budget.
+  await enforce(
+    env,
+    subjectFor(auth.user.id, clientIp(request)),
+    method === 'GET' ? READ_RULE : WRITE_RULE,
+  );
 
   if (auth.user.must_change_password === 1 && !PASSWORD_ROTATION_ALLOWLIST.has(path)) {
     throw forbidden('Please choose a new password before continuing.');
   }
 
+  // CTF staff are exempt from the organization gate: their own organization's
+  // status must not determine whether they can see the platform overview.
+  const isPlatformAdmin = auth.user.platform_role === 'ctf_admin';
+
+  if (!isPlatformAdmin && auth.org.status !== 'active' && !INACTIVE_ORG_ALLOWLIST.has(path)) {
+    throw forbidden(
+      auth.org.status === 'pending'
+        ? 'Your account is waiting to be activated by Cut Through Faster.'
+        : 'This account has been suspended. Please contact Cut Through Faster.',
+    );
+  }
+
+  if (!CONSENT_ALLOWLIST.has(path) && !(await hasCurrentConsent(env, auth.user.id))) {
+    throw forbidden('Please accept the updated terms and privacy policy to continue.');
+  }
+
   // Opportunistic cleanup; runs after the response is already on its way.
   if (Math.random() < 0.01) ctx.waitUntil(pruneExpired(env));
 
-  if (path === '/api/me' && method === 'GET') return handleMe(auth);
+  if (path === '/api/me' && method === 'GET') {
+    return handleMe(auth, await hasCurrentConsent(env, auth.user.id));
+  }
+  if (path === '/api/auth/accept-terms') {
+    if (method !== 'POST') return methodNotAllowed('POST');
+    return handleAcceptTerms(request, env, auth);
+  }
+  if (path === '/api/platform/overview' && method === 'GET') {
+    return handlePlatformOverview(request, env, auth);
+  }
+
+  const platformOrgMatch = /^\/api\/platform\/organizations\/([^/]+)$/.exec(path);
+  if (platformOrgMatch) {
+    if (method !== 'PATCH') return methodNotAllowed('PATCH');
+    return handlePlatformSetOrgStatus(
+      request,
+      env,
+      auth,
+      decodeURIComponent(platformOrgMatch[1] as string),
+    );
+  }
   if (path === '/api/auth/logout') {
     if (method !== 'POST') return methodNotAllowed('POST');
     return handleLogout(request, env, auth);

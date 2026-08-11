@@ -103,6 +103,9 @@ export async function requireAuth(request: Request, env: Env): Promise<AuthConte
             u.*, o.id AS o_id, o.name AS o_name, o.slug AS o_slug, o.timezone AS o_timezone,
             o.services AS o_services, o.vapi_assistant_id AS o_assistant,
             o.vapi_phone_number_id AS o_phone_number, o.takeover_number AS o_takeover,
+            o.status AS o_status, o.activated_at AS o_activated_at,
+            o.activated_by AS o_activated_by, o.billing_email AS o_billing_email,
+            o.plan AS o_plan, o.signup_note AS o_signup_note,
             o.created_at AS o_created_at, o.updated_at AS o_updated_at
        FROM sessions s
        JOIN users u ON u.id = s.user_id
@@ -146,6 +149,7 @@ export async function requireAuth(request: Request, env: Env): Promise<AuthConte
     last_login_at: (row.last_login_at as number | null) ?? null,
     google_sub: (row.google_sub as string | null) ?? null,
     google_linked_at: (row.google_linked_at as number | null) ?? null,
+    platform_role: (row.platform_role as 'none' | 'ctf_admin') ?? 'none',
     created_at: row.created_at as number,
     updated_at: row.updated_at as number,
   };
@@ -159,6 +163,12 @@ export async function requireAuth(request: Request, env: Env): Promise<AuthConte
     vapi_assistant_id: (row.o_assistant as string | null) ?? null,
     vapi_phone_number_id: (row.o_phone_number as string | null) ?? null,
     takeover_number: (row.o_takeover as string | null) ?? null,
+    status: (row.o_status as 'pending' | 'active' | 'suspended') ?? 'pending',
+    activated_at: (row.o_activated_at as number | null) ?? null,
+    activated_by: (row.o_activated_by as string | null) ?? null,
+    billing_email: (row.o_billing_email as string | null) ?? null,
+    plan: (row.o_plan as string) ?? 'standard',
+    signup_note: (row.o_signup_note as string | null) ?? null,
     created_at: row.o_created_at as number,
     updated_at: row.o_updated_at as number,
   };
@@ -211,6 +221,7 @@ export async function pruneExpired(env: Env): Promise<void> {
     env.DB.prepare('DELETE FROM login_attempts WHERE created_at < ?').bind(now - LOGIN_WINDOW_MS * 4),
     env.DB.prepare('DELETE FROM webhook_events WHERE received_at < ?').bind(now - 24 * 60 * 60 * 1000),
     env.DB.prepare('DELETE FROM oauth_states WHERE expires_at < ?').bind(now),
+    env.DB.prepare('DELETE FROM rate_limits WHERE expires_at < ?').bind(now),
   ]);
 }
 
