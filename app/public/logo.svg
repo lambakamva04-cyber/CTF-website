@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!--
+    Cut Through Faster monogram. Kept as a standalone file as well as a React
+    component so it can serve as the favicon, the touch icon and the social
+    preview, where markup cannot reach.
+
+    Redrawn from the letterpress artwork. If a master vector exists, replacing
+    the paths here and in src/components/Logo.tsx covers every use.
+  -->
+  <title>Cut Through Faster</title>
+  <rect width="100" height="100" rx="18" fill="#14161A"/>
+  <g fill="none" stroke="#F7F6F3" stroke-width="4.5" stroke-linejoin="miter" transform="translate(10 10) scale(0.8)">
+    <path d="M60.6 37.4 A32 32 0 1 0 60.6 82.6 L51.4 73.4 A19 19 0 1 1 51.4 46.6 Z"/>
+    <rect x="8" y="10" width="84" height="15"/>
+    <rect x="43" y="10" width="14" height="82"/>
+    <rect x="62" y="10" width="13" height="78"/>
+    <rect x="62" y="50" width="30" height="13"/>
+  </g>
+</svg>

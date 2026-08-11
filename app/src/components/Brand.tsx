@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { LogoLockup } from './Logo';
 
 /**
  * The shell every signed-out screen sits in — sign in, sign up, the policies,
@@ -16,13 +17,8 @@ export function BrandShell({
     <div className="min-h-screen bg-cream text-ink font-body flex flex-col">
       <header className="bg-ink">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
-          <a href="/" className="flex items-center gap-2.5">
-            <span className="h-6 w-6 rounded bg-cream text-ink font-display font-bold text-xs flex items-center justify-center">
-              C
-            </span>
-            <span className="font-display font-semibold text-cream tracking-tight">
-              Cut Through Faster
-            </span>
+          <a href="/" className="text-cream">
+            <LogoLockup markSize={26} />
           </a>
           <a
             href="https://www.cutthroughfaster.com"

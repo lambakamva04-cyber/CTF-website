@@ -8,6 +8,7 @@ import type {
 } from '../../shared/types';
 import { CallRow } from '../components/CallRow';
 import { LiveCallPanel } from '../components/LiveCallPanel';
+import { LogoMark } from '../components/Logo';
 import { PlatformPanel } from '../components/PlatformPanel';
 import { TeamPanel } from '../components/TeamPanel';
 import { Banner, SegmentedControl, Spinner, StatCard, StatusPill } from '../components/ui';
@@ -140,10 +141,13 @@ export function Dashboard({ session, onSignOut, onSessionExpired }: Props) {
   return (
     <div className="min-h-screen bg-white text-black">
       <div className="font-body max-w-2xl mx-auto px-6 py-10 sm:py-14 space-y-10">
-        <header className="space-y-2">
-          <p className="text-xs tracking-widest uppercase text-gray-400 font-medium">
-            Powered by Cut Through Faster
-          </p>
+        <header className="space-y-3">
+          <div className="flex items-center gap-2 text-slate">
+            <LogoMark size={20} />
+            <p className="text-xs tracking-widest uppercase font-medium">
+              Powered by Cut Through Faster
+            </p>
+          </div>
           <div className="flex items-center justify-between gap-4">
             <h1 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight truncate">
               {org.name}
@@ -300,8 +304,19 @@ export function Dashboard({ session, onSignOut, onSessionExpired }: Props) {
 
         {user.isPlatformAdmin && <PlatformPanel timeZone={org.timezone} />}
 
-        <footer className="text-center pt-4">
-          <p className="text-xs text-gray-300">Cut Through Faster · AI Receptionist</p>
+        <footer className="pt-6 border-t border-line flex flex-wrap items-center justify-between gap-3">
+          <span className="inline-flex items-center gap-2 text-slate">
+            <LogoMark size={18} />
+            <span className="text-xs">AI Receptionist</span>
+          </span>
+          <span className="flex gap-4 text-xs text-slate">
+            <a href="/terms" className="hover:text-ink transition">
+              Terms
+            </a>
+            <a href="/privacy" className="hover:text-ink transition">
+              Privacy
+            </a>
+          </span>
         </footer>
       </div>
     </div>
