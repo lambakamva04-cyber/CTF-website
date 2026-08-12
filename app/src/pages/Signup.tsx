@@ -78,15 +78,20 @@ export function Signup({ onBackToSignIn }: { onBackToSignIn: () => void }) {
             />
             <span className="text-xs text-slate leading-relaxed">
               I accept the{' '}
-              <a href="/terms" className="underline underline-offset-2 text-ink">
+              <a href="/terms" target="_blank" rel="noreferrer" className="underline underline-offset-2 text-ink">
                 Terms of Service
-              </a>{' '}
-              and{' '}
-              <a href="/privacy" className="underline underline-offset-2 text-ink">
+              </a>
+              , the{' '}
+              <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-2 text-ink">
                 Privacy Policy
+              </a>{' '}
+              and the{' '}
+              <a href="/operator" target="_blank" rel="noreferrer" className="underline underline-offset-2 text-ink">
+                Operator Agreement
               </a>
               , including that Cut Through Faster records how many calls and bookings my
-              receptionist handles in order to bill me.
+              receptionist handles in order to bill me. I am signing the operator agreement on
+              behalf of my business.
             </span>
           </label>
 

@@ -1,5 +1,11 @@
 import type { SignupStartResponse } from '../../shared/types';
-import { PRIVACY_VERSION, TERMS_VERSION } from '../../shared/legal';
+import {
+  CURRENT_VERSIONS,
+  OPERATOR_VERSION,
+  PRIVACY_VERSION,
+  TERMS_VERSION,
+  type LegalDocumentId,
+} from '../../shared/legal';
 import type { Env } from '../env';
 import { newId, randomToken } from '../lib/crypto';
 import { UNUSABLE_PASSWORD_HASH, writeAudit, type OrgRow, type UserRow } from '../lib/db';
@@ -13,8 +19,6 @@ const MAX_ORG_NAME = 80;
 export interface SignupPayload {
   orgName: string;
   note: string | null;
-  termsVersion: string;
-  privacyVersion: string;
 }
 
 function slugify(value: string): string {
@@ -52,7 +56,9 @@ export async function handleSignupStart(request: Request, env: Env): Promise<Res
   if (orgName.length > MAX_ORG_NAME) throw badRequest('That business name is too long.');
   // Consent is a precondition, not a checkbox we record after the fact.
   if (body.accept !== true) {
-    throw badRequest('You need to accept the terms and privacy policy to continue.');
+    throw badRequest(
+      'You need to accept the terms, the privacy policy and the operator agreement to continue.',
+    );
   }
 
   const url = new URL(request.url);
@@ -60,12 +66,7 @@ export async function handleSignupStart(request: Request, env: Env): Promise<Res
   const nonce = randomToken(32);
   const now = Date.now();
 
-  const payload: SignupPayload = {
-    orgName,
-    note,
-    termsVersion: TERMS_VERSION,
-    privacyVersion: PRIVACY_VERSION,
-  };
+  const payload: SignupPayload = { orgName, note };
 
   await env.DB.prepare(
     `INSERT INTO oauth_states (state, nonce, redirect_to, created_at, expires_at, signup_payload)
@@ -88,8 +89,6 @@ export function parseSignupPayload(raw: string | null): SignupPayload | null {
     return {
       orgName: parsed.orgName.trim(),
       note: typeof parsed.note === 'string' ? parsed.note : null,
-      termsVersion: typeof parsed.termsVersion === 'string' ? parsed.termsVersion : 'unknown',
-      privacyVersion: typeof parsed.privacyVersion === 'string' ? parsed.privacyVersion : 'unknown',
     };
   } catch {
     return null;
@@ -152,12 +151,7 @@ export async function createPendingOrganization(
     ),
   ]);
 
-  await recordConsent(env, request, {
-    userId,
-    orgId,
-    termsVersion: payload.termsVersion,
-    privacyVersion: payload.privacyVersion,
-  });
+  await recordConsent(env, request, { userId, orgId });
 
   await writeAudit(env.DB, {
     orgId,
@@ -179,40 +173,51 @@ export async function createPendingOrganization(
   return { org, user };
 }
 
-/** Appends acceptance rows. Never updated in place — the history is the record. */
+/**
+ * Appends one acceptance row per document. Never updated in place — the history
+ * is the record, and a row that can be overwritten proves nothing about what
+ * anyone agreed to.
+ *
+ * All three documents are recorded together because they are presented
+ * together: the operator agreement is what POPIA section 72 relies on to permit
+ * the data leaving South Africa, so a client who accepted only the other two
+ * would leave that transfer without its legal basis.
+ */
 export async function recordConsent(
   env: Env,
   request: Request,
-  input: { userId: string; orgId: string; termsVersion: string; privacyVersion: string },
+  input: { userId: string; orgId: string },
 ): Promise<void> {
   const now = Date.now();
   const ip = clientIp(request);
   const agent = request.headers.get('user-agent')?.slice(0, 256) ?? null;
 
-  await env.DB.batch([
-    env.DB.prepare(
-      `INSERT INTO terms_acceptances (user_id, org_id, document, version, accepted_at, ip, user_agent)
-       VALUES (?, ?, 'terms', ?, ?, ?, ?)`,
-    ).bind(input.userId, input.orgId, input.termsVersion, now, ip, agent),
-    env.DB.prepare(
-      `INSERT INTO terms_acceptances (user_id, org_id, document, version, accepted_at, ip, user_agent)
-       VALUES (?, ?, 'privacy', ?, ?, ?, ?)`,
-    ).bind(input.userId, input.orgId, input.privacyVersion, now, ip, agent),
-  ]);
+  await env.DB.batch(
+    (Object.keys(CURRENT_VERSIONS) as LegalDocumentId[]).map((document) =>
+      env.DB.prepare(
+        `INSERT INTO terms_acceptances (user_id, org_id, document, version, accepted_at, ip, user_agent)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      ).bind(input.userId, input.orgId, document, CURRENT_VERSIONS[document], now, ip, agent),
+    ),
+  );
 }
 
-/** True when the user has accepted the current version of both documents. */
+/** True when the user has accepted the current version of every document. */
 export async function hasCurrentConsent(env: Env, userId: string): Promise<boolean> {
-  const row = await env.DB.prepare(
-    `SELECT
-       SUM(CASE WHEN document = 'terms'   AND version = ?2 THEN 1 ELSE 0 END) AS terms,
-       SUM(CASE WHEN document = 'privacy' AND version = ?3 THEN 1 ELSE 0 END) AS privacy
-     FROM terms_acceptances WHERE user_id = ?1`,
-  )
-    .bind(userId, TERMS_VERSION, PRIVACY_VERSION)
-    .first<{ terms: number | null; privacy: number | null }>();
+  const documents = Object.keys(CURRENT_VERSIONS) as LegalDocumentId[];
 
-  return (row?.terms ?? 0) > 0 && (row?.privacy ?? 0) > 0;
+  const row = await env.DB.prepare(
+    `SELECT COUNT(DISTINCT document) AS accepted
+       FROM terms_acceptances
+      WHERE user_id = ?1
+        AND ((document = 'terms'    AND version = ?2)
+          OR (document = 'privacy'  AND version = ?3)
+          OR (document = 'operator' AND version = ?4))`,
+  )
+    .bind(userId, TERMS_VERSION, PRIVACY_VERSION, OPERATOR_VERSION)
+    .first<{ accepted: number | null }>();
+
+  return (row?.accepted ?? 0) === documents.length;
 }
 
 export async function handleAcceptTerms(
@@ -220,11 +225,11 @@ export async function handleAcceptTerms(
   env: Env,
   auth: { user: UserRow; org: OrgRow },
 ): Promise<Response> {
-  await recordConsent(env, request, {
-    userId: auth.user.id,
-    orgId: auth.org.id,
+  await recordConsent(env, request, { userId: auth.user.id, orgId: auth.org.id });
+  return json({
+    ok: true,
     termsVersion: TERMS_VERSION,
     privacyVersion: PRIVACY_VERSION,
+    operatorVersion: OPERATOR_VERSION,
   });
-  return json({ ok: true, termsVersion: TERMS_VERSION, privacyVersion: PRIVACY_VERSION });
 }

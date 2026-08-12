@@ -27,6 +27,8 @@ Caller ──▶ Vapi assistant ──webhook──▶ Worker ──▶ D1
 | `migrations/` | D1 schema |
 | `scripts/seed.mjs` | Onboards one client (org + first login) |
 | `tests/` | Unit tests for auth crypto, webhook handling and date maths |
+| `shared/legal.ts` | Terms, privacy policy, operator agreement, sub-processors — versioned, so consent points at real text |
+| `docs/incident-response.md` | What to do when personal information may have been exposed |
 
 ## First deploy
 
@@ -288,6 +290,34 @@ Guards worth knowing about:
   de-duplicated so Vapi's retries cannot double-count a call.
 - **Audit log**: every sign-in, takeover, hang-up and password change is
   recorded in `audit_log` with actor, target and IP.
+- **Breach response** is written down rather than improvised, in
+  `docs/incident-response.md`: containment SQL, the queries that establish
+  scope, and the 72-hour notification deadline the privacy policy commits to.
+
+## Privacy and POPIA
+
+- **Three documents**, all versioned in `shared/legal.ts` and all accepted
+  together at signup: terms of service, privacy policy, and an **operator
+  agreement**. The last one matters legally — POPIA section 72 permits personal
+  information to leave South Africa on the strength of a contract, and the
+  database lives in Western Europe because D1 has no African region. The
+  mitigation there has to be contractual; there is no setting that fixes it.
+- **Sub-processors are named**, not described: Cloudflare, Vapi and Google,
+  each with its location and whether it handles caller data. Rendered as a table
+  on the privacy page.
+- **Consent is append-only**. `terms_acceptances` gets one row per user per
+  document version, never an update. `hasCurrentConsent` requires all three at
+  their current versions, and the API refuses everything else until they are
+  accepted, so the screens and the server cannot drift apart.
+- **Callers agreed to nothing.** They are not users of this platform. The client
+  is the responsible party for their callers' information and CTF is the
+  operator — that division is what the operator agreement sets out, and it is
+  what determines who notifies callers after a breach.
+- **Still outstanding, and not fixable in code**: an Information Officer has to
+  be appointed and registered with the Information Regulator.
+  `INFORMATION_OFFICER.registeredWithRegulator` is `false` until that is done.
+  The documents are a working draft and want review by a South African
+  practitioner before they are relied on.
 
 ## Operational notes
 

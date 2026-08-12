@@ -1,4 +1,10 @@
-import { PRIVACY, TERMS } from '../shared/legal';
+import {
+  BREACH_NOTIFICATION_HOURS,
+  CURRENT_VERSIONS,
+  INFORMATION_OFFICER,
+  LEGAL_DOCUMENTS,
+  SUB_PROCESSORS,
+} from '../shared/legal';
 import type { Env } from './env';
 import { pruneExpired, requireAuth, type AuthContext } from './lib/auth';
 import {
@@ -118,7 +124,13 @@ async function handleApi(
   }
 
   if (path === '/api/legal' && method === 'GET') {
-    return json({ terms: TERMS, privacy: PRIVACY });
+    return json({
+      documents: LEGAL_DOCUMENTS,
+      versions: CURRENT_VERSIONS,
+      subProcessors: SUB_PROCESSORS,
+      informationOfficer: INFORMATION_OFFICER,
+      breachNotificationHours: BREACH_NOTIFICATION_HOURS,
+    });
   }
 
   // Which sign-in methods this deployment offers. Public: the answer is visible

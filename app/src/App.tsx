@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import type { LegalDocumentId } from '../shared/legal';
 import type { MeResponse } from '../shared/types';
 import { BrandShell } from './components/Brand';
 import { Spinner } from './components/ui';
@@ -18,12 +19,19 @@ type Status = 'loading' | 'signed-out' | 'ready' | 'unavailable';
  * The app has four public screens and one private one; a router would be a
  * dependency and a bundle cost for something this shape.
  */
-function currentRoute(): 'terms' | 'privacy' | 'signup' | 'app' {
+type Route = LegalDocumentId | 'signup' | 'app';
+
+function currentRoute(): Route {
   const path = window.location.pathname;
   if (path === '/terms') return 'terms';
   if (path === '/privacy') return 'privacy';
+  if (path === '/operator') return 'operator';
   if (path === '/signup') return 'signup';
   return 'app';
+}
+
+function isLegalRoute(route: Route): route is LegalDocumentId {
+  return route === 'terms' || route === 'privacy' || route === 'operator';
 }
 
 export default function App() {
@@ -77,7 +85,7 @@ export default function App() {
 
   // The policies are readable without an account — someone deciding whether to
   // sign up needs to read them before they have one.
-  if (route === 'terms' || route === 'privacy') {
+  if (isLegalRoute(route)) {
     return <Legal document={route} onBack={() => navigate('/')} />;
   }
 

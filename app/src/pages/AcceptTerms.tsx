@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { PRIVACY_VERSION, TERMS_VERSION } from '../../shared/legal';
+import { LegalDocumentLinks } from '../components/LegalDocumentLinks';
 import { api, ApiError } from '../lib/api';
 import { Banner } from '../components/ui';
 import { BrandShell, PrimaryButton } from '../components/Brand';
@@ -33,23 +33,15 @@ export function AcceptTerms({ onAccepted }: { onAccepted: () => void }) {
         <div className="space-y-2">
           <h1 className="text-2xl font-semibold">Before you continue</h1>
           <p className="text-sm text-slate leading-relaxed">
-            We have published our terms and privacy policy. Please read them and confirm you
+            We have published our terms, our privacy policy and the operator agreement that
+            governs how we handle your callers’ information. Please read them and confirm you
             accept — we record which version you agreed to and when.
           </p>
         </div>
 
         {error && <Banner tone="error">{error}</Banner>}
 
-        <div className="border border-line rounded-xl divide-y divide-line bg-white">
-          <a href="/terms" className="flex items-center justify-between px-4 py-3 hover:bg-cream transition">
-            <span className="text-sm font-medium">Terms of Service</span>
-            <span className="text-xs text-slate font-mono-data">{TERMS_VERSION}</span>
-          </a>
-          <a href="/privacy" className="flex items-center justify-between px-4 py-3 hover:bg-cream transition">
-            <span className="text-sm font-medium">Privacy Policy</span>
-            <span className="text-xs text-slate font-mono-data">{PRIVACY_VERSION}</span>
-          </a>
-        </div>
+        <LegalDocumentLinks />
 
         <label className="flex items-start gap-2.5">
           <input
@@ -59,8 +51,9 @@ export function AcceptTerms({ onAccepted }: { onAccepted: () => void }) {
             className="mt-0.5 h-4 w-4 accent-[#14161A]"
           />
           <span className="text-xs text-slate leading-relaxed">
-            I accept the Terms of Service and Privacy Policy, including that Cut Through Faster
-            records how many calls and bookings my receptionist handles in order to bill me.
+            I accept the Terms of Service, the Privacy Policy and the Operator Agreement, including
+            that Cut Through Faster records how many calls and bookings my receptionist handles in
+            order to bill me.
           </span>
         </label>
 

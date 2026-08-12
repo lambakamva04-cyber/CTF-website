@@ -316,6 +316,9 @@ export function Dashboard({ session, onSignOut, onSessionExpired }: Props) {
             <a href="/privacy" className="hover:text-ink transition">
               Privacy
             </a>
+            <a href="/operator" className="hover:text-ink transition">
+              Operator agreement
+            </a>
           </span>
         </footer>
       </div>

@@ -166,9 +166,13 @@ export function Login({
           <a href="/terms" className="underline underline-offset-2">
             Terms
           </a>{' '}
-          and{' '}
+          ,{' '}
           <a href="/privacy" className="underline underline-offset-2">
             Privacy Policy
+          </a>{' '}
+          and{' '}
+          <a href="/operator" className="underline underline-offset-2">
+            Operator Agreement
           </a>
           .
         </p>

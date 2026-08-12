@@ -45,6 +45,9 @@ export function BrandShell({
             <a href="/privacy" className="hover:text-ink transition">
               Privacy
             </a>
+            <a href="/operator" className="hover:text-ink transition">
+              Operator agreement
+            </a>
           </span>
         </div>
       </footer>
