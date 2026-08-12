@@ -72,6 +72,66 @@ describe('legal documents', () => {
     expect(INFORMATION_OFFICER.email).toMatch(/^[^@\s]+@[^@\s]+\.[^@\s]+$/);
   });
 
+  describe('liability regime in the terms', () => {
+    const sections = LEGAL_DOCUMENTS.terms.sections;
+    const emphasised = sections.filter((section) => section.emphasis);
+    const text = sections.flatMap((section) => section.body).join(' ');
+
+    it('caps total liability at twelve months of fees', () => {
+      expect(text).toMatch(/capped at the total amount you actually paid us/i);
+      expect(text).toMatch(/twelve months/i);
+      // The aggregate wording is the whole point of a cap: without it, each
+      // claim gets its own ceiling and the cap stops being one.
+      expect(text).toMatch(/ceiling for all of them together/i);
+    });
+
+    it('excludes consequential and indirect loss, naming lost business', () => {
+      expect(text).toMatch(/not liable for indirect or consequential loss/i);
+      for (const head of ['lost profit', 'lost revenue', 'lost business', 'lost bookings']) {
+        expect(text.toLowerCase()).toContain(head);
+      }
+    });
+
+    it('bars the client from passing caller claims on to us, and indemnifies us', () => {
+      expect(text).toMatch(/cannot pass what you pay on it to us/i);
+      expect(text).toMatch(/you will cover us/i);
+    });
+
+    it('carves out what South African law does not allow us to limit', () => {
+      // A cap with no carve-out for gross negligence risks being struck out
+      // whole under section 51 of the Consumer Protection Act, which takes the
+      // protection with it. These four have to survive any edit.
+      for (const carveOut of [
+        /gross negligence/i,
+        /wilful misconduct/i,
+        /death or personal injury/i,
+        /POPIA/,
+      ]) {
+        expect(text).toMatch(carveOut);
+      }
+    });
+
+    it('marks the limitation and indemnity sections as conspicuous', () => {
+      // Section 49 of the Consumer Protection Act requires these be drawn to
+      // the customer's attention, which is what `emphasis` drives in the UI.
+      expect(emphasised).toHaveLength(2);
+      expect(emphasised.map((section) => section.heading)).toEqual([
+        expect.stringMatching(/owe you/i),
+        expect.stringMatching(/callers/i),
+      ]);
+    });
+
+    it('keeps the section numbers referenced elsewhere pointing at the right text', () => {
+      // The signup and re-consent screens name "sections 9 and 10" verbatim.
+      // Renumbering the document without updating them would leave the consent
+      // copy pointing at the wrong clauses.
+      expect(sections[8]?.heading).toMatch(/^9\./);
+      expect(sections[9]?.heading).toMatch(/^10\./);
+      expect(sections[8]?.emphasis).toBe(true);
+      expect(sections[9]?.emphasis).toBe(true);
+    });
+  });
+
   it('grounds the operator agreement in the transborder-flow section', () => {
     const operatorText = LEGAL_DOCUMENTS.operator.sections
       .flatMap((section) => section.body)

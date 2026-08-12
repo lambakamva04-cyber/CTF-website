@@ -5,6 +5,14 @@ export interface Env {
   /** Comma-separated origins permitted to make cookie-bearing API calls. */
   ALLOWED_ORIGINS: string;
 
+  /**
+   * The single address the public legal pages are published at, used for the
+   * sitemap and the canonical link. Unset falls back to the request's own host
+   * over https, which is right for a preview and wrong for production, where
+   * the workers.dev fallback would otherwise compete with the custom domain.
+   */
+  CANONICAL_ORIGIN?: string;
+
   /** Vapi private API key — used for call control fallbacks and recordings. */
   VAPI_PRIVATE_KEY?: string;
   /** Matches `server.secret` in Vapi; arrives on webhooks as x-vapi-secret. */

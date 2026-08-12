@@ -3,7 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="robots" content="noindex, nofollow" />
+    <!--
+      Crawl policy is set per URL by the Worker (worker/lib/seo.ts) as an
+      X-Robots-Tag header, not here. Every client route is served from this one
+      file, so a meta tag would hide the public legal pages along with the
+      private dashboard.
+    -->
     <meta name="theme-color" content="#14161A" />
     <title>Receptionist Dashboard · Cut Through Faster</title>
 

@@ -53,7 +53,13 @@ export function AcceptTerms({ onAccepted }: { onAccepted: () => void }) {
           <span className="text-xs text-slate leading-relaxed">
             I accept the Terms of Service, the Privacy Policy and the Operator Agreement, including
             that Cut Through Faster records how many calls and bookings my receptionist handles in
-            order to bill me.
+            order to bill me.{' '}
+            <span className="text-ink font-medium">
+              I have read sections 9 and 10 of the terms, which cap what I can recover from Cut
+              Through Faster at what I have paid them in the last twelve months, exclude lost
+              business and other indirect losses, and set out when I cover them against claims
+              brought by my callers.
+            </span>
           </span>
         </label>
 

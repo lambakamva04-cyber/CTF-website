@@ -1,0 +1,17 @@
+# app.cutthroughfaster.com is the client dashboard: a private application behind
+# a login. Nothing here should be in a search result except the legal documents,
+# which are public by nature and which the marketing site links to rather than
+# keeping a second copy of.
+#
+# The Worker also sends X-Robots-Tag: noindex, nofollow on every route except
+# those three (see worker/lib/seo.ts). Two mechanisms because they do different
+# jobs: this file stops the crawl, the header stops the indexing.
+
+User-agent: *
+Allow: /terms
+Allow: /privacy
+Allow: /operator
+Allow: /sitemap.xml
+Disallow: /
+
+Sitemap: https://app.cutthroughfaster.com/sitemap.xml

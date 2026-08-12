@@ -91,7 +91,13 @@ export function Signup({ onBackToSignIn }: { onBackToSignIn: () => void }) {
               </a>
               , including that Cut Through Faster records how many calls and bookings my
               receptionist handles in order to bill me. I am signing the operator agreement on
-              behalf of my business.
+              behalf of my business.{' '}
+              <span className="text-ink font-medium">
+                I have read sections 9 and 10 of the terms, which cap what I can recover from Cut
+                Through Faster at what I have paid them in the last twelve months, exclude lost
+                business and other indirect losses, and set out when I cover them against claims
+                brought by my callers.
+              </span>
             </span>
           </label>
 

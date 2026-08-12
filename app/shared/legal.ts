@@ -12,7 +12,7 @@
 // the country, and callers are not users of this platform and have agreed to
 // nothing at all.
 
-export const TERMS_VERSION = '2026-08-11';
+export const TERMS_VERSION = '2026-08-12';
 export const PRIVACY_VERSION = '2026-08-11';
 export const OPERATOR_VERSION = '2026-08-11';
 
@@ -69,6 +69,16 @@ export const SUB_PROCESSORS: SubProcessor[] = [
 export interface LegalSection {
   heading: string;
   body: string[];
+  /**
+   * Renders the section as a bordered, visually distinct block.
+   *
+   * Not decoration. Section 49 of the Consumer Protection Act requires that a
+   * term limiting a supplier's liability, or asking the customer to indemnify
+   * or assume risk, be drawn to the customer's attention in a conspicuous
+   * manner before they agree. A limitation buried in the middle of a wall of
+   * grey text is exactly what that section is aimed at.
+   */
+  emphasis?: boolean;
 }
 
 export interface LegalDocument {
@@ -84,9 +94,9 @@ export const TERMS: LegalDocument = {
   id: 'terms',
   title: 'Terms of Service',
   version: TERMS_VERSION,
-  updated: '11 August 2026',
+  updated: '12 August 2026',
   intro:
-    'These terms govern your use of the Cut Through Faster control platform — the dashboard where you watch your AI receptionist work, read call transcripts, and take calls over. By signing in you agree to them.',
+    'These terms govern your use of the Cut Through Faster control platform — the dashboard where you watch your AI receptionist work, read call transcripts, and take calls over. By signing in you agree to them. Sections 9 and 10 limit what you can recover from us and set out when you cover us instead; they are marked out on this page and you should read them before you accept.',
   sections: [
     {
       heading: '1. The service',
@@ -141,27 +151,49 @@ export const TERMS: LegalDocument = {
       ],
     },
     {
-      heading: '8. Availability and liability',
+      heading: '8. What we do and do not promise',
       body: [
-        'We work to keep the platform available but do not guarantee uninterrupted service, and it is provided without warranties beyond those the law requires.',
-        'Nothing here limits liability that cannot lawfully be limited, including liability arising from our own failure to meet our obligations as your operator under POPIA.',
+        'We work to keep the platform available, but we do not promise uninterrupted service.',
+        'The receptionist is software. It will sometimes mishear a caller, misjudge what they want, or fail to book an appointment a person would have booked. We improve it continuously and we do not promise it will be right every time.',
+        'Beyond the warranties South African law requires of us, the service is provided as it stands. Keep whatever fallback you would keep for any telephone system — a diverted number, a voicemail, a person.',
       ],
     },
     {
-      heading: '9. Ending the agreement',
+      heading: '9. The most we can ever owe you',
+      emphasis: true,
+      body: [
+        'This section limits what you can recover from us, and you should read it before you accept. It is one of the terms on which we are willing to provide the service at the price we charge.',
+        'Our total liability to you, for everything arising out of or connected with the service, is capped at the total amount you actually paid us in the twelve months before the event giving rise to the claim. Where several claims arise, that amount is the ceiling for all of them together — not for each one.',
+        'We are not liable for indirect or consequential loss of any kind. That includes lost profit, lost revenue, lost business, lost bookings, lost customers, loss of goodwill or reputation, wasted expenditure, and the cost of having the same work done elsewhere — whether or not we were told that such loss was possible. Put plainly: if a call is missed or mishandled and that customer goes elsewhere, the value of the business you lost is not something you can recover from us.',
+        'None of this touches liability that cannot lawfully be limited. Our gross negligence, our wilful misconduct, our fraud, death or personal injury caused by our negligence, and the obligations we owe you as your operator under POPIA all sit outside this cap, and nothing in these terms limits them.',
+      ],
+    },
+    {
+      heading: '10. Claims that come from your callers',
+      emphasis: true,
+      body: [
+        'You are the responsible party for the people who telephone your business, and we are your operator. That division decides who answers to whom when a call goes wrong.',
+        'If a caller, a customer, or a regulator acting on their complaint brings a claim against you arising from what your receptionist said, did, failed to do, or failed to book, that claim is yours to answer. You cannot pass what you pay on it to us — not as damages, not as a contribution, and not as a claim for the amount you settled at.',
+        'If such a claim is brought against us instead, you will cover us: what we are required to pay, and the reasonable legal costs of dealing with it. This covers claims arising from how your receptionist was configured, from what you instructed it to say, from your not telling callers that calls are recorded and transcribed, and from your own breach of these terms.',
+        'Neither of the two paragraphs above applies where the claim arises from our gross negligence, our wilful misconduct, our fraud, or our own failure to meet our POPIA obligations as your operator. In those cases the ordinary law applies and you keep every right it gives you.',
+        'If we want a claim covered we will tell you promptly, we will not settle it without asking you first, and you may take over the defence of it yourself.',
+      ],
+    },
+    {
+      heading: '11. Ending the agreement',
       body: [
         'You may stop using the platform at any time and ask us to close your account.',
         'On closure we delete or irreversibly anonymise your call data within 90 days, except where we are required to keep records for longer, and we instruct our sub-operators to do the same.',
       ],
     },
     {
-      heading: '10. Changes',
+      heading: '12. Changes',
       body: [
         'We may update these terms. Material changes will be shown to you when you next sign in, and continuing to use the platform means accepting the revised version.',
       ],
     },
     {
-      heading: '11. Governing law',
+      heading: '13. Governing law',
       body: ['These terms are governed by the laws of the Republic of South Africa.'],
     },
   ],

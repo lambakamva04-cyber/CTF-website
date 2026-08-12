@@ -4,7 +4,8 @@ import { CURRENT_VERSIONS, LEGAL_DOCUMENTS } from '../../shared/legal';
 const ORDER: LegalDocumentId[] = ['terms', 'privacy', 'operator'];
 
 const SUMMARY: Record<LegalDocumentId, string> = {
-  terms: 'What the service does and what each of us is responsible for.',
+  terms:
+    'What the service does and what each of us is responsible for. Sections 9 and 10 cap what you can recover from us and set out when you cover us instead.',
   privacy: 'What we collect about you and your callers, and why.',
   operator: 'How we handle your callers’ information on your behalf, as POPIA requires.',
 };

@@ -29,16 +29,37 @@ export function Legal({ document, onBack }: { document: LegalDocumentId; onBack:
           <p className="text-sm text-slate leading-relaxed">{doc.intro}</p>
         </header>
 
-        {doc.sections.map((section) => (
-          <section key={section.heading} className="space-y-2">
-            <h2 className="text-base font-semibold">{section.heading}</h2>
-            {section.body.map((paragraph, index) => (
-              <p key={index} className="text-sm text-slate leading-relaxed">
-                {paragraph}
+        {doc.sections.map((section) =>
+          section.emphasis ? (
+            // Boxed, darker text, and labelled. Section 49 of the Consumer
+            // Protection Act wants a limitation of liability or an indemnity
+            // brought to the customer's attention conspicuously, not merely
+            // included — so it is set apart from the sections around it.
+            <section
+              key={section.heading}
+              className="space-y-2 border-2 border-ink rounded-xl p-5 bg-cream-dim/40"
+            >
+              <p className="text-[0.65rem] tracking-widest uppercase font-semibold text-ink">
+                Please read this section carefully
               </p>
-            ))}
-          </section>
-        ))}
+              <h2 className="text-base font-semibold">{section.heading}</h2>
+              {section.body.map((paragraph, index) => (
+                <p key={index} className="text-sm text-ink leading-relaxed">
+                  {paragraph}
+                </p>
+              ))}
+            </section>
+          ) : (
+            <section key={section.heading} className="space-y-2">
+              <h2 className="text-base font-semibold">{section.heading}</h2>
+              {section.body.map((paragraph, index) => (
+                <p key={index} className="text-sm text-slate leading-relaxed">
+                  {paragraph}
+                </p>
+              ))}
+            </section>
+          ),
+        )}
 
         {/* The list of sub-processors belongs with the privacy policy, but as a
             table rather than prose: a client checking who holds their callers'

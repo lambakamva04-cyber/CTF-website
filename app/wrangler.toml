@@ -21,6 +21,12 @@ custom_domain = true
 [assets]
 directory = "./dist"
 binding = "ASSETS"
+# A request matching a built file is normally served without invoking the
+# Worker, and `/` matches index.html — which would leave the sign-in page
+# without the X-Robots-Tag header the Worker sets. Routing just that one path
+# through the Worker fixes it; every hashed bundle under /assets/ still comes
+# straight off the edge.
+run_worker_first = ["/"]
 
 [[d1_databases]]
 binding = "DB"
@@ -40,6 +46,11 @@ crons = ["17 3 * * *"]
 # Must include every hostname the dashboard is served from.
 ALLOWED_ORIGINS = "https://app.cutthroughfaster.com"
 
+# The one address the public legal pages are published at. The Worker also
+# answers on ctf-app.<account>.workers.dev with identical content; without this,
+# that fallback competes with the custom domain for the same pages in Google.
+CANONICAL_ORIGIN = "https://app.cutthroughfaster.com"
+
 # Secrets — set with `wrangler secret put <NAME>`, never in this file:
 #   VAPI_PRIVATE_KEY        Vapi private API key (server-side call control)
 #   VAPI_WEBHOOK_SECRET     Value configured as server.secret in Vapi; arrives as x-vapi-secret
@@ -53,6 +64,8 @@ name = "ctf-app-staging"
 
 [env.staging.vars]
 ALLOWED_ORIGINS = "https://ctf-app-staging.workers.dev"
+# Staging is noindex throughout, so it never competes with production.
+CANONICAL_ORIGIN = "https://ctf-app-staging.workers.dev"
 
 [[env.staging.d1_databases]]
 binding = "DB"

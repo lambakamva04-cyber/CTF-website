@@ -51,6 +51,7 @@ import {
   handleGoogleStart,
 } from './routes/googleAuth';
 import { handleMetrics } from './routes/metrics';
+import { canonicalFor, canonicalOrigin, robotsTagFor, sitemapXml } from './lib/seo';
 import {
   handleCreateTeamMember,
   handleListTeam,
@@ -82,6 +83,17 @@ const CONSENT_ALLOWLIST = new Set(['/api/me', '/api/auth/logout', '/api/auth/acc
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
+
+    // Ahead of serveSpa, which would otherwise treat the extension as a file
+    // and hand it to the assets runtime, where no such file exists.
+    if (url.pathname === '/sitemap.xml') {
+      return new Response(sitemapXml(canonicalOrigin(env, url)), {
+        headers: {
+          'content-type': 'application/xml; charset=utf-8',
+          'cache-control': 'public, max-age=3600',
+        },
+      });
+    }
 
     if (!url.pathname.startsWith('/api/')) {
       return serveSpa(request, env, url);
@@ -318,5 +330,19 @@ async function serveSpa(request: Request, env: Env, url: URL): Promise<Response>
 
   // Ask for `/`, not `/index.html`: the assets runtime canonicalises the
   // latter with a 307 redirect rather than serving it.
-  return env.ASSETS.fetch(new Request(new URL('/', url), request));
+  const response = await env.ASSETS.fetch(new Request(new URL('/', url), request));
+
+  // Every client route is served from the same HTML shell, so a `noindex` meta
+  // tag in that file would hide the legal pages along with the dashboard. The
+  // decision has to be made per URL, which means a header.
+  const robots = robotsTagFor(url.pathname);
+  const canonical = canonicalFor(canonicalOrigin(env, url), url.pathname);
+  if (!robots && !canonical) return response;
+
+  const tagged = new Response(response.body, response);
+  if (robots) tagged.headers.set('x-robots-tag', robots);
+  // Sent as a header rather than a meta tag because the SPA serves one HTML
+  // file for every route — the tag cannot differ per URL, and the header can.
+  if (canonical) tagged.headers.set('link', `<${canonical}>; rel="canonical"`);
+  return tagged;
 }
