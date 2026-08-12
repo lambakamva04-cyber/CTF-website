@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { LegalDocumentId } from '../shared/legal';
 import type { MeResponse } from '../shared/types';
 import { BrandShell } from './components/Brand';
-import { Spinner } from './components/ui';
+import { DashboardSkeleton } from './components/Skeleton';
 import { api, ApiError } from './lib/api';
 import { AcceptTerms } from './pages/AcceptTerms';
 import { ChangePassword } from './pages/ChangePassword';
@@ -89,12 +89,12 @@ export default function App() {
     return <Legal document={route} onBack={() => navigate('/')} />;
   }
 
+  // The first thing a client sees on every visit. Drawing the dashboard's own
+  // layout — heading, live card, the three figures, the call list — rather than
+  // a spinner means the page they are waiting for is already the page they are
+  // looking at, and nothing moves when the data lands.
   if (status === 'loading') {
-    return (
-      <BrandShell>
-        <Spinner label="Loading your dashboard" />
-      </BrandShell>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (status === 'unavailable') {

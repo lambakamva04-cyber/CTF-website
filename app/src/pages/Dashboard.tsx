@@ -11,7 +11,13 @@ import { LiveCallPanel } from '../components/LiveCallPanel';
 import { LogoMark } from '../components/Logo';
 import { PlatformPanel } from '../components/PlatformPanel';
 import { TeamPanel } from '../components/TeamPanel';
-import { Banner, SegmentedControl, Spinner, StatCard, StatusPill } from '../components/ui';
+import {
+  CallListSkeleton,
+  LiveCallSkeleton,
+  Skeleton,
+  StatGridSkeleton,
+} from '../components/Skeleton';
+import { Banner, SegmentedControl, StatCard, StatusPill } from '../components/ui';
 import { usePoll } from '../hooks/usePoll';
 import { useTranscript } from '../hooks/useTranscript';
 import { api, ApiError } from '../lib/api';
@@ -170,9 +176,7 @@ export function Dashboard({ session, onSignOut, onSessionExpired }: Props) {
         {connectionError && <Banner tone="warning" onRetry={live.refresh}>{connectionError}</Banner>}
 
         {live.loading && !live.data ? (
-          <section className="border border-gray-200 rounded-2xl p-6 sm:p-8">
-            <Spinner label="Checking for live calls" />
-          </section>
+          <LiveCallSkeleton />
         ) : (
           <LiveCallPanel
             call={liveCall}
@@ -205,7 +209,7 @@ export function Dashboard({ session, onSignOut, onSessionExpired }: Props) {
               {metrics.error.message}
             </Banner>
           ) : metrics.loading && !metrics.data ? (
-            <Spinner label="Loading performance" />
+            <StatGridSkeleton />
           ) : (
             <>
               <div className="grid grid-cols-3 gap-3">
@@ -219,7 +223,10 @@ export function Dashboard({ session, onSignOut, onSessionExpired }: Props) {
                   <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-4">
                     {period === 'week' ? 'Last 7 Days' : 'Last 5 Weeks'}
                   </p>
-                  <Suspense fallback={<div className="h-[140px]" aria-hidden="true" />}>
+                  {/* The chart is a lazy chunk and the largest one in the app.
+                      Holding its exact height keeps the page from jumping when
+                      it arrives. */}
+                  <Suspense fallback={<Skeleton className="h-[140px] w-full rounded-lg" />}>
                     <TrendChart data={metrics.data?.trend ?? []} />
                   </Suspense>
                 </div>
@@ -264,7 +271,7 @@ export function Dashboard({ session, onSignOut, onSessionExpired }: Props) {
           )}
 
           {callsLoading ? (
-            <Spinner label="Loading calls" />
+            <CallListSkeleton />
           ) : (
             <div className="divide-y divide-gray-100 border-t border-b border-gray-100">
               {calls.map((call) => (

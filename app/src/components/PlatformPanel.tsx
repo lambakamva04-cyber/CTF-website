@@ -3,7 +3,8 @@ import { useCallback, useEffect, useState } from 'react';
 import type { OrgStatus, PlatformOverview } from '../../shared/types';
 import { api, ApiError } from '../lib/api';
 import { formatRelativeDate } from '../lib/format';
-import { Banner, SegmentedControl, Spinner } from './ui';
+import { StatCardSkeleton, TableSkeleton } from './Skeleton';
+import { Banner, SegmentedControl } from './ui';
 
 type Period = 'this-month' | 'last-month' | 'all-time';
 
@@ -86,7 +87,15 @@ export function PlatformPanel({ timeZone }: { timeZone: string }) {
       )}
 
       {loading && !data ? (
-        <Spinner label="Loading clients" />
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <StatCardSkeleton />
+            <StatCardSkeleton delay={1} />
+            <StatCardSkeleton delay={2} />
+            <StatCardSkeleton delay={3} />
+          </div>
+          <TableSkeleton label="Loading your clients" rows={4} />
+        </div>
       ) : (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

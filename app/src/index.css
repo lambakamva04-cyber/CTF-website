@@ -53,6 +53,57 @@ h3 {
   animation: lineIn 0.35s ease-out;
 }
 
+/*
+ * Skeletons. A sweep of light across a cream block rather than a pulse: the
+ * movement travels in one direction, which reads as progress, where a pulse
+ * reads as waiting.
+ *
+ * The gradient is painted with a background-position animation instead of a
+ * transform on a child, so a skeleton is one element with no wrapper and can be
+ * dropped anywhere a real element goes.
+ */
+@keyframes skeletonSweep {
+  from {
+    background-position: 180% 0;
+  }
+  to {
+    background-position: -80% 0;
+  }
+}
+
+.skeleton {
+  /* Ink at low opacity rather than a fixed grey, so the block reads the same
+     on the cream sign-in shell and on the white dashboard. cream-dim was the
+     first choice and was nearly invisible against white. */
+  background-color: rgba(20, 22, 26, 0.08);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.6) 50%,
+    transparent 100%
+  );
+  background-size: 220% 100%;
+  background-repeat: no-repeat;
+  animation: skeletonSweep 1.6s ease-in-out infinite;
+  /* Nothing inside a skeleton is real text, so never let it be selected or
+     read out — the accessible announcement comes from the container's
+     aria-busy and its visually hidden label. */
+  user-select: none;
+  color: transparent;
+}
+
+/* Staggering the sweep stops a column of placeholders pulsing in lockstep,
+   which looks like a broken render rather than a loading list. */
+.skeleton-delay-1 {
+  animation-delay: 0.1s;
+}
+.skeleton-delay-2 {
+  animation-delay: 0.2s;
+}
+.skeleton-delay-3 {
+  animation-delay: 0.3s;
+}
+
 /* Visible keyboard focus everywhere, without the ring on mouse clicks. */
 :focus-visible {
   outline: 2px solid var(--color-ink);
@@ -62,8 +113,15 @@ h3 {
 @media (prefers-reduced-motion: reduce) {
   .transcript-line,
   .animate-pulse,
-  .animate-spin {
+  .animate-spin,
+  .skeleton {
     animation: none !important;
+  }
+
+  /* With the sweep off, the block still has to be visible as a placeholder —
+     the flat fill alone carries it. */
+  .skeleton {
+    background-image: none;
   }
 
   html {

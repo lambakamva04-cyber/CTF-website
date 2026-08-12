@@ -5,6 +5,7 @@ import { api, ApiError } from '../lib/api';
 import { Banner } from '../components/ui';
 import { BrandShell } from '../components/Brand';
 import { GoogleMark } from '../components/GoogleMark';
+import { Skeleton, SkeletonRegion } from '../components/Skeleton';
 
 /** Reasons the Google leg can bounce back, phrased for the person reading them. */
 const AUTH_ERRORS: Record<string, string> = {
@@ -43,7 +44,11 @@ export function Login({
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [googleEnabled, setGoogleEnabled] = useState(false);
+  // Three states, not two. Until the server has answered we do not know whether
+  // this deployment offers Google, and rendering `false` in the meantime pops
+  // the button and the divider into existence a moment later — on the screen a
+  // client sees most often.
+  const [googleEnabled, setGoogleEnabled] = useState<boolean | null>(null);
 
   // Surface a failed Google round trip, then strip the parameter so a refresh
   // does not show a stale error.
@@ -95,7 +100,19 @@ export function Login({
 
         {error && <Banner tone="error">{error}</Banner>}
 
-        {googleEnabled && (
+        {googleEnabled === null && (
+          <SkeletonRegion label="Checking which sign-in methods are available" className="space-y-8">
+            <Skeleton className="h-12 w-full rounded-xl" />
+            {/* The divider it stands in for is a hairline with "or" on it, so
+                the placeholder is a hairline too — a solid bar here would be
+                heavier than the thing that replaces it. */}
+            <span className="flex items-center h-4">
+              <Skeleton className="h-px w-full" delay={1} />
+            </span>
+          </SkeletonRegion>
+        )}
+
+        {googleEnabled === true && (
           <>
             {/* A plain link, not fetch(): the OAuth flow is a top-level browser
                 redirect, and an XHR to Google would be blocked by CORS. */}

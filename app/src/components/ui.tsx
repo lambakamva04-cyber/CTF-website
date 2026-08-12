@@ -91,9 +91,19 @@ export function Banner({
   );
 }
 
+/**
+ * A spinner for waits with no shape to stand in for — the answer is one word,
+ * or the destination is another page entirely. Anything that resolves into a
+ * known layout uses a skeleton from Skeleton.tsx instead: a spinner in that
+ * position throws the content downward when it disappears.
+ *
+ * Currently unused in the app; kept because the in-button case (see the sign-in
+ * and signup buttons, which use Loader2 directly) is the one place it stays
+ * correct.
+ */
 export function Spinner({ label = 'Loading' }: { label?: string }) {
   return (
-    <div className="flex items-center justify-center gap-2 py-8 text-gray-400">
+    <div role="status" className="flex items-center justify-center gap-2 py-8 text-gray-400">
       <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
       <span className="text-sm">{label}</span>
     </div>
