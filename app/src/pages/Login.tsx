@@ -1,6 +1,7 @@
 import { Loader2 } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
-import type { MeResponse } from '../../shared/types';
+import type { MeResponse, TwoFactorChallenge } from '../../shared/types';
+import { isTwoFactorChallenge } from '../../shared/types';
 import { api, ApiError } from '../lib/api';
 import { Banner } from '../components/ui';
 import { BrandShell } from '../components/Brand';
@@ -35,9 +36,11 @@ const AUTH_ERRORS: Record<string, string> = {
 
 export function Login({
   onSignedIn,
+  onChallenge,
   onSignUp,
 }: {
   onSignedIn: (session: MeResponse) => void;
+  onChallenge: (challenge: TwoFactorChallenge) => void;
   onSignUp: () => void;
 }) {
   const [email, setEmail] = useState('');
@@ -75,8 +78,16 @@ export function Login({
     setSubmitting(true);
     setError(null);
     try {
-      const session = await api.login(email.trim(), password);
-      onSignedIn(session);
+      const result = await api.login(email.trim(), password);
+      // The password being right is not the same as being signed in. When the
+      // account carries a second factor the server returns a challenge and no
+      // cookie, and the caller takes over from there.
+      if (isTwoFactorChallenge(result)) {
+        setPassword('');
+        onChallenge(result);
+        return;
+      }
+      onSignedIn(result);
     } catch (caught) {
       setError(
         caught instanceof ApiError ? caught.message : 'Could not sign you in. Please try again.',

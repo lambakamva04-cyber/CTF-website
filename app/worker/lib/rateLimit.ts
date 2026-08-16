@@ -36,6 +36,34 @@ export const SIGNUP_RULE: RateLimitRule = { name: 'signup', limit: 5, windowMs: 
  */
 export const WEBHOOK_RULE: RateLimitRule = { name: 'webhook', limit: 3_000, windowMs: 60_000 };
 
+/**
+ * Second-factor code submission. Six digits is a million possibilities, which
+ * sounds ample and is not: at a few hundred guesses a minute an attacker who
+ * already has the password gets meaningful odds inside a day. Five per quarter
+ * hour, per address and per challenge, keeps that hopeless.
+ *
+ * The per-challenge attempt cap in lib/twoFactor.ts does the same job from the
+ * other side. Both exist because they fail differently — this one survives an
+ * attacker opening a fresh challenge for every guess.
+ */
+export const TWO_FACTOR_RULE: RateLimitRule = {
+  name: '2fa',
+  limit: 5,
+  windowMs: 15 * 60_000,
+};
+
+/**
+ * Password reset. No such endpoint exists yet — there is no self-service reset,
+ * an owner issues a new password from the Team panel. The rule is defined here
+ * so that whoever adds the endpoint finds the limiter already waiting rather
+ * than shipping it unthrottled, which is the usual way this gets missed.
+ */
+export const PASSWORD_RESET_RULE: RateLimitRule = {
+  name: 'password-reset',
+  limit: 5,
+  windowMs: 15 * 60_000,
+};
+
 export interface RateLimitResult {
   allowed: boolean;
   remaining: number;

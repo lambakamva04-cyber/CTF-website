@@ -19,6 +19,7 @@ import {
   enforce,
   READ_RULE,
   subjectFor,
+  TWO_FACTOR_RULE,
   WEBHOOK_RULE,
   WRITE_RULE,
 } from './lib/rateLimit';
@@ -51,6 +52,16 @@ import {
   handleGoogleStart,
 } from './routes/googleAuth';
 import { handleMetrics } from './routes/metrics';
+import {
+  handleChallengeResend,
+  handleChallengeVerify,
+  handleEmailFactorEnable,
+  handleRegenerateBackupCodes,
+  handleTotpEnrollConfirm,
+  handleTotpEnrollStart,
+  handleTwoFactorDisable,
+  handleTwoFactorStatus,
+} from './routes/twoFactor';
 import { canonicalFor, canonicalOrigin, robotsTagFor, sitemapXml } from './lib/seo';
 import {
   handleCreateTeamMember,
@@ -175,6 +186,22 @@ async function handleApi(
     return handleSignupStart(request, env);
   }
 
+  // Answering a second-factor challenge. Unauthenticated by necessity — there
+  // is no session cookie until the code is right — so it is limited by address
+  // as well as by the per-challenge attempt cap.
+  if (path === '/api/auth/2fa/verify' || path === '/api/auth/2fa/resend') {
+    if (method !== 'POST') return methodNotAllowed('POST');
+    await enforce(
+      env,
+      `ip:${clientIp(request)}`,
+      TWO_FACTOR_RULE,
+      'Too many code attempts from this connection. Please wait and try again.',
+    );
+    return path === '/api/auth/2fa/verify'
+      ? handleChallengeVerify(request, env)
+      : handleChallengeResend(request, env);
+  }
+
   const auth = await requireAuth(request, env);
 
   // Limited as the user rather than the address, so one client on a shared
@@ -215,6 +242,30 @@ async function handleApi(
     if (method !== 'POST') return methodNotAllowed('POST');
     return handleAcceptTerms(request, env, auth);
   }
+  if (path === '/api/auth/2fa' && method === 'GET') {
+    return handleTwoFactorStatus(env, auth);
+  }
+  if (path === '/api/auth/2fa/totp/start') {
+    if (method !== 'POST') return methodNotAllowed('POST');
+    return handleTotpEnrollStart(request, env, auth);
+  }
+  if (path === '/api/auth/2fa/totp/confirm') {
+    if (method !== 'POST') return methodNotAllowed('POST');
+    return handleTotpEnrollConfirm(request, env, auth);
+  }
+  if (path === '/api/auth/2fa/email/enable') {
+    if (method !== 'POST') return methodNotAllowed('POST');
+    return handleEmailFactorEnable(request, env, auth);
+  }
+  if (path === '/api/auth/2fa/disable') {
+    if (method !== 'POST') return methodNotAllowed('POST');
+    return handleTwoFactorDisable(request, env, auth);
+  }
+  if (path === '/api/auth/2fa/backup-codes') {
+    if (method !== 'POST') return methodNotAllowed('POST');
+    return handleRegenerateBackupCodes(request, env, auth);
+  }
+
   if (path === '/api/platform/overview' && method === 'GET') {
     return handlePlatformOverview(request, env, auth);
   }

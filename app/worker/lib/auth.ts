@@ -11,7 +11,16 @@ const IDLE_TTL_MS = 12 * 60 * 60 * 1000;
 const ABSOLUTE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
-const MAX_FAILURES_PER_EMAIL = 8;
+/**
+ * Five failures per account per quarter hour. Low enough that guessing is
+ * hopeless, high enough that somebody mistyping a password twice and then
+ * fetching it from a manager is not locked out of their own dashboard.
+ */
+const MAX_FAILURES_PER_EMAIL = 5;
+/**
+ * Higher per address, because a dental practice behind one office NAT is many
+ * people on one IP, and locking the address locks the whole surgery out.
+ */
 const MAX_FAILURES_PER_IP = 30;
 
 export interface AuthContext {
@@ -150,6 +159,10 @@ export async function requireAuth(request: Request, env: Env): Promise<AuthConte
     google_sub: (row.google_sub as string | null) ?? null,
     google_linked_at: (row.google_linked_at as number | null) ?? null,
     platform_role: (row.platform_role as 'none' | 'ctf_admin') ?? 'none',
+    two_factor_method: (row.two_factor_method as 'none' | 'totp' | 'email') ?? 'none',
+    totp_secret: (row.totp_secret as string | null) ?? null,
+    totp_confirmed_at: (row.totp_confirmed_at as number | null) ?? null,
+    totp_last_counter: (row.totp_last_counter as number | null) ?? null,
     created_at: row.created_at as number,
     updated_at: row.updated_at as number,
   };
@@ -222,6 +235,9 @@ export async function pruneExpired(env: Env): Promise<void> {
     env.DB.prepare('DELETE FROM webhook_events WHERE received_at < ?').bind(now - 24 * 60 * 60 * 1000),
     env.DB.prepare('DELETE FROM oauth_states WHERE expires_at < ?').bind(now),
     env.DB.prepare('DELETE FROM rate_limits WHERE expires_at < ?').bind(now),
+    // Challenges are short-lived, but an abandoned one is a row that never gets
+    // deleted on its own — nothing revisits a login someone walked away from.
+    env.DB.prepare('DELETE FROM login_challenges WHERE expires_at < ?').bind(now),
   ]);
 }
 

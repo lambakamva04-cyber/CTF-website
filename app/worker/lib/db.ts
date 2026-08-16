@@ -37,6 +37,13 @@ export interface UserRow {
   google_linked_at: number | null;
   /** 'ctf_admin' is a person at CTF, not a client with extra powers. */
   platform_role: 'none' | 'ctf_admin';
+  /** Second factor in use. 'totp' only counts once totp_confirmed_at is set. */
+  two_factor_method: 'none' | 'totp' | 'email';
+  /** AES-GCM envelope; never the seed itself. See lib/secretbox.ts. */
+  totp_secret: string | null;
+  totp_confirmed_at: number | null;
+  /** Last accepted TOTP step, so a code cannot be replayed inside its window. */
+  totp_last_counter: number | null;
   created_at: number;
   updated_at: number;
 }

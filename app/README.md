@@ -29,6 +29,9 @@ Caller ──▶ Vapi assistant ──webhook──▶ Worker ──▶ D1
 | `tests/` | Unit tests for auth crypto, webhook handling and date maths |
 | `shared/legal.ts` | Terms, privacy policy, operator agreement, sub-processors — versioned, so consent points at real text |
 | `docs/incident-response.md` | What to do when personal information may have been exposed |
+| `worker/lib/totp.ts` | RFC 6238 TOTP, tested against the specification's vectors |
+| `worker/lib/twoFactor.ts` | Challenges, backup codes — the flow both sign-in paths share |
+| `worker/lib/email.ts` | **Every email-provider detail lives here** |
 
 ## First deploy
 
@@ -288,11 +291,66 @@ Guards worth knowing about:
 - **Webhooks** fail closed. If `VAPI_WEBHOOK_SECRET` is unset the endpoint
   rejects everything rather than accepting anonymous writes, and deliveries are
   de-duplicated so Vapi's retries cannot double-count a call.
+- **Two-factor authentication**, TOTP or emailed codes, off by default and
+  enrolled per account from the Security panel. See below.
 - **Audit log**: every sign-in, takeover, hang-up and password change is
   recorded in `audit_log` with actor, target and IP.
 - **Breach response** is written down rather than improvised, in
   `docs/incident-response.md`: containment SQL, the queries that establish
   scope, and the 72-hour notification deadline the privacy policy commits to.
+
+## Two-factor authentication
+
+Off until a client switches it on. Two methods: an authenticator app (TOTP), or
+a six-digit code by email for people who will not install one.
+
+- **The first factor never issues a session when 2FA is on.** Password sign-in
+  returns a challenge id instead of a cookie; Google sign-in redirects back with
+  one in the URL. A challenge is a row in `login_challenges` and grants nothing
+  — deliberately, rather than a "half-authenticated" cookie with a flag on it,
+  where one missed check turns a first factor into a full login.
+- **TOTP is RFC 6238**, SHA-1 / 30s / 6 digits, written out in
+  `worker/lib/totp.ts` and tested against the RFC's own vectors. SHA-1 is the
+  right choice here and not a compromise: every authenticator app assumes it,
+  and HMAC-SHA1 has no practical break.
+- **Codes cannot be replayed.** The accepted step is stored on the user and
+  anything at or below it is refused. That is why enrolling and immediately
+  signing in gets "that code has already been used" — the enrolment spent it.
+  The message says so rather than "incorrect", which is the same event and
+  useless advice.
+- **Seeds are encrypted at rest** with AES-GCM under `TOTP_ENCRYPTION_KEY`, a
+  Worker secret rather than a database column. A TOTP seed is not like a
+  password hash: whoever reads it can mint valid codes forever and invisibly, so
+  a database dump alone must not defeat the factor. Unset key fails closed —
+  never a default, which every deployment would share.
+- **Backup codes** matter more here than most places. There is no self-service
+  password reset, so an owner who loses their phone with no code has no way back
+  in without someone editing D1. Ten are issued at enrolment, shown once, stored
+  as hashes, and spent in a single statement so two racing requests cannot both
+  redeem one.
+- **Three independent limits** on guessing six digits: five attempts per
+  challenge, five per address per quarter hour, and the challenge expiring after
+  five minutes. They fail differently on purpose — the per-challenge cap alone
+  is defeated by opening a fresh challenge per guess.
+
+### Email codes and the sending address
+
+`worker/lib/email.ts` is the one file that knows about the email provider, the
+way `worker/lib/vapi.ts` is for Vapi. Workers cannot open SMTP connections, so
+it is an HTTPS API.
+
+**Codes cannot be sent from `cutthroughfaster@gmail.com`.** gmail.com publishes
+an SPF record authorising Google's servers and nobody else, and Google does not
+let you add a third party to it — the domain is not yours. Any provider sending
+as `@gmail.com` fails SPF, fails DKIM alignment, and fails DMARC; Gmail and
+Outlook mostly reject it outright. A one-time code in a spam folder is worse
+than no second factor, because people switch it on and then cannot sign in.
+
+So `EMAIL_FROM` defaults to a subdomain of `cutthroughfaster.com` — which CTF
+does control and can publish SPF and DKIM for — and `EMAIL_REPLY_TO` defaults to
+the CTF gmail, so replies still reach the address clients know.
+`emailDiagnostics` flags a free-mail sender explicitly, because that
+misconfiguration fails silently at the recipient rather than at send time.
 
 ## Privacy and POPIA
 

@@ -131,6 +131,48 @@ export interface PlatformOverview {
   };
 }
 
+/**
+ * What /api/auth/login answers with when the password was right but the account
+ * carries a second factor. Nothing here is a credential: the challenge id names
+ * a server-side row and grants no access until a code is verified against it.
+ */
+export interface TwoFactorChallenge {
+  twoFactorRequired: true;
+  challengeId: string;
+  method: 'totp' | 'email';
+  /** Masked address for the email method, so the client knows where to look. */
+  sentTo: string | null;
+}
+
+export type LoginResponse = MeResponse | TwoFactorChallenge;
+
+export function isTwoFactorChallenge(value: LoginResponse): value is TwoFactorChallenge {
+  return (value as TwoFactorChallenge).twoFactorRequired === true;
+}
+
+export type TwoFactorMethod = 'none' | 'totp' | 'email';
+
+export interface TwoFactorStatus {
+  method: TwoFactorMethod;
+  /** An enrolment started but never confirmed; the UI offers to resume it. */
+  pendingTotp: boolean;
+  backupCodesRemaining: number;
+  /** False when TOTP_ENCRYPTION_KEY is unset, so the UI can say why. */
+  totpAvailable: boolean;
+  /** False when no email provider is configured. */
+  emailAvailable: boolean;
+}
+
+export interface TotpEnrollment {
+  /** Shown once, for someone typing it in rather than scanning. */
+  secret: string;
+  otpauthUri: string;
+}
+
+export interface BackupCodesResponse {
+  backupCodes: string[];
+}
+
 export interface MeResponse {
   user: SessionUser;
   org: SessionOrg;

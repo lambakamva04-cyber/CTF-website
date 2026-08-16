@@ -23,6 +23,23 @@ export interface Env {
   /** Override PBKDF2 work factor. Defaults to 210_000 (OWASP guidance). */
   PBKDF2_ITERATIONS?: string;
 
+  /**
+   * 32 bytes of base64. Encrypts TOTP seeds at rest, so a database dump alone
+   * does not defeat two-factor auth. Unset means TOTP enrolment is unavailable
+   * — the code fails closed rather than falling back to a shared default key.
+   */
+  TOTP_ENCRYPTION_KEY?: string;
+
+  /** Email provider API key. Unset means email one-time codes are unavailable. */
+  EMAIL_API_KEY?: string;
+  /**
+   * Envelope sender. Must be a domain with SPF and DKIM published — a
+   * @gmail.com sender fails DMARC and the codes land in spam.
+   */
+  EMAIL_FROM?: string;
+  /** Where replies go: the address clients already know. */
+  EMAIL_REPLY_TO?: string;
+
   /** Google OAuth client. Both must be set for "Continue with Google" to appear. */
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;

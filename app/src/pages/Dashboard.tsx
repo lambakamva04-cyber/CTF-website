@@ -10,6 +10,7 @@ import { CallRow } from '../components/CallRow';
 import { LiveCallPanel } from '../components/LiveCallPanel';
 import { LogoMark } from '../components/Logo';
 import { PlatformPanel } from '../components/PlatformPanel';
+import { SecurityPanel } from '../components/SecurityPanel';
 import { TeamPanel } from '../components/TeamPanel';
 import {
   CallListSkeleton,
@@ -304,6 +305,8 @@ export function Dashboard({ session, onSignOut, onSessionExpired }: Props) {
             </button>
           )}
         </section>
+
+        <SecurityPanel />
 
         {user.permissions.includes('users:manage') && (
           <TeamPanel currentUser={user} timeZone={org.timezone} />

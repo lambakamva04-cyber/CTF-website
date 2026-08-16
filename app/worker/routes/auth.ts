@@ -1,4 +1,9 @@
-import type { MeResponse, SessionOrg, SessionUser } from '../../shared/types';
+import type {
+  MeResponse,
+  SessionOrg,
+  SessionUser,
+  TwoFactorChallenge,
+} from '../../shared/types';
 import type { Env } from '../env';
 import type { AuthContext } from '../lib/auth';
 import {
@@ -14,6 +19,7 @@ import { hashPassword, needsRehash, verifyPassword } from '../lib/crypto';
 import { parseServices, writeAudit, type OrgRow, type UserRow } from '../lib/db';
 import { badRequest, clientIp, json, noContent, readJson, unauthorized } from '../lib/http';
 import { permissionsFor } from '../lib/permissions';
+import { requiresSecondFactor, startChallenge } from '../lib/twoFactor';
 
 const MIN_PASSWORD_LENGTH = 12;
 
@@ -89,6 +95,22 @@ export async function handleLogin(request: Request, env: Env): Promise<Response>
   }
 
   await recordLoginAttempt(env, email, ip, true);
+
+  // The password was right, and that is all it proves. When the account carries
+  // a second factor no session exists yet — the client gets a challenge id,
+  // which grants nothing until a code is verified against it.
+  if (requiresSecondFactor(user)) {
+    const challenge = await startChallenge(env, request, user);
+    await writeAudit(env.DB, {
+      orgId: user.org_id,
+      userId: user.id,
+      action: 'auth.second_factor_required',
+      detail: challenge.method,
+      ip,
+    });
+    return json({ twoFactorRequired: true, ...challenge } satisfies TwoFactorChallenge);
+  }
+
   await env.DB.prepare('UPDATE users SET last_login_at = ? WHERE id = ?')
     .bind(Date.now(), user.id)
     .run();

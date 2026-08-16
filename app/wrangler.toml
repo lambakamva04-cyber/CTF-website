@@ -58,6 +58,8 @@ CANONICAL_ORIGIN = "https://app.cutthroughfaster.com"
 #   GOOGLE_CLIENT_ID        OAuth client id; "Continue with Google" is hidden without it
 #   GOOGLE_CLIENT_SECRET    OAuth client secret
 #   PBKDF2_ITERATIONS       (optional) lower the password work factor — see README
+#   TOTP_ENCRYPTION_KEY     32 bytes of base64; encrypts 2FA seeds at rest
+#   EMAIL_API_KEY           email provider key; without it email codes are off
 
 [env.staging]
 name = "ctf-app-staging"

@@ -1,5 +1,6 @@
 import type { Env } from '../env';
 import { createSession, sessionCookie } from '../lib/auth';
+import { requiresSecondFactor, startChallenge } from '../lib/twoFactor';
 import { randomToken } from '../lib/crypto';
 import { writeAudit, type OrgRow, type UserRow } from '../lib/db';
 import { clientIp, notFound } from '../lib/http';
@@ -172,6 +173,24 @@ export async function handleGoogleCallback(request: Request, env: Env): Promise<
     await env.DB.prepare('UPDATE users SET must_change_password = 0 WHERE id = ?')
       .bind(user.id)
       .run();
+  }
+
+  // Google having vouched for the identity is the first factor, not both. An
+  // account with a second factor stops here exactly as a password sign-in does;
+  // the challenge id travels in the URL because this leg is a browser redirect
+  // and there is no response body to put it in. It grants nothing by itself.
+  if (requiresSecondFactor(user)) {
+    const challenge = await startChallenge(env, request, user);
+    await writeAudit(env.DB, {
+      orgId: org.id,
+      userId: user.id,
+      action: 'auth.second_factor_required',
+      detail: `google, ${challenge.method}`,
+      ip: clientIp(request),
+    });
+    const params = new URLSearchParams({ challenge: challenge.challengeId, method: challenge.method });
+    if (challenge.sentTo) params.set('sent_to', challenge.sentTo);
+    return redirect(`/?${params.toString()}`);
   }
 
   await env.DB.prepare('UPDATE users SET last_login_at = ? WHERE id = ?')

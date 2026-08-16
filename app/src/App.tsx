@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { LegalDocumentId } from '../shared/legal';
-import type { MeResponse } from '../shared/types';
+import type { MeResponse, TwoFactorChallenge as Challenge } from '../shared/types';
 import { BrandShell } from './components/Brand';
 import { DashboardSkeleton } from './components/Skeleton';
 import { api, ApiError } from './lib/api';
@@ -11,6 +11,7 @@ import { Legal } from './pages/Legal';
 import { Login } from './pages/Login';
 import { PendingApproval } from './pages/PendingApproval';
 import { Signup } from './pages/Signup';
+import { TwoFactorChallenge } from './pages/TwoFactorChallenge';
 
 type Status = 'loading' | 'signed-out' | 'ready' | 'unavailable';
 
@@ -36,6 +37,17 @@ function isLegalRoute(route: Route): route is LegalDocumentId {
 
 export default function App() {
   const [session, setSession] = useState<MeResponse | null>(null);
+  // A sign-in that has passed the first factor and is waiting on a code. The
+  // Google leg is a browser redirect with no response body, so it hands the
+  // challenge back in the URL; the password leg returns it in JSON.
+  const [challenge, setChallenge] = useState<Challenge | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('challenge');
+    const method = params.get('method');
+    if (!id || (method !== 'totp' && method !== 'email')) return null;
+    window.history.replaceState({}, '', window.location.pathname);
+    return { twoFactorRequired: true, challengeId: id, method, sentTo: params.get('sent_to') };
+  });
   const [status, setStatus] = useState<Status>('loading');
   const [route, setRoute] = useState(currentRoute);
 
@@ -74,6 +86,7 @@ export default function App() {
   }, [refresh]);
 
   const handleSignedIn = useCallback((next: MeResponse) => {
+    setChallenge(null);
     setSession(next);
     setStatus('ready');
   }, []);
@@ -119,8 +132,23 @@ export default function App() {
   }
 
   if (status === 'signed-out' || !session) {
+    if (challenge) {
+      return (
+        <TwoFactorChallenge
+          challenge={challenge}
+          onVerified={handleSignedIn}
+          onCancel={() => setChallenge(null)}
+        />
+      );
+    }
     if (route === 'signup') return <Signup onBackToSignIn={() => navigate('/')} />;
-    return <Login onSignedIn={handleSignedIn} onSignUp={() => navigate('/signup')} />;
+    return (
+      <Login
+        onSignedIn={handleSignedIn}
+        onChallenge={setChallenge}
+        onSignUp={() => navigate('/signup')}
+      />
+    );
   }
 
   // Order matters: consent is asked for before anything else, an inactive
