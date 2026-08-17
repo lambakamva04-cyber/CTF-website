@@ -299,6 +299,28 @@ Guards worth knowing about:
   `docs/incident-response.md`: containment SQL, the queries that establish
   scope, and the 72-hour notification deadline the privacy policy commits to.
 
+## Password rules
+
+`shared/password.ts` holds the five requirements — 7 characters, a lowercase
+letter, a capital, a number, a symbol — as data, and both sides use it. The
+checklist a client watches tick green and the check the server enforces are the
+same list evaluated twice. Duplicating them, a regex in a component and an `if`
+in a route, is how a form goes all green and is then rejected on submit, which
+reads as a broken product rather than a rejected password.
+
+The character classes are Unicode-aware rather than `[a-z]`, so a client typing
+Zoë or señora is typing letters, not symbols. Length counts code points, so four
+emoji do not satisfy a seven-character rule. A space counts as a symbol on
+purpose: a spaced passphrase is a good password, and refusing it teaches people
+to pick worse ones.
+
+**The 7-character minimum is worth revisiting.** Length buys far more than
+composition does, and the four class rules do not make up the difference —
+`Passw0rd!` satisfies every rule here and is on the first page of every cracking
+dictionary. `MIN_PASSWORD_LENGTH` is the one number to change. The strength
+meter is advisory and pushes past the minimum: all five rules met at exactly
+seven characters reads "Fair", not "Strong".
+
 ## Two-factor authentication
 
 Off until a client switches it on. Two methods: an authenticator app (TOTP), or

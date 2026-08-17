@@ -19,9 +19,9 @@ import { hashPassword, needsRehash, verifyPassword } from '../lib/crypto';
 import { parseServices, writeAudit, type OrgRow, type UserRow } from '../lib/db';
 import { badRequest, clientIp, json, noContent, readJson, unauthorized } from '../lib/http';
 import { permissionsFor } from '../lib/permissions';
+import { MIN_PASSWORD_LENGTH, passwordRejectionMessage } from '../../shared/password';
 import { requiresSecondFactor, startChallenge } from '../lib/twoFactor';
 
-const MIN_PASSWORD_LENGTH = 12;
 
 export function toSessionUser(user: UserRow): SessionUser {
   return {
@@ -158,9 +158,11 @@ export async function handleChangePassword(
   if (!(await verifyPassword(currentPassword, auth.user.password_hash))) {
     throw unauthorized('Your current password is not correct.');
   }
-  if (newPassword.length < MIN_PASSWORD_LENGTH) {
-    throw badRequest(`Choose a password of at least ${MIN_PASSWORD_LENGTH} characters.`);
-  }
+  // The same rules the client's checklist ticks through, evaluated here so the
+  // two cannot drift. A form that goes all green and is then refused reads as a
+  // broken product rather than a rejected password.
+  const rejection = passwordRejectionMessage(newPassword);
+  if (rejection) throw badRequest(rejection);
   if (newPassword === currentPassword) {
     throw badRequest('Choose a password you have not used here before.');
   }
