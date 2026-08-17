@@ -12,8 +12,10 @@ import {
   clientIp,
   errorResponse,
   forbidden,
+  httpsUpgrade,
   json,
   notFound,
+  withTransportSecurity,
 } from './lib/http';
 import {
   enforce,
@@ -95,26 +97,12 @@ export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
-    // Ahead of serveSpa, which would otherwise treat the extension as a file
-    // and hand it to the assets runtime, where no such file exists.
-    if (url.pathname === '/sitemap.xml') {
-      return new Response(sitemapXml(canonicalOrigin(env, url)), {
-        headers: {
-          'content-type': 'application/xml; charset=utf-8',
-          'cache-control': 'public, max-age=3600',
-        },
-      });
-    }
+    // Before anything else, and before any handler can set a Secure cookie a
+    // browser would then throw away.
+    const upgrade = httpsUpgrade(request, url);
+    if (upgrade) return upgrade;
 
-    if (!url.pathname.startsWith('/api/')) {
-      return serveSpa(request, env, url);
-    }
-
-    try {
-      return await handleApi(request, env, ctx, url);
-    } catch (error) {
-      return errorResponse(error);
-    }
+    return withTransportSecurity(url, await route(request, env, ctx, url));
   },
 
   /** Nightly housekeeping for sessions, rate-limit rows and webhook ids. */
@@ -122,6 +110,34 @@ export default {
     ctx.waitUntil(pruneExpired(env));
   },
 };
+
+async function route(
+  request: Request,
+  env: Env,
+  ctx: ExecutionContext,
+  url: URL,
+): Promise<Response> {
+  // Ahead of serveSpa, which would otherwise treat the extension as a file and
+  // hand it to the assets runtime, where no such file exists.
+  if (url.pathname === '/sitemap.xml') {
+    return new Response(sitemapXml(canonicalOrigin(env, url)), {
+      headers: {
+        'content-type': 'application/xml; charset=utf-8',
+        'cache-control': 'public, max-age=3600',
+      },
+    });
+  }
+
+  if (!url.pathname.startsWith('/api/')) {
+    return serveSpa(request, env, url);
+  }
+
+  try {
+    return await handleApi(request, env, ctx, url);
+  } catch (error) {
+    return errorResponse(error);
+  }
+}
 
 async function handleApi(
   request: Request,

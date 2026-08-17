@@ -265,6 +265,15 @@ OAuth client. Two things to check before anything else: it must go under
 different fields and the second one does not satisfy this — and it must match
 character for character, including scheme and any trailing slash.
 
+**"This app … doesn't comply with Google's OAuth 2.0 policy", with an `http://`
+redirect_uri in the request details,** is a different failure and does not mean
+the URI is merely unregistered — an http callback cannot be registered at all
+for a web client, so there is nothing to add in the console that would fix it.
+It means the browser reached the platform over plain http; the callback is now
+pinned to https regardless of how the request arrived, so this should not recur.
+If it does, the request never reached this Worker — check that the hostname
+resolves to it rather than to a parked page.
+
 **Google sign-in never creates an account.** It matches the verified Google
 email against a login that already exists, and refuses anything else — the
 dashboard exposes live calls and caller phone numbers, so having a Google
@@ -305,14 +314,24 @@ Guards worth knowing about:
 - **Sessions** are opaque 256-bit tokens in an `HttpOnly; Secure; SameSite=Lax`
   cookie. Only their SHA-256 is stored, so a database leak cannot be replayed as
   a login. Idle timeout 12 hours, absolute 30 days.
+- **HTTPS is not optional.** A plain-http request that reaches the edge is
+  answered with a 308 to the same URL over https, before any handler runs, and
+  https responses carry a year of HSTS. Both matter more than they look: the
+  session cookie is `Secure`, so a browser silently discards it on an http
+  response — sign-in appears to work and then bounces straight back to the
+  sign-in screen, with nothing in the logs to say why. Google refuses an http
+  OAuth callback outright. The upgrade is skipped for requests that did not come
+  through Cloudflare, because `wrangler dev` rewrites both the request URL and
+  the `Location` header and would otherwise loop.
 - **Passwords** are PBKDF2-HMAC-SHA256, 210,000 iterations, per-user salt. The
   work factor is embedded in the stored hash and upgraded automatically on the
   next successful sign-in when it is raised.
 - **Tenant isolation** is enforced by passing `org_id` from the session into the
   `WHERE` clause of every query that touches client data. A call id belonging to
   another client returns a plain 404.
-- **Login rate limiting**: 8 failures per email and 30 per IP in a 15-minute
-  window. Unknown emails and wrong passwords take the same path and return the
+- **Login rate limiting**: 5 failures per email and 30 per IP in a 15-minute
+  window — higher per address because an office behind one NAT is many people on
+  one IP. Unknown emails and wrong passwords take the same path and return the
   same message, so the endpoint cannot be used to enumerate clients.
 - **CSRF**: `SameSite=Lax` plus an `Origin` check against `ALLOWED_ORIGINS` on
   every mutation.
