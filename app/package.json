@@ -2,7 +2,7 @@
   "name": "ctf-app",
   "version": "1.0.0",
   "private": true,
-  "description": "Cut Through Faster — client control platform for AI receptionists",
+  "description": "Cut Through Faster \u2014 client control platform for AI receptionists",
   "type": "module",
   "engines": {
     "node": ">=22"
@@ -17,7 +17,9 @@
     "db:migrate:local": "wrangler d1 migrations apply ctf-app --local",
     "db:migrate": "wrangler d1 migrations apply ctf-app --remote",
     "seed": "node scripts/seed.mjs",
-    "deploy": "npm run build && wrangler deploy"
+    "deploy": "npm run build && wrangler deploy",
+    "assistant:sync": "node scripts/sync-assistant.mjs",
+    "assistant:preview": "node scripts/sync-assistant.mjs --dry-run"
   },
   "dependencies": {
     "lucide-react": "^0.462.0",

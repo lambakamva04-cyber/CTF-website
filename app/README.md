@@ -32,6 +32,8 @@ Caller ──▶ Vapi assistant ──webhook──▶ Worker ──▶ D1
 | `worker/lib/totp.ts` | RFC 6238 TOTP, tested against the specification's vectors |
 | `worker/lib/twoFactor.ts` | Challenges, backup codes — the flow both sign-in paths share |
 | `worker/lib/email.ts` | **Every email-provider detail lives here** |
+| `assistants/hope.ts` | Hope's prompt, voice and analysis plan — versioned, not clicked into a dashboard |
+| `docs/giving-hope-a-phone-number.md` | The four ways to get calls to her, and why a SIM cannot be one |
 
 ## First deploy
 
@@ -73,6 +75,32 @@ npx wrangler secret put VAPI_WEBHOOK_SECRET
 `ALLOWED_ORIGINS` in `wrangler.toml` lists extra origins permitted to send
 cookie-bearing mutations. Same-origin requests are always allowed, so both the
 workers.dev URL and the custom domain work without changing it.
+
+## Hope
+
+Hope is CTF's own receptionist and the live demonstration of the product. Her
+prompt, voice, timing and analysis plan live in `assistants/hope.ts` rather than
+only in the Vapi dashboard, for the same reason the schema lives in
+`migrations/`: something typed into a web form is not versioned, not reviewable,
+and gone the day somebody clicks the wrong thing.
+
+```bash
+npm run assistant:preview                        # see the payload, no key needed
+VAPI_PRIVATE_KEY=... npm run assistant:sync      # push it to Vapi
+```
+
+The `structuredDataPlan` at the bottom of that file is what the dashboard reads
+to decide whether a call was booked, escalated or missed. Rename a field there
+and every call quietly becomes "Inquiry" — nothing errors, the numbers just go
+wrong. `tests/assistant.test.ts` asserts those fields against what
+`deriveOutcome` actually consumes, along with the things Hope must always do:
+disclose that she is an AI, say the call is recorded, hand over the moment
+somebody asks for a person, and never quote a price.
+
+Getting calls to her is a separate question with four answers — see
+`docs/giving-hope-a-phone-number.md`. The short version: a personal cellphone
+cannot be pointed at Vapi directly, but conditional call forwarding gets you the
+same result.
 
 ## Connecting a client's Vapi assistant
 
