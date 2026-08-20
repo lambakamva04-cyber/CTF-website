@@ -104,9 +104,33 @@ export function googleClientDiagnostics(env: Env): {
   };
 }
 
-/** The callback must match a redirect URI registered in the Google console. */
+/**
+ * Hosts where Google permits a plain http callback. Everywhere else it requires
+ * https, and refuses the sign-in outright rather than warning.
+ */
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
+
+/**
+ * The callback must match a redirect URI registered in the Google console.
+ *
+ * The host comes from the request, so the custom domain and the workers.dev
+ * fallback each produce their own callback and both can be registered. The
+ * *scheme* does not: it is forced to https for anything but loopback.
+ *
+ * A browser sent to `app.cutthroughfaster.com` with no scheme typed tries http
+ * first. If the edge does not upgrade that, the Worker sees an http request and
+ * an origin-derived callback becomes `http://…/callback` — which Google rejects
+ * with "doesn't comply with Google's OAuth 2.0 policy", because http redirect
+ * URIs cannot be registered at all for a web client. Deriving the scheme from
+ * the request makes reaching the site over http silently break sign-in; pinning
+ * it to https means the worst case is a callback that has to be registered.
+ */
 export function redirectUriFor(requestUrl: URL): string {
-  return `${requestUrl.origin}/api/auth/google/callback`;
+  const scheme = LOOPBACK_HOSTS.has(requestUrl.hostname)
+    ? requestUrl.protocol.replace(/:$/, '')
+    : 'https';
+  // `host`, not `hostname` — a dev server on :8787 needs its port in the URI.
+  return `${scheme}://${requestUrl.host}/api/auth/google/callback`;
 }
 
 export function buildAuthorizeUrl(

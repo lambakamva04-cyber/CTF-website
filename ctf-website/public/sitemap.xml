@@ -1,9 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The marketing site is a single page: About, How it works, Pricing and Contact
+  are anchors on it, not separate URLs. Anchors do not belong in a sitemap —
+  Google treats them as the same document, and listing them adds nothing.
+
+  The legal documents live on the platform and are listed in its own sitemap at
+  https://app.cutthroughfaster.com/sitemap.xml, so that the text a client
+  accepted and the text a search engine shows are the same text. Both sitemaps
+  should be submitted in Search Console, as separate properties.
+-->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://www.cutthroughfaster.com/</loc>
-    <lastmod>2026-07-27</lastmod>
-    <changefreq>weekly</changefreq>
+    <lastmod>2026-08-12</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>1.0</priority>
   </url>
 </urlset>

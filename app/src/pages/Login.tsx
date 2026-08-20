@@ -1,32 +1,12 @@
 import { Loader2 } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
-import type { MeResponse } from '../../shared/types';
+import type { MeResponse, TwoFactorChallenge } from '../../shared/types';
+import { isTwoFactorChallenge } from '../../shared/types';
 import { api, ApiError } from '../lib/api';
 import { Banner } from '../components/ui';
-
-/** Google's mark, inlined — a strict CSP blocks loading it from a CDN. */
-function GoogleMark() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 18 18" aria-hidden="true">
-      <path
-        fill="#4285F4"
-        d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"
-      />
-      <path
-        fill="#34A853"
-        d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.81.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"
-      />
-      <path
-        fill="#FBBC05"
-        d="M3.97 10.72a5.4 5.4 0 0 1 0-3.44V4.95H.96a9 9 0 0 0 0 8.1l3.01-2.33z"
-      />
-      <path
-        fill="#EA4335"
-        d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.9 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"
-      />
-    </svg>
-  );
-}
+import { BrandShell } from '../components/Brand';
+import { GoogleMark } from '../components/GoogleMark';
+import { Skeleton, SkeletonRegion } from '../components/Skeleton';
 
 /** Reasons the Google leg can bounce back, phrased for the person reading them. */
 const AUTH_ERRORS: Record<string, string> = {
@@ -51,14 +31,27 @@ const AUTH_ERRORS: Record<string, string> = {
   google_unavailable: 'Google sign-in is not set up for this dashboard yet.',
   account_disabled: 'That login has been disabled. Contact the owner of your dashboard.',
   no_org: 'That login is not linked to a business yet.',
+  signup_failed: 'We could not finish creating your account. Please try again.',
 };
 
-export function Login({ onSignedIn }: { onSignedIn: (session: MeResponse) => void }) {
+export function Login({
+  onSignedIn,
+  onChallenge,
+  onSignUp,
+}: {
+  onSignedIn: (session: MeResponse) => void;
+  onChallenge: (challenge: TwoFactorChallenge) => void;
+  onSignUp: () => void;
+}) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [googleEnabled, setGoogleEnabled] = useState(false);
+  // Three states, not two. Until the server has answered we do not know whether
+  // this deployment offers Google, and rendering `false` in the meantime pops
+  // the button and the divider into existence a moment later — on the screen a
+  // client sees most often.
+  const [googleEnabled, setGoogleEnabled] = useState<boolean | null>(null);
 
   // Surface a failed Google round trip, then strip the parameter so a refresh
   // does not show a stale error.
@@ -85,8 +78,16 @@ export function Login({ onSignedIn }: { onSignedIn: (session: MeResponse) => voi
     setSubmitting(true);
     setError(null);
     try {
-      const session = await api.login(email.trim(), password);
-      onSignedIn(session);
+      const result = await api.login(email.trim(), password);
+      // The password being right is not the same as being signed in. When the
+      // account carries a second factor the server returns a challenge and no
+      // cookie, and the caller takes over from there.
+      if (isTwoFactorChallenge(result)) {
+        setPassword('');
+        onChallenge(result);
+        return;
+      }
+      onSignedIn(result);
     } catch (caught) {
       setError(
         caught instanceof ApiError ? caught.message : 'Could not sign you in. Please try again.',
@@ -98,21 +99,31 @@ export function Login({ onSignedIn }: { onSignedIn: (session: MeResponse) => voi
   };
 
   return (
-    <div className="min-h-screen bg-white text-black font-body flex items-center justify-center px-6 py-12">
-      <div className="w-full max-w-sm space-y-8">
+    <BrandShell>
+      <div className="space-y-8">
         <div className="space-y-2">
-          <p className="text-xs tracking-widest uppercase text-gray-400 font-medium">
-            Cut Through Faster
-          </p>
-          <h1 className="font-display text-2xl font-semibold tracking-tight">
+          <p className="text-xs tracking-widest uppercase text-slate font-medium">
             Receptionist Dashboard
-          </h1>
-          <p className="text-sm text-gray-500">Sign in to see your calls as they happen.</p>
+          </p>
+          <h1 className="text-2xl font-semibold">Sign in</h1>
+          <p className="text-sm text-slate">See your calls as they happen.</p>
         </div>
 
         {error && <Banner tone="error">{error}</Banner>}
 
-        {googleEnabled && (
+        {googleEnabled === null && (
+          <SkeletonRegion label="Checking which sign-in methods are available" className="space-y-8">
+            <Skeleton className="h-12 w-full rounded-xl" />
+            {/* The divider it stands in for is a hairline with "or" on it, so
+                the placeholder is a hairline too — a solid bar here would be
+                heavier than the thing that replaces it. */}
+            <span className="flex items-center h-4">
+              <Skeleton className="h-px w-full" delay={1} />
+            </span>
+          </SkeletonRegion>
+        )}
+
+        {googleEnabled === true && (
           <>
             {/* A plain link, not fetch(): the OAuth flow is a top-level browser
                 redirect, and an XHR to Google would be blocked by CORS. */}
@@ -167,10 +178,33 @@ export function Login({ onSignedIn }: { onSignedIn: (session: MeResponse) => voi
           </button>
         </form>
 
-        <p className="text-xs text-gray-400 text-center">
-          Trouble signing in? Contact Cut Through Faster and we will get you back in.
+        <p className="text-xs text-slate text-center">
+          New to Cut Through Faster?{' '}
+          <button
+            type="button"
+            onClick={onSignUp}
+            className="underline underline-offset-2 text-ink font-medium"
+          >
+            Register your business
+          </button>
+        </p>
+
+        <p className="text-xs text-slate text-center">
+          By signing in you accept our{' '}
+          <a href="/terms" className="underline underline-offset-2">
+            Terms
+          </a>{' '}
+          ,{' '}
+          <a href="/privacy" className="underline underline-offset-2">
+            Privacy Policy
+          </a>{' '}
+          and{' '}
+          <a href="/operator" className="underline underline-offset-2">
+            Operator Agreement
+          </a>
+          .
         </p>
       </div>
-    </div>
+    </BrandShell>
   );
 }

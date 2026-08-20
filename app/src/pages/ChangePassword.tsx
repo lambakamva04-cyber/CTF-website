@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from 'react';
+import { checkPassword } from '../../shared/password';
 import { api, ApiError } from '../lib/api';
+import { PasswordField } from '../components/PasswordField';
 import { Banner } from '../components/ui';
-
-const MIN_LENGTH = 12;
 
 /**
  * Shown when `mustChangePassword` is set — a client onboarded with a temporary
@@ -16,11 +16,11 @@ export function ChangePassword({ onDone }: { onDone: () => void }) {
   const [submitting, setSubmitting] = useState(false);
 
   const mismatch = confirmation.length > 0 && confirmation !== newPassword;
-  const tooShort = newPassword.length > 0 && newPassword.length < MIN_LENGTH;
+  const { acceptable } = checkPassword(newPassword);
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    if (submitting || mismatch || tooShort) return;
+    if (submitting || mismatch || !acceptable) return;
 
     setSubmitting(true);
     setError(null);
@@ -51,52 +51,28 @@ export function ChangePassword({ onDone }: { onDone: () => void }) {
         {error && <Banner tone="error">{error}</Banner>}
 
         <form onSubmit={onSubmit} className="space-y-4" noValidate>
-          <label className="block space-y-1.5">
-            <span className="text-xs font-medium text-gray-500">Current password</span>
-            <input
-              type="password"
-              value={currentPassword}
-              onChange={(event) => setCurrentPassword(event.target.value)}
-              required
-              autoComplete="current-password"
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-black"
-            />
-          </label>
+          <PasswordField
+            label="Current password"
+            value={currentPassword}
+            onChange={setCurrentPassword}
+            autoComplete="current-password"
+            showRequirements={false}
+          />
 
-          <label className="block space-y-1.5">
-            <span className="text-xs font-medium text-gray-500">
-              New password (at least {MIN_LENGTH} characters)
-            </span>
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(event) => setNewPassword(event.target.value)}
-              required
-              minLength={MIN_LENGTH}
-              autoComplete="new-password"
-              aria-invalid={tooShort}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-black"
-            />
-          </label>
+          <PasswordField label="New password" value={newPassword} onChange={setNewPassword} />
 
-          <label className="block space-y-1.5">
-            <span className="text-xs font-medium text-gray-500">Confirm new password</span>
-            <input
-              type="password"
-              value={confirmation}
-              onChange={(event) => setConfirmation(event.target.value)}
-              required
-              autoComplete="new-password"
-              aria-invalid={mismatch}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-black"
-            />
-          </label>
+          <PasswordField
+            label="Confirm new password"
+            value={confirmation}
+            onChange={setConfirmation}
+            showRequirements={false}
+          />
 
           {mismatch && <p className="text-xs text-red-600">Those two passwords do not match.</p>}
 
           <button
             type="submit"
-            disabled={submitting || mismatch || tooShort || !currentPassword || !newPassword}
+            disabled={submitting || mismatch || !acceptable || !currentPassword}
             className="w-full bg-black text-white rounded-xl py-3 font-medium text-sm hover:bg-gray-800 transition disabled:opacity-40"
           >
             {submitting ? 'Saving…' : 'Save password'}

@@ -1,17 +1,25 @@
 import type {
   ApiErrorBody,
   AuthMethodsResponse,
+  BackupCodesResponse,
   CallDetail,
   CallsResponse,
   CreatedTeamMember,
   LiveResponse,
+  LoginResponse,
   MeResponse,
   MetricsResponse,
+  OrgStatus,
   Period,
+  PlatformOverview,
+  SignupStartResponse,
   TakeoverResponse,
   TeamMember,
   TeamResponse,
+  TotpEnrollment,
   TranscriptResponse,
+  TwoFactorChallenge,
+  TwoFactorStatus,
   UserRole,
 } from '../../shared/types';
 
@@ -81,6 +89,23 @@ export const api = {
   authMethods: (signal?: AbortSignal) =>
     request<AuthMethodsResponse>('/api/auth/methods', { signal }),
 
+  startSignup: (orgName: string, note: string) =>
+    request<SignupStartResponse>('/api/auth/signup/start', {
+      method: 'POST',
+      body: { orgName, note, accept: true },
+    }),
+
+  acceptTerms: () => request<void>('/api/auth/accept-terms', { method: 'POST' }),
+
+  platformOverview: (period: string, signal?: AbortSignal) =>
+    request<PlatformOverview>(`/api/platform/overview?period=${period}`, { signal }),
+
+  setOrgStatus: (orgId: string, status: OrgStatus) =>
+    request<void>(`/api/platform/organizations/${encodeURIComponent(orgId)}`, {
+      method: 'PATCH',
+      body: { status },
+    }),
+
   team: (signal?: AbortSignal) => request<TeamResponse>('/api/users', { signal }),
 
   createTeamMember: (member: {
@@ -108,7 +133,37 @@ export const api = {
     }),
 
   login: (email: string, password: string) =>
-    request<MeResponse>('/api/auth/login', { method: 'POST', body: { email, password } }),
+    request<LoginResponse>('/api/auth/login', { method: 'POST', body: { email, password } }),
+
+  /** Answers a second-factor challenge; a session cookie comes back with it. */
+  verifyTwoFactor: (challengeId: string, input: { code?: string; backupCode?: string }) =>
+    request<MeResponse>('/api/auth/2fa/verify', {
+      method: 'POST',
+      body: { challengeId, ...input },
+    }),
+
+  resendTwoFactorCode: (challengeId: string) =>
+    request<TwoFactorChallenge>('/api/auth/2fa/resend', {
+      method: 'POST',
+      body: { challengeId },
+    }),
+
+  twoFactorStatus: (signal?: AbortSignal) => request<TwoFactorStatus>('/api/auth/2fa', { signal }),
+
+  startTotpEnrollment: () =>
+    request<TotpEnrollment>('/api/auth/2fa/totp/start', { method: 'POST' }),
+
+  confirmTotpEnrollment: (code: string) =>
+    request<BackupCodesResponse>('/api/auth/2fa/totp/confirm', { method: 'POST', body: { code } }),
+
+  enableEmailFactor: () =>
+    request<BackupCodesResponse>('/api/auth/2fa/email/enable', { method: 'POST' }),
+
+  disableTwoFactor: (code: string) =>
+    request<{ ok: true }>('/api/auth/2fa/disable', { method: 'POST', body: { code } }),
+
+  regenerateBackupCodes: () =>
+    request<BackupCodesResponse>('/api/auth/2fa/backup-codes', { method: 'POST' }),
 
   logout: () => request<void>('/api/auth/logout', { method: 'POST' }),
 

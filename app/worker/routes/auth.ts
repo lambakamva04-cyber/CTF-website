@@ -1,4 +1,9 @@
-import type { MeResponse, SessionOrg, SessionUser } from '../../shared/types';
+import type {
+  MeResponse,
+  SessionOrg,
+  SessionUser,
+  TwoFactorChallenge,
+} from '../../shared/types';
 import type { Env } from '../env';
 import type { AuthContext } from '../lib/auth';
 import {
@@ -14,8 +19,9 @@ import { hashPassword, needsRehash, verifyPassword } from '../lib/crypto';
 import { parseServices, writeAudit, type OrgRow, type UserRow } from '../lib/db';
 import { badRequest, clientIp, json, noContent, readJson, unauthorized } from '../lib/http';
 import { permissionsFor } from '../lib/permissions';
+import { MIN_PASSWORD_LENGTH, passwordRejectionMessage } from '../../shared/password';
+import { requiresSecondFactor, startChallenge } from '../lib/twoFactor';
 
-const MIN_PASSWORD_LENGTH = 12;
 
 export function toSessionUser(user: UserRow): SessionUser {
   return {
@@ -29,6 +35,9 @@ export function toSessionUser(user: UserRow): SessionUser {
     // Sent so the UI can hide controls it would be refused anyway. The API
     // re-checks every one of these; this list is a convenience, not the gate.
     permissions: permissionsFor(user.role),
+    isPlatformAdmin: user.platform_role === 'ctf_admin',
+    // Filled in by the caller, which knows whether consent is current.
+    termsAccepted: true,
   };
 }
 
@@ -41,6 +50,8 @@ export function toSessionOrg(org: OrgRow): SessionOrg {
     services: parseServices(org.services),
     takeoverNumber: org.takeover_number,
     receptionistLinked: Boolean(org.vapi_assistant_id ?? org.vapi_phone_number_id),
+    status: org.status,
+    plan: org.plan,
   };
 }
 
@@ -84,6 +95,22 @@ export async function handleLogin(request: Request, env: Env): Promise<Response>
   }
 
   await recordLoginAttempt(env, email, ip, true);
+
+  // The password was right, and that is all it proves. When the account carries
+  // a second factor no session exists yet — the client gets a challenge id,
+  // which grants nothing until a code is verified against it.
+  if (requiresSecondFactor(user)) {
+    const challenge = await startChallenge(env, request, user);
+    await writeAudit(env.DB, {
+      orgId: user.org_id,
+      userId: user.id,
+      action: 'auth.second_factor_required',
+      detail: challenge.method,
+      ip,
+    });
+    return json({ twoFactorRequired: true, ...challenge } satisfies TwoFactorChallenge);
+  }
+
   await env.DB.prepare('UPDATE users SET last_login_at = ? WHERE id = ?')
     .bind(Date.now(), user.id)
     .run();
@@ -111,8 +138,11 @@ export async function handleLogout(request: Request, env: Env, auth: AuthContext
   return noContent({ headers: { 'set-cookie': clearedSessionCookie() } });
 }
 
-export function handleMe(auth: AuthContext): Response {
-  const payload: MeResponse = { user: toSessionUser(auth.user), org: toSessionOrg(auth.org) };
+export function handleMe(auth: AuthContext, termsAccepted: boolean): Response {
+  const payload: MeResponse = {
+    user: { ...toSessionUser(auth.user), termsAccepted },
+    org: toSessionOrg(auth.org),
+  };
   return json(payload);
 }
 
@@ -128,9 +158,11 @@ export async function handleChangePassword(
   if (!(await verifyPassword(currentPassword, auth.user.password_hash))) {
     throw unauthorized('Your current password is not correct.');
   }
-  if (newPassword.length < MIN_PASSWORD_LENGTH) {
-    throw badRequest(`Choose a password of at least ${MIN_PASSWORD_LENGTH} characters.`);
-  }
+  // The same rules the client's checklist ticks through, evaluated here so the
+  // two cannot drift. A form that goes all green and is then refused reads as a
+  // broken product rather than a rejected password.
+  const rejection = passwordRejectionMessage(newPassword);
+  if (rejection) throw badRequest(rejection);
   if (newPassword === currentPassword) {
     throw badRequest('Choose a password you have not used here before.');
   }

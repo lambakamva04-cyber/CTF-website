@@ -8,8 +8,17 @@ import type {
 } from '../../shared/types';
 import { CallRow } from '../components/CallRow';
 import { LiveCallPanel } from '../components/LiveCallPanel';
+import { LogoMark } from '../components/Logo';
+import { PlatformPanel } from '../components/PlatformPanel';
+import { SecurityPanel } from '../components/SecurityPanel';
 import { TeamPanel } from '../components/TeamPanel';
-import { Banner, SegmentedControl, Spinner, StatCard, StatusPill } from '../components/ui';
+import {
+  CallListSkeleton,
+  LiveCallSkeleton,
+  Skeleton,
+  StatGridSkeleton,
+} from '../components/Skeleton';
+import { Banner, SegmentedControl, StatCard, StatusPill } from '../components/ui';
 import { usePoll } from '../hooks/usePoll';
 import { useTranscript } from '../hooks/useTranscript';
 import { api, ApiError } from '../lib/api';
@@ -139,10 +148,13 @@ export function Dashboard({ session, onSignOut, onSessionExpired }: Props) {
   return (
     <div className="min-h-screen bg-white text-black">
       <div className="font-body max-w-2xl mx-auto px-6 py-10 sm:py-14 space-y-10">
-        <header className="space-y-2">
-          <p className="text-xs tracking-widest uppercase text-gray-400 font-medium">
-            Powered by Cut Through Faster
-          </p>
+        <header className="space-y-3">
+          <div className="flex items-center gap-2 text-slate">
+            <LogoMark size={20} />
+            <p className="text-xs tracking-widest uppercase font-medium">
+              Powered by Cut Through Faster
+            </p>
+          </div>
           <div className="flex items-center justify-between gap-4">
             <h1 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight truncate">
               {org.name}
@@ -165,9 +177,7 @@ export function Dashboard({ session, onSignOut, onSessionExpired }: Props) {
         {connectionError && <Banner tone="warning" onRetry={live.refresh}>{connectionError}</Banner>}
 
         {live.loading && !live.data ? (
-          <section className="border border-gray-200 rounded-2xl p-6 sm:p-8">
-            <Spinner label="Checking for live calls" />
-          </section>
+          <LiveCallSkeleton />
         ) : (
           <LiveCallPanel
             call={liveCall}
@@ -200,7 +210,7 @@ export function Dashboard({ session, onSignOut, onSessionExpired }: Props) {
               {metrics.error.message}
             </Banner>
           ) : metrics.loading && !metrics.data ? (
-            <Spinner label="Loading performance" />
+            <StatGridSkeleton />
           ) : (
             <>
               <div className="grid grid-cols-3 gap-3">
@@ -214,7 +224,10 @@ export function Dashboard({ session, onSignOut, onSessionExpired }: Props) {
                   <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-4">
                     {period === 'week' ? 'Last 7 Days' : 'Last 5 Weeks'}
                   </p>
-                  <Suspense fallback={<div className="h-[140px]" aria-hidden="true" />}>
+                  {/* The chart is a lazy chunk and the largest one in the app.
+                      Holding its exact height keeps the page from jumping when
+                      it arrives. */}
+                  <Suspense fallback={<Skeleton className="h-[140px] w-full rounded-lg" />}>
                     <TrendChart data={metrics.data?.trend ?? []} />
                   </Suspense>
                 </div>
@@ -259,7 +272,7 @@ export function Dashboard({ session, onSignOut, onSessionExpired }: Props) {
           )}
 
           {callsLoading ? (
-            <Spinner label="Loading calls" />
+            <CallListSkeleton />
           ) : (
             <div className="divide-y divide-gray-100 border-t border-b border-gray-100">
               {calls.map((call) => (
@@ -293,12 +306,30 @@ export function Dashboard({ session, onSignOut, onSessionExpired }: Props) {
           )}
         </section>
 
+        <SecurityPanel />
+
         {user.permissions.includes('users:manage') && (
           <TeamPanel currentUser={user} timeZone={org.timezone} />
         )}
 
-        <footer className="text-center pt-4">
-          <p className="text-xs text-gray-300">Cut Through Faster · AI Receptionist</p>
+        {user.isPlatformAdmin && <PlatformPanel timeZone={org.timezone} />}
+
+        <footer className="pt-6 border-t border-line flex flex-wrap items-center justify-between gap-3">
+          <span className="inline-flex items-center gap-2 text-slate">
+            <LogoMark size={18} />
+            <span className="text-xs">AI Receptionist</span>
+          </span>
+          <span className="flex gap-4 text-xs text-slate">
+            <a href="/terms" className="hover:text-ink transition">
+              Terms
+            </a>
+            <a href="/privacy" className="hover:text-ink transition">
+              Privacy
+            </a>
+            <a href="/operator" className="hover:text-ink transition">
+              Operator agreement
+            </a>
+          </span>
         </footer>
       </div>
     </div>
