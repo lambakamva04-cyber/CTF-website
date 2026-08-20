@@ -12,16 +12,22 @@
     <meta name="theme-color" content="#14161A" />
     <title>Receptionist Dashboard · Cut Through Faster</title>
 
-    <!-- The monogram, as the tab icon, the home-screen icon, and the image
-         shown when a link to the dashboard is pasted into a chat. -->
+    <!-- The CTF mark, as the tab icon, the home-screen icon, and the image
+         shown when a link to the dashboard is pasted into a chat.
+
+         Three files rather than one, because the SVG is not accepted
+         everywhere: iOS ignores an SVG apple-touch-icon and falls back to a
+         screenshot of the page, and the major link unfurlers do not render SVG
+         previews at all. The PNGs are rendered from logo.svg, so there is still
+         one source of truth for the artwork. -->
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
-    <link rel="apple-touch-icon" href="/logo.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/logo-180.png" />
     <meta property="og:title" content="Cut Through Faster · Receptionist Dashboard" />
     <meta
       property="og:description"
       content="Watch your AI receptionist work: live calls, transcripts, and one tap to take over."
     />
-    <meta property="og:image" content="/logo.svg" />
+    <meta property="og:image" content="/logo-512.png" />
     <meta name="twitter:card" content="summary" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
