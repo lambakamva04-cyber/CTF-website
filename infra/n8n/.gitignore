@@ -1,0 +1,13 @@
+# The encryption key lives here. Committing it would publish the key that
+# decrypts every credential stored in n8n.
+.env
+.env.from-backup
+
+# Backups contain credentials AND the key. Never in git.
+backups/
+*.tar.gz
+*.tar.gz.gpg
+
+# Tunnel credentials, if anyone ever copies them here.
+*.json
+cert.pem
