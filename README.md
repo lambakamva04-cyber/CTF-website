@@ -1,12 +1,12 @@
 # Cut Through Faster
 
-Two deployables live in this repository.
+Three deployables live in this repository.
 
 | Directory | What it is | Deploys to |
 | --- | --- | --- |
 | `ctf-website/public/` | Marketing site — the public `cutthroughfaster.com` page | Cloudflare Pages (`npm run deploy` from the repo root) |
 | `app/` | Client control platform — where clients watch their AI receptionist, take calls over, and read transcripts | Cloudflare Workers (`npm run deploy` from `app/`) |
-| `demo/` | Personalised demo pages — one link per cold-email prospect, who talks to Hope live in the browser | Vercel (`demo/` as the project root) |
+| `demo/` | Personalised demo pages — one link per cold-email prospect, who talks to Hope live in the browser | Cloudflare Workers (`npm run deploy` from `demo/`) |
 
 The control platform is the product clients log into. It has its own
 [README](app/README.md) covering the deploy runbook, how to connect a client's
@@ -37,4 +37,6 @@ cd demo
 npm install
 npm run dev           # demo on :3000
 npm run seed          # a test prospect to open
+npm run preview       # the real Worker, under wrangler
+npm run deploy
 ```

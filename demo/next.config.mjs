@@ -1,3 +1,9 @@
+import { initOpenNextCloudflareForDev } from '@opennextjs/cloudflare';
+
+// Gives `next dev` the same Cloudflare context the deployed Worker runs in, so
+// local development and production do not diverge on bindings or environment.
+initOpenNextCloudflareForDev();
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,

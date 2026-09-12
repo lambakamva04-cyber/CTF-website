@@ -8,4 +8,10 @@ tsconfig.tsbuildinfo
 .env.local
 .env*.local
 
-.vercel
+
+# OpenNext build output for the Cloudflare Worker.
+.open-next/
+cloudflare-env.d.ts
+
+# Local secrets for `wrangler dev`. Never commit.
+.dev.vars

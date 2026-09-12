@@ -24,8 +24,8 @@ export function supabaseServiceRoleKey(): string {
 /**
  * Vapi browser credentials. These are handed to the client component as props
  * rather than inlined as NEXT_PUBLIC_* at build time, so rotating the key or
- * pointing at a different assistant is an environment change in Vercel and a
- * redeploy of the same build — not a rebuild.
+ * pointing at a different assistant is a `wrangler secret put` and a redeploy
+ * of the same build — not a rebuild.
  */
 export function vapiPublicKey(): string {
   return required('VAPI_PUBLIC_KEY');

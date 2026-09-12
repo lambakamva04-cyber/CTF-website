@@ -33,6 +33,8 @@ that will drift apart by March. Adding a practice is an `INSERT`.
 | `migrations/0001_init.sql` | The two tables |
 | `vapi/assistant.md` | **The system prompt.** The positioning lives here as much as in the page copy |
 | `scripts/seed.mjs` | Adds a prospect |
+| `wrangler.jsonc`, `open-next.config.ts` | Cloudflare Worker build and deploy |
+| `heartbeat/` | Daily keep-alive so the free Supabase project never pauses |
 
 ## Security model
 
@@ -95,8 +97,16 @@ public key in `.env.local`.
 
 ```bash
 npm run seed          # inserts the Rosebank Family Dental test prospect
-npm run dev
+npm run dev           # Next dev server, reads .env.local
 open http://localhost:3000/demo/rosebank-family-dental
+```
+
+To exercise the actual Worker rather than the Next dev server — which is what
+you want before any deploy, because the two are different runtimes:
+
+```bash
+cp .env.local .dev.vars   # wrangler reads .dev.vars, next reads .env.local
+npm run preview           # builds with OpenNext, serves under wrangler
 ```
 
 ### Environment variables
@@ -204,14 +214,83 @@ order by count(*) desc;
 
 ## Deploying
 
-Vercel, root directory `demo`. Set the five environment variables in the
-project settings, then deploy.
+Cloudflare Workers, on the free tier, at `demo.cutthroughfaster.com`.
 
-> **Vercel's Hobby tier prohibits commercial use.** These pages go in front of
-> paying prospects as part of a sales campaign, which is squarely commercial.
-> Move the project onto **Pro** before the first cold email goes out — not
-> after. Vercel enforce this by taking the deployment down, and a dead demo
-> link in a cold email is a prospect you do not get a second attempt at.
+Not Vercel. Vercel's Hobby tier prohibits commercial use, and a sales campaign
+is squarely commercial — which would have forced Pro, a recurring cost that a
+company at zero revenue cannot justify. Cloudflare's free tier permits
+commercial use and the domain is already a zone in the account.
+
+### Why OpenNext and not next-on-pages
+
+`@cloudflare/next-on-pages` is **deprecated** — npm serves a deprecation notice
+pointing at OpenNext — and its peer range caps Next at `<=15.5.2`. This app is
+on Next 16, so it cannot build it at all. There was no trade-off to weigh.
+
+`@opennextjs/cloudflare` also turns out to be the better fit on its own merits:
+it builds a **Worker** rather than a Pages project, and Workers support cron
+triggers, which is where the Supabase keep-alive below has to live. It runs on
+`nodejs_compat` rather than demanding `export const runtime = 'edge'` on every
+route, so the Supabase client and the server routes work unchanged.
+
+One consequence worth being explicit about: this is a Worker, not a Pages
+project. It is a **new** Worker named `ctf-demo`, unrelated to the `ctf-website`
+and `throbbing-disk-fd8d` builds already wired to the marketing site. Deploying
+it does not touch either of them.
+
+### First deploy
+
+```bash
+cd demo
+npm install
+npx wrangler login          # or export CLOUDFLARE_API_TOKEN=...
+
+npx wrangler secret put SUPABASE_URL
+npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+npx wrangler secret put VAPI_PUBLIC_KEY
+npx wrangler secret put VAPI_ASSISTANT_ID
+npx wrangler secret put BOOKING_URL
+
+npm run deploy              # opennextjs-cloudflare build && wrangler deploy
+```
+
+The `[[routes]]` entry in `wrangler.jsonc` creates the DNS record and
+certificate for `demo.cutthroughfaster.com` on deploy, because the zone is
+already in this Cloudflare account. If the deploy fails naming the zone, drop
+that block and use the `workers.dev` URL until DNS is sorted — but do not send
+a cold email pointing at a `workers.dev` address. It reads as a phishing link
+to a spam filter and as amateur to a practice owner.
+
+### The Supabase keep-alive — a launch blocker, not a nicety
+
+Supabase pauses a free project after seven idle days. A paused project does not
+degrade this demo, it breaks it outright: every link already sitting in a
+prospect's inbox starts returning an error, and a dead link in a cold email is a
+prospect you do not get a second attempt at. Between building the list and
+sending the first batch, and again once a campaign goes quiet, seven days is
+easy to reach.
+
+`heartbeat/` is a second, deliberately tiny Worker that reads one row from
+`prospects` on a daily cron. It is separate because OpenNext generates the demo
+Worker's entrypoint and owns its exports — there is no supported place to hang a
+`scheduled` handler off it without importing a build artifact, and an adapter
+upgrade should not be able to take the keep-alive with it.
+
+```bash
+cd demo/heartbeat
+npm install
+npx wrangler secret put SUPABASE_URL
+npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+npm run deploy
+
+curl https://ctf-demo-heartbeat.<account>.workers.dev    # "ok: database reached"
+```
+
+Deploy it **before** the first email goes out, and check that URL returns `ok`.
+It uses the service role key rather than the anon key on purpose: `anon` holds
+no grants on these tables by design, so a request made with it can be refused at
+the API layer without ever reaching Postgres — a heartbeat that reports success
+while the project drifts towards a pause is worse than no heartbeat.
 
 ## Positioning, which is not a copy question
 

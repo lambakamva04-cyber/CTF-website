@@ -1,0 +1,20 @@
+name = "ctf-demo-heartbeat"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+
+# Gives a URL to curl when checking the heartbeat by hand. No custom domain:
+# this is plumbing, not something a prospect should ever reach.
+workers_dev = true
+
+[observability]
+enabled = true
+
+# Daily. Supabase pauses a free project after seven idle days, so a day between
+# beats leaves six days of margin for a missed run. The odd minute keeps it off
+# the top of the hour, where Cloudflare's cron queue is busiest.
+[triggers]
+crons = ["23 5 * * *"]
+
+# Secrets — set with `wrangler secret put <NAME>`, never in this file:
+#   SUPABASE_URL
+#   SUPABASE_SERVICE_ROLE_KEY
