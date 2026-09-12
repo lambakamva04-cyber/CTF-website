@@ -1,0 +1,11 @@
+node_modules/
+.next/
+out/
+next-env.d.ts
+tsconfig.tsbuildinfo
+
+# Local secrets — never commit. SUPABASE_SERVICE_ROLE_KEY lives here.
+.env.local
+.env*.local
+
+.vercel
