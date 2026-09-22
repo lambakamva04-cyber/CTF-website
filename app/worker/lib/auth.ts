@@ -103,6 +103,8 @@ export async function requireAuth(request: Request, env: Env): Promise<AuthConte
             u.*, o.id AS o_id, o.name AS o_name, o.slug AS o_slug, o.timezone AS o_timezone,
             o.services AS o_services, o.vapi_assistant_id AS o_assistant,
             o.vapi_phone_number_id AS o_phone_number, o.takeover_number AS o_takeover,
+            o.plan_minutes AS o_plan_minutes, o.subscription_zar AS o_subscription_zar,
+            o.overage_rate_zar AS o_overage_rate_zar, o.setup_fee_zar AS o_setup_fee_zar,
             o.created_at AS o_created_at, o.updated_at AS o_updated_at
        FROM sessions s
        JOIN users u ON u.id = s.user_id
@@ -159,6 +161,12 @@ export async function requireAuth(request: Request, env: Env): Promise<AuthConte
     vapi_assistant_id: (row.o_assistant as string | null) ?? null,
     vapi_phone_number_id: (row.o_phone_number as string | null) ?? null,
     takeover_number: (row.o_takeover as string | null) ?? null,
+    // Carried on the session's org row, so billing is always computed from the
+    // authenticated tenant's own terms and never from anything a caller sent.
+    plan_minutes: row.o_plan_minutes as number,
+    subscription_zar: row.o_subscription_zar as number,
+    overage_rate_zar: row.o_overage_rate_zar as number,
+    setup_fee_zar: row.o_setup_fee_zar as number,
     created_at: row.o_created_at as number,
     updated_at: row.o_updated_at as number,
   };

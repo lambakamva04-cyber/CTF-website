@@ -9,11 +9,18 @@ import type {
 import { CallRow } from '../components/CallRow';
 import { LiveCallPanel } from '../components/LiveCallPanel';
 import { TeamPanel } from '../components/TeamPanel';
-import { Banner, SegmentedControl, Spinner, StatCard, StatusPill } from '../components/ui';
+import {
+  Banner,
+  MinuteMeter,
+  SegmentedControl,
+  Spinner,
+  StatCard,
+  StatusPill,
+} from '../components/ui';
 import { usePoll } from '../hooks/usePoll';
 import { useTranscript } from '../hooks/useTranscript';
 import { api, ApiError } from '../lib/api';
-import { outcomeLabel } from '../lib/format';
+import { formatZar, outcomeLabel } from '../lib/format';
 
 const TrendChart = lazy(() => import('../components/TrendChart'));
 
@@ -222,6 +229,47 @@ export function Dashboard({ session, onSignOut, onSessionExpired }: Props) {
             </>
           )}
         </section>
+
+        {/* Billing is always the calendar month, whatever the period toggle
+            above is set to — the subscription renews monthly regardless. Kept
+            as its own block so the two are never read as one figure. */}
+        {metrics.data && (
+          <section className="space-y-5">
+            <div>
+              <h2 className="font-display text-lg font-semibold">This Month</h2>
+              {/* The period control above also offers "This Month". This line
+                  says which one this is, so the two are not read as linked. */}
+              <p className="text-xs text-gray-400 mt-1">
+                Usage and billing, always the calendar month.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <StatCard
+                label="Minutes Used"
+                value={`${metrics.data.billing.minutesUsed} / ${metrics.data.billing.planMinutes}`}
+              />
+              <StatCard label="Extra Minutes" value={metrics.data.billing.extraMinutes} />
+              <StatCard
+                label="Overage"
+                value={formatZar(metrics.data.billing.extraCostZar)}
+              />
+            </div>
+
+            <div className="border border-gray-200 rounded-2xl p-5 sm:p-6">
+              <MinuteMeter
+                used={metrics.data.billing.minutesUsed}
+                plan={metrics.data.billing.planMinutes}
+              />
+              <p className="text-xs text-gray-400 mt-4">
+                {metrics.data.billing.planMinutes} minutes included at{' '}
+                {formatZar(metrics.data.billing.subscriptionZar)} a month, then{' '}
+                {formatZar(metrics.data.billing.overageRateZar)} a minute. Each call is
+                rounded up to the next whole minute.
+              </p>
+            </div>
+          </section>
+        )}
 
         <section className="space-y-5">
           <h2 className="font-display text-lg font-semibold">Recent Activity</h2>

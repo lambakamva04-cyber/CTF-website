@@ -10,6 +10,12 @@ export interface OrgRow {
   vapi_assistant_id: string | null;
   vapi_phone_number_id: string | null;
   takeover_number: string | null;
+  // What this client signed. Per-org, so a change to the list price leaves
+  // existing contracts alone. See migrations/0003_billing_plan.sql.
+  plan_minutes: number;
+  subscription_zar: number;
+  overage_rate_zar: number;
+  setup_fee_zar: number;
   created_at: number;
   updated_at: number;
 }

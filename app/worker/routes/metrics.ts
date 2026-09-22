@@ -1,6 +1,7 @@
-import type { MetricsResponse, Period } from '../../shared/types';
+import type { BillingSummary, MetricsResponse, Period } from '../../shared/types';
 import type { Env } from '../env';
 import type { AuthContext } from '../lib/auth';
+import { billableMinutes, summariseBilling } from '../lib/billing';
 import { badRequest, json } from '../lib/http';
 import {
   isValidTimeZone,
@@ -63,9 +64,43 @@ export async function handleMetrics(
     escalated: counts?.escalated ?? 0,
     missed: counts?.missed ?? 0,
     trend: await buildTrend(env, auth.org.id, period, timeZone, now),
+    billing: await buildBilling(env, auth, timeZone, now),
   };
 
   return json(payload);
+}
+
+/**
+ * Usage against plan for the current calendar month, independent of the
+ * selected `period` — the subscription renews monthly whichever toggle the
+ * client is looking at.
+ *
+ * Durations are pulled per call rather than summed in SQL because the rounding
+ * rule is per call, and a rule that decides what a client is charged belongs in
+ * one tested place rather than inside a query string. The row count is a single
+ * practice's calls for one month, so this stays small.
+ */
+async function buildBilling(
+  env: Env,
+  auth: AuthContext,
+  timeZone: string,
+  now: Date,
+): Promise<BillingSummary> {
+  const monthStart = startOfLocalMonth(now, timeZone);
+
+  // A call belongs to the month it started in, matching the call stats above.
+  // A call that runs across midnight on the 1st bills to the month it began.
+  const { results } = await env.DB.prepare(
+    'SELECT duration_s FROM calls WHERE org_id = ? AND started_at >= ?',
+  )
+    .bind(auth.org.id, monthStart)
+    .all<{ duration_s: number | null }>();
+
+  return summariseBilling(billableMinutes((results ?? []).map((row) => row.duration_s)), {
+    planMinutes: auth.org.plan_minutes,
+    subscriptionZar: auth.org.subscription_zar,
+    overageRateZar: auth.org.overage_rate_zar,
+  });
 }
 
 async function buildTrend(

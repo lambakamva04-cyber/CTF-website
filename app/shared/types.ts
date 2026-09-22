@@ -136,6 +136,28 @@ export interface CallsResponse {
   nextCursor: string | null;
 }
 
+/**
+ * Usage against the client's plan for the CURRENT CALENDAR MONTH.
+ *
+ * Deliberately not affected by `period`: the call stats above answer "how is
+ * the receptionist doing this week", while this answers "what will the invoice
+ * say", and the invoice is monthly whichever toggle happens to be selected.
+ */
+export interface BillingSummary {
+  /** Minutes this month, each call rounded up to a whole minute before summing. */
+  minutesUsed: number;
+  /** Minutes included in the subscription. */
+  planMinutes: number;
+  /** Minutes beyond the plan. Zero when under. */
+  extraMinutes: number;
+  /** Rand owed for `extraMinutes`, rounded to cents. Zero when under. */
+  extraCostZar: number;
+  /** The client's own monthly fee, excluding overage. */
+  subscriptionZar: number;
+  /** The client's own per-minute rate beyond the plan. */
+  overageRateZar: number;
+}
+
 export interface MetricsResponse {
   period: Period;
   total: number;
@@ -144,6 +166,8 @@ export interface MetricsResponse {
   escalated: number;
   missed: number;
   trend: { label: string; count: number }[];
+  /** Always the calendar month, regardless of `period`. */
+  billing: BillingSummary;
 }
 
 export interface TakeoverResponse {
