@@ -26,3 +26,16 @@ GOOGLE_CLIENT_SECRET=
 # Optional. Lowers the password hashing work factor for faster local logins.
 # Leave unset in production so the default 210,000 iterations applies.
 # PBKDF2_ITERATIONS=10000
+
+# Two-factor authentication. 32 bytes of base64; generate one with:
+#   node -e "const{webcrypto:c}=require('node:crypto');const b=new Uint8Array(32);c.getRandomValues(b);console.log(Buffer.from(b).toString('base64'))"
+# Unset means TOTP enrolment is unavailable — the code fails closed rather than
+# falling back to a default key that every deployment would share.
+TOTP_ENCRYPTION_KEY=
+
+# Email one-time codes. Unset means the email second factor is unavailable.
+# EMAIL_FROM must be a domain with SPF and DKIM published: a @gmail.com sender
+# fails DMARC and the codes land in spam. See worker/lib/email.ts.
+EMAIL_API_KEY=
+EMAIL_FROM=Cut Through Faster <security@mail.cutthroughfaster.com>
+EMAIL_REPLY_TO=cutthroughfaster@gmail.com

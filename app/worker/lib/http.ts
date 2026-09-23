@@ -104,6 +104,80 @@ export async function readJson<T>(request: Request): Promise<T> {
   }
 }
 
+/** Hosts that legitimately answer over plain http: a local dev server. */
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
+
+export function isLoopback(hostname: string): boolean {
+  return LOOPBACK_HOSTS.has(hostname);
+}
+
+/**
+ * True when this request reached us through Cloudflare's edge rather than a
+ * local dev server.
+ *
+ * `cf-ray` is stamped by Cloudflare on every proxied request and overwritten if
+ * a client sends its own, so it cannot be forged inward. `wrangler dev` does not
+ * set it, which is exactly the distinction needed below — and the failure mode
+ * if it were ever missing in production is that the upgrade is skipped, which is
+ * merely today's behaviour rather than something worse.
+ */
+function fromCloudflareEdge(request: Request): boolean {
+  return request.headers.has('cf-ray');
+}
+
+/**
+ * Sends a plain-http request to the https address of the same URL, or null when
+ * there is nothing to upgrade.
+ *
+ * This is not a hardening nicety. The session cookie is marked `Secure`, so a
+ * browser silently discards it on an http response: signing in over http
+ * appears to succeed and then lands back on the sign-in screen, with nothing in
+ * the logs to explain it. Google refuses an http OAuth callback outright. Both
+ * failures are invisible at the point they happen and both are fixed here.
+ *
+ * 308 rather than 301 because it preserves the method — a 301 turns a POST into
+ * a GET, which would quietly discard the body of anything that reached us over
+ * http rather than failing where somebody would notice.
+ *
+ * The edge check is not paranoia about dev convenience. `wrangler dev` rewrites
+ * the incoming URL to the hostname in `[[routes]]` — the Worker sees
+ * `http://app.cutthroughfaster.com` however you actually reached it — and then
+ * rewrites the `Location` of the response back to the local address. Without the
+ * check, every local request 308s to a URL that resolves back to itself, and
+ * `npm run dev` becomes an infinite redirect.
+ */
+export function httpsUpgrade(request: Request, url: URL): Response | null {
+  if (url.protocol === 'https:' || isLoopback(url.hostname)) return null;
+  if (!fromCloudflareEdge(request)) return null;
+
+  const secure = new URL(url);
+  secure.protocol = 'https:';
+  return new Response(null, {
+    status: 308,
+    headers: { location: secure.toString(), 'cache-control': 'no-store' },
+  });
+}
+
+/**
+ * A year of HSTS, so the browser stops trying http at all after the first
+ * visit. The upgrade above only helps somebody who has already sent a request
+ * in the clear; this stops the request being sent.
+ *
+ * Deliberately without `preload`: that submits the domain to a list browsers
+ * ship in their binaries, and removal takes months. Not a decision to make as a
+ * side effect of fixing a redirect.
+ */
+export const HSTS = 'max-age=31536000; includeSubDomains';
+
+export function withTransportSecurity(url: URL, response: Response): Response {
+  if (url.protocol !== 'https:' || isLoopback(url.hostname)) return response;
+  // Headers on a Response from the assets runtime are immutable, so the header
+  // is set on a copy rather than in place.
+  const tagged = new Response(response.body, response);
+  tagged.headers.set('strict-transport-security', HSTS);
+  return tagged;
+}
+
 export function clientIp(request: Request): string {
   return (
     request.headers.get('cf-connecting-ip') ??

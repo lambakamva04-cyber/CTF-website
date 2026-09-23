@@ -20,6 +20,10 @@ export interface SessionUser {
   googleLinked: boolean;
   /** Resolved from the role; the UI hides what the API would refuse anyway. */
   permissions: Permission[];
+  /** True for Cut Through Faster staff, who can see billing totals. */
+  isPlatformAdmin: boolean;
+  /** False when the current policy versions have not been accepted. */
+  termsAccepted: boolean;
 }
 
 export interface TeamMember {
@@ -68,6 +72,8 @@ export interface AuthMethodsResponse {
   secretHadWhitespace: boolean;
 }
 
+export type OrgStatus = 'pending' | 'active' | 'suspended';
+
 export interface SessionOrg {
   id: string;
   name: string;
@@ -78,6 +84,93 @@ export interface SessionOrg {
   takeoverNumber: string | null;
   /** False when the org has no Vapi assistant or phone number linked yet. */
   receptionistLinked: boolean;
+  /** Only 'active' organizations may reach call data. */
+  status: OrgStatus;
+  plan: string;
+}
+
+export interface SignupStartResponse {
+  authorizeUrl: string;
+}
+
+export interface PlatformOrgSummary {
+  id: string;
+  name: string;
+  slug: string;
+  status: OrgStatus;
+  plan: string;
+  billingEmail: string | null;
+  signupNote: string | null;
+  createdAt: number;
+  activatedAt: number | null;
+  logins: number;
+  calls: number;
+  booked: number;
+  escalated: number;
+  missed: number;
+  /** Rounded up per call — a 20-second call is a billable minute. */
+  minutes: number;
+  bookingRate: number;
+  lastCallAt: number | null;
+}
+
+/**
+ * Billing figures only. Deliberately carries no caller names, numbers,
+ * transcripts or recordings — the privacy policy promises clients as much.
+ */
+export interface PlatformOverview {
+  period: 'this-month' | 'last-month' | 'all-time';
+  organizations: PlatformOrgSummary[];
+  totals: {
+    organizations: number;
+    pending: number;
+    active: number;
+    calls: number;
+    booked: number;
+    minutes: number;
+  };
+}
+
+/**
+ * What /api/auth/login answers with when the password was right but the account
+ * carries a second factor. Nothing here is a credential: the challenge id names
+ * a server-side row and grants no access until a code is verified against it.
+ */
+export interface TwoFactorChallenge {
+  twoFactorRequired: true;
+  challengeId: string;
+  method: 'totp' | 'email';
+  /** Masked address for the email method, so the client knows where to look. */
+  sentTo: string | null;
+}
+
+export type LoginResponse = MeResponse | TwoFactorChallenge;
+
+export function isTwoFactorChallenge(value: LoginResponse): value is TwoFactorChallenge {
+  return (value as TwoFactorChallenge).twoFactorRequired === true;
+}
+
+export type TwoFactorMethod = 'none' | 'totp' | 'email';
+
+export interface TwoFactorStatus {
+  method: TwoFactorMethod;
+  /** An enrolment started but never confirmed; the UI offers to resume it. */
+  pendingTotp: boolean;
+  backupCodesRemaining: number;
+  /** False when TOTP_ENCRYPTION_KEY is unset, so the UI can say why. */
+  totpAvailable: boolean;
+  /** False when no email provider is configured. */
+  emailAvailable: boolean;
+}
+
+export interface TotpEnrollment {
+  /** Shown once, for someone typing it in rather than scanning. */
+  secret: string;
+  otpauthUri: string;
+}
+
+export interface BackupCodesResponse {
+  backupCodes: string[];
 }
 
 export interface MeResponse {
