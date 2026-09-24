@@ -23,6 +23,52 @@ export function StatCard({ label, value }: { label: string; value: string | numb
   );
 }
 
+/**
+ * Minutes used against the plan for the month.
+ *
+ * The bar is scaled to whichever is larger, usage or plan, so going over does
+ * not just peg a full bar — the overage keeps growing visibly past the mark
+ * where the plan ran out. Monochrome like the rest of the dashboard: the
+ * included minutes are solid, the overage is the lighter segment after the
+ * divider.
+ */
+export function MinuteMeter({ used, plan }: { used: number; plan: number }) {
+  const safeUsed = Math.max(0, used);
+  const safePlan = Math.max(0, plan);
+  const extra = Math.max(0, safeUsed - safePlan);
+  // Avoid dividing by zero for a plan with no included minutes.
+  const scale = Math.max(safeUsed, safePlan, 1);
+  const withinPlan = Math.min(safeUsed, safePlan);
+
+  return (
+    <div>
+      <div
+        className="flex h-2 w-full overflow-hidden rounded-full bg-gray-100"
+        role="progressbar"
+        aria-label="Minutes used against plan"
+        aria-valuemin={0}
+        aria-valuemax={safePlan}
+        aria-valuenow={safeUsed}
+        aria-valuetext={`${safeUsed} of ${safePlan} minutes used`}
+      >
+        <div className="h-full bg-black" style={{ width: `${(withinPlan / scale) * 100}%` }} />
+        {extra > 0 && (
+          <div
+            className="h-full border-l border-white bg-gray-400"
+            style={{ width: `${(extra / scale) * 100}%` }}
+          />
+        )}
+      </div>
+      <div className="mt-2 flex justify-between text-xs text-gray-400 tabular-nums">
+        <span>
+          {safeUsed} of {safePlan} min
+        </span>
+        <span>{extra > 0 ? `${extra} over` : `${safePlan - safeUsed} left`}</span>
+      </div>
+    </div>
+  );
+}
+
 interface SegmentedControlProps<T extends string> {
   value: T;
   onChange: (value: T) => void;
@@ -91,9 +137,19 @@ export function Banner({
   );
 }
 
+/**
+ * A spinner for waits with no shape to stand in for — the answer is one word,
+ * or the destination is another page entirely. Anything that resolves into a
+ * known layout uses a skeleton from Skeleton.tsx instead: a spinner in that
+ * position throws the content downward when it disappears.
+ *
+ * Currently unused in the app; kept because the in-button case (see the sign-in
+ * and signup buttons, which use Loader2 directly) is the one place it stays
+ * correct.
+ */
 export function Spinner({ label = 'Loading' }: { label?: string }) {
   return (
-    <div className="flex items-center justify-center gap-2 py-8 text-gray-400">
+    <div role="status" className="flex items-center justify-center gap-2 py-8 text-gray-400">
       <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
       <span className="text-sm">{label}</span>
     </div>

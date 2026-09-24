@@ -2,6 +2,8 @@ import type { Env } from '../env';
 import type { OrgRow, UserRow } from './db';
 import { newId, randomToken, sha256Hex } from './crypto';
 import { clientIp, tooManyRequests, unauthorized } from './http';
+import { adminSignInEmail, emailConfigured, sendEmail } from './email';
+import { ADMIN_ABSOLUTE_TTL_MS, ADMIN_IDLE_TTL_MS } from './platform';
 
 export const SESSION_COOKIE = 'ctf_session';
 
@@ -11,13 +13,34 @@ const IDLE_TTL_MS = 12 * 60 * 60 * 1000;
 const ABSOLUTE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
-const MAX_FAILURES_PER_EMAIL = 8;
+/**
+ * Five failures per account per quarter hour. Low enough that guessing is
+ * hopeless, high enough that somebody mistyping a password twice and then
+ * fetching it from a manager is not locked out of their own dashboard.
+ */
+const MAX_FAILURES_PER_EMAIL = 5;
+/**
+ * Higher per address, because a dental practice behind one office NAT is many
+ * people on one IP, and locking the address locks the whole surgery out.
+ */
 const MAX_FAILURES_PER_IP = 30;
 
 export interface AuthContext {
   user: UserRow;
   org: OrgRow;
   sessionId: string;
+  /** Until when this session may take destructive admin actions. See lib/platform.ts. */
+  steppedUpUntil: number | null;
+}
+
+/** Idle and absolute session lifetimes. CTF admins get far shorter ones. */
+export function sessionLimits(platformRole: string | null | undefined): {
+  idle: number;
+  absolute: number;
+} {
+  return platformRole === 'ctf_admin'
+    ? { idle: ADMIN_IDLE_TTL_MS, absolute: ADMIN_ABSOLUTE_TTL_MS }
+    : { idle: IDLE_TTL_MS, absolute: ABSOLUTE_TTL_MS };
 }
 
 export function pbkdf2Iterations(env: Env): number | undefined {
@@ -65,6 +88,13 @@ export async function createSession(
   const id = await sha256Hex(token);
   const now = Date.now();
 
+  // Every caller creates the session after the user is known, so the role is
+  // read here once rather than threaded through each sign-in path.
+  const who = await env.DB.prepare('SELECT platform_role, email FROM users WHERE id = ?')
+    .bind(userId)
+    .first<{ platform_role: string | null; email: string }>();
+  const limits = sessionLimits(who?.platform_role);
+
   await env.DB.prepare(
     `INSERT INTO sessions (id, user_id, created_at, expires_at, last_seen_at, user_agent, ip)
      VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -73,14 +103,40 @@ export async function createSession(
       id,
       userId,
       now,
-      now + IDLE_TTL_MS,
+      now + limits.idle,
       now,
       request.headers.get('user-agent')?.slice(0, 256) ?? null,
       clientIp(request),
     )
     .run();
 
-  return { token, maxAgeSeconds: Math.floor(IDLE_TTL_MS / 1000) };
+  if (who?.platform_role === 'ctf_admin') {
+    await alertAdminSignIn(env, request, who.email, now);
+  }
+
+  return { token, maxAgeSeconds: Math.floor(limits.idle / 1000) };
+}
+
+/**
+ * Best effort. A sign-in must never fail because the alert could not be sent —
+ * that would let an email outage lock CTF out of its own console.
+ */
+async function alertAdminSignIn(env: Env, request: Request, to: string, at: number): Promise<void> {
+  if (!emailConfigured(env)) return;
+  try {
+    const message = adminSignInEmail({
+      when: new Intl.DateTimeFormat('en-ZA', {
+        timeZone: 'Africa/Johannesburg',
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      }).format(new Date(at)),
+      ip: clientIp(request),
+      userAgent: request.headers.get('user-agent'),
+    });
+    await sendEmail(env, { to, ...message });
+  } catch (error) {
+    console.error('admin sign-in alert failed', error);
+  }
 }
 
 export async function destroySession(env: Env, sessionId: string): Promise<void> {
@@ -100,9 +156,17 @@ export async function requireAuth(request: Request, env: Env): Promise<AuthConte
 
   const row = await env.DB.prepare(
     `SELECT s.id AS session_id, s.created_at AS session_created_at, s.expires_at,
+            s.last_seen_at AS session_last_seen_at, s.stepped_up_until AS session_stepped_up_until,
             u.*, o.id AS o_id, o.name AS o_name, o.slug AS o_slug, o.timezone AS o_timezone,
             o.services AS o_services, o.vapi_assistant_id AS o_assistant,
             o.vapi_phone_number_id AS o_phone_number, o.takeover_number AS o_takeover,
+            o.status AS o_status, o.activated_at AS o_activated_at,
+            o.activated_by AS o_activated_by, o.billing_email AS o_billing_email,
+            o.plan AS o_plan, o.signup_note AS o_signup_note,
+            o.plan_minutes AS o_plan_minutes, o.subscription_zar AS o_subscription_zar,
+            o.overage_rate_zar AS o_overage_rate_zar, o.setup_fee_zar AS o_setup_fee_zar,
+            o.is_platform AS o_is_platform, o.blocked_at AS o_blocked_at,
+            o.status_reason AS o_status_reason,
             o.created_at AS o_created_at, o.updated_at AS o_updated_at
        FROM sessions s
        JOIN users u ON u.id = s.user_id
@@ -117,19 +181,30 @@ export async function requireAuth(request: Request, env: Env): Promise<AuthConte
   const expiresAt = row.expires_at as number;
   const sessionCreatedAt = row.session_created_at as number;
 
-  if (expiresAt <= now || sessionCreatedAt + ABSOLUTE_TTL_MS <= now) {
+  const limits = sessionLimits(row.platform_role as string | null);
+
+  // The absolute ceiling is checked against the role's own limit, so a session
+  // opened before someone became an admin cannot outlive the admin ceiling.
+  if (expiresAt <= now || sessionCreatedAt + limits.absolute <= now) {
     await destroySession(env, sessionId);
     throw unauthorized('Your session has expired.');
   }
   if ((row.disabled as number) === 1) {
     await destroySession(env, sessionId);
-    throw unauthorized('This account has been disabled.');
+    throw unauthorized(
+      row.platform_hold === 'blocked'
+        ? 'This account has been closed by Cut Through Faster.'
+        : 'This account has been disabled.',
+    );
   }
 
   // Slide the idle window, but only once a minute to avoid a write per poll.
-  if (now - (row.last_seen_at as number ?? 0) > 60_000 || expiresAt - now < IDLE_TTL_MS / 2) {
+  // The new expiry never exceeds the role's idle limit, so an admin session
+  // cannot be kept alive past thirty idle minutes by an old, longer expiry.
+  const lastSeen = (row.session_last_seen_at as number | null) ?? 0;
+  if (now - lastSeen > 60_000 || expiresAt - now < limits.idle / 2 || expiresAt - now > limits.idle) {
     await env.DB.prepare('UPDATE sessions SET last_seen_at = ?, expires_at = ? WHERE id = ?')
-      .bind(now, now + IDLE_TTL_MS, sessionId)
+      .bind(now, now + limits.idle, sessionId)
       .run();
   }
 
@@ -146,6 +221,14 @@ export async function requireAuth(request: Request, env: Env): Promise<AuthConte
     last_login_at: (row.last_login_at as number | null) ?? null,
     google_sub: (row.google_sub as string | null) ?? null,
     google_linked_at: (row.google_linked_at as number | null) ?? null,
+    platform_role: (row.platform_role as 'none' | 'ctf_admin') ?? 'none',
+    two_factor_method: (row.two_factor_method as 'none' | 'totp' | 'email') ?? 'none',
+    totp_secret: (row.totp_secret as string | null) ?? null,
+    totp_confirmed_at: (row.totp_confirmed_at as number | null) ?? null,
+    totp_last_counter: (row.totp_last_counter as number | null) ?? null,
+    platform_hold: (row.platform_hold as 'disabled' | 'blocked' | null) ?? null,
+    platform_hold_at: (row.platform_hold_at as number | null) ?? null,
+    platform_hold_reason: (row.platform_hold_reason as string | null) ?? null,
     created_at: row.created_at as number,
     updated_at: row.updated_at as number,
   };
@@ -159,11 +242,31 @@ export async function requireAuth(request: Request, env: Env): Promise<AuthConte
     vapi_assistant_id: (row.o_assistant as string | null) ?? null,
     vapi_phone_number_id: (row.o_phone_number as string | null) ?? null,
     takeover_number: (row.o_takeover as string | null) ?? null,
+    status: (row.o_status as 'pending' | 'active' | 'suspended') ?? 'pending',
+    activated_at: (row.o_activated_at as number | null) ?? null,
+    activated_by: (row.o_activated_by as string | null) ?? null,
+    billing_email: (row.o_billing_email as string | null) ?? null,
+    plan: (row.o_plan as string) ?? 'standard',
+    signup_note: (row.o_signup_note as string | null) ?? null,
+    // Carried on the session's org row, so billing is always computed from the
+    // authenticated tenant's own terms and never from anything a caller sent.
+    plan_minutes: row.o_plan_minutes as number,
+    subscription_zar: row.o_subscription_zar as number,
+    overage_rate_zar: row.o_overage_rate_zar as number,
+    setup_fee_zar: row.o_setup_fee_zar as number,
+    is_platform: (row.o_is_platform as number) ?? 0,
+    blocked_at: (row.o_blocked_at as number | null) ?? null,
+    status_reason: (row.o_status_reason as string | null) ?? null,
     created_at: row.o_created_at as number,
     updated_at: row.o_updated_at as number,
   };
 
-  return { user, org, sessionId };
+  return {
+    user,
+    org,
+    sessionId,
+    steppedUpUntil: (row.session_stepped_up_until as number | null) ?? null,
+  };
 }
 
 export async function assertLoginAllowed(env: Env, email: string, ip: string): Promise<void> {
@@ -211,6 +314,10 @@ export async function pruneExpired(env: Env): Promise<void> {
     env.DB.prepare('DELETE FROM login_attempts WHERE created_at < ?').bind(now - LOGIN_WINDOW_MS * 4),
     env.DB.prepare('DELETE FROM webhook_events WHERE received_at < ?').bind(now - 24 * 60 * 60 * 1000),
     env.DB.prepare('DELETE FROM oauth_states WHERE expires_at < ?').bind(now),
+    env.DB.prepare('DELETE FROM rate_limits WHERE expires_at < ?').bind(now),
+    // Challenges are short-lived, but an abandoned one is a row that never gets
+    // deleted on its own — nothing revisits a login someone walked away from.
+    env.DB.prepare('DELETE FROM login_challenges WHERE expires_at < ?').bind(now),
   ]);
 }
 

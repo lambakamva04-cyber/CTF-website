@@ -3,18 +3,244 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="robots" content="noindex, nofollow" />
+    <!--
+      Crawl policy is set per URL by the Worker (worker/lib/seo.ts) as an
+      X-Robots-Tag header, not here. Every client route is served from this one
+      file, so a meta tag would hide the public legal pages along with the
+      private dashboard.
+    -->
     <meta name="theme-color" content="#14161A" />
     <title>Receptionist Dashboard · Cut Through Faster</title>
+
+    <!-- The CTF mark, as the tab icon, the home-screen icon, and the image
+         shown when a link to the dashboard is pasted into a chat.
+
+         Three files rather than one, because the SVG is not accepted
+         everywhere: iOS ignores an SVG apple-touch-icon and falls back to a
+         screenshot of the page, and the major link unfurlers do not render SVG
+         previews at all. The PNGs are rendered from logo.svg, so there is still
+         one source of truth for the artwork. -->
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/logo-180.png" />
+    <meta property="og:title" content="Cut Through Faster · Receptionist Dashboard" />
+    <meta
+      property="og:description"
+      content="Watch your AI receptionist work: live calls, transcripts, and one tap to take over."
+    />
+    <meta property="og:image" content="/logo-512.png" />
+    <meta name="twitter:card" content="summary" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
+
+    <!--
+      The boot skeleton, inline because it has to paint before anything is
+      downloaded. Between the first byte and React mounting there is a stylesheet
+      and a ~230 kB bundle to fetch, which on a phone on a weak signal is the
+      longest wait in the whole product. Without this it is a white page.
+
+      Deliberately duplicated rather than shared with src/components/Skeleton.tsx:
+      nothing in src/ exists yet at this point. It is a handful of rules, and the
+      shapes only have to be approximately right — React replaces the markup the
+      moment it mounts, and the real DashboardSkeleton takes over with the same
+      layout, so the swap is invisible.
+    -->
+    <style>
+      /* White, because that is what the dashboard behind it uses. Letting the
+         cream body show through here would flash to white the instant React
+         mounts. */
+      #boot-bg {
+        background: #fff;
+        min-height: 100vh;
+      }
+      #boot {
+        font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+        color: #14161a;
+        max-width: 42rem;
+        margin: 0 auto;
+        padding: 2.5rem 1.5rem;
+      }
+      #boot h2 {
+        font-family: 'Space Grotesk', ui-sans-serif, sans-serif;
+        font-size: 1.125rem;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        margin: 0 0 1.25rem;
+      }
+      #boot .b {
+        display: block;
+        border-radius: 0.375rem;
+        background-color: rgba(20, 22, 26, 0.08);
+        background-image: linear-gradient(
+          90deg,
+          transparent 0%,
+          rgba(255, 255, 255, 0.6) 50%,
+          transparent 100%
+        );
+        background-size: 220% 100%;
+        background-repeat: no-repeat;
+        animation: bootSweep 1.6s ease-in-out infinite;
+      }
+      #boot .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+      #boot .card {
+        border: 1px solid rgba(20, 22, 26, 0.12);
+        border-radius: 1rem;
+        padding: 1.5rem;
+      }
+      #boot .stat {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 1rem;
+        padding: 1.25rem 1rem;
+      }
+      #boot .line {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem 0;
+        border-top: 1px solid #f3f4f6;
+      }
+      #boot .line:last-child {
+        border-bottom: 1px solid #f3f4f6;
+      }
+      #boot .grow {
+        flex: 1;
+        display: grid;
+        gap: 0.5rem;
+      }
+      #boot .dot {
+        height: 2rem;
+        width: 2rem;
+        border-radius: 9999px;
+        flex: none;
+      }
+      #boot .pill {
+        height: 1.25rem;
+        width: 4rem;
+        border-radius: 9999px;
+        flex: none;
+      }
+      @keyframes bootSweep {
+        from {
+          background-position: 180% 0;
+        }
+        to {
+          background-position: -80% 0;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #boot .b {
+          animation: none;
+          background-image: none;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="boot-bg">
+        <div id="boot" role="status" aria-label="Loading your dashboard">
+          <div style="display: grid; gap: 0.75rem; margin-bottom: 2.5rem">
+            <span class="b" style="height: 0.75rem; width: 12rem"></span>
+            <div class="row">
+              <span class="b" style="height: 2rem; width: 50%"></span>
+              <span class="b" style="height: 2rem; width: 6rem; border-radius: 9999px"></span>
+            </div>
+            <span class="b" style="height: 0.75rem; width: 10rem"></span>
+          </div>
+
+          <div class="card" style="display: grid; gap: 1rem; margin-bottom: 2.5rem">
+            <div class="row">
+              <span class="b" style="height: 0.75rem; width: 7rem"></span>
+              <span class="b" style="height: 1.5rem; width: 5rem; border-radius: 9999px"></span>
+            </div>
+            <span class="b" style="height: 1.5rem; width: 50%"></span>
+            <span class="b" style="height: 0.75rem; width: 100%"></span>
+            <span class="b" style="height: 0.75rem; width: 40%"></span>
+          </div>
+
+          <h2>Performance</h2>
+          <span
+            class="b"
+            style="height: 2rem; width: 14rem; border-radius: 9999px; margin-bottom: 1.25rem"
+          ></span>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 0.75rem;
+              margin-bottom: 2.5rem;
+            "
+          >
+            <span class="stat">
+              <span class="b" style="height: 1.75rem; width: 3rem"></span>
+              <span class="b" style="height: 0.625rem; width: 4rem"></span>
+            </span>
+            <span class="stat">
+              <span class="b" style="height: 1.75rem; width: 3rem"></span>
+              <span class="b" style="height: 0.625rem; width: 4rem"></span>
+            </span>
+            <span class="stat">
+              <span class="b" style="height: 1.75rem; width: 3rem"></span>
+              <span class="b" style="height: 0.625rem; width: 4rem"></span>
+            </span>
+          </div>
+
+          <h2>Recent Activity</h2>
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem">
+            <span class="b" style="height: 1.75rem; width: 3.5rem; border-radius: 9999px"></span>
+            <span class="b" style="height: 1.75rem; width: 5rem; border-radius: 9999px"></span>
+            <span class="b" style="height: 1.75rem; width: 5rem; border-radius: 9999px"></span>
+          </div>
+          <!-- Four rows, written out rather than generated: the CSP in
+               public/_headers is script-src 'self', so an inline script to
+               build them would simply be blocked. -->
+          <div class="line">
+            <span class="b dot"></span>
+            <span class="grow">
+              <span class="b" style="height: 0.875rem; width: 40%"></span>
+              <span class="b" style="height: 0.625rem; width: 60%"></span>
+            </span>
+            <span class="b pill"></span>
+          </div>
+          <div class="line">
+            <span class="b dot"></span>
+            <span class="grow">
+              <span class="b" style="height: 0.875rem; width: 34%"></span>
+              <span class="b" style="height: 0.625rem; width: 56%"></span>
+            </span>
+            <span class="b pill"></span>
+          </div>
+          <div class="line">
+            <span class="b dot"></span>
+            <span class="grow">
+              <span class="b" style="height: 0.875rem; width: 44%"></span>
+              <span class="b" style="height: 0.625rem; width: 62%"></span>
+            </span>
+            <span class="b pill"></span>
+          </div>
+          <div class="line">
+            <span class="b dot"></span>
+            <span class="grow">
+              <span class="b" style="height: 0.875rem; width: 38%"></span>
+              <span class="b" style="height: 0.625rem; width: 58%"></span>
+            </span>
+            <span class="b pill"></span>
+          </div>
+        </div>
+      </div>
+    </div>
     <noscript>This dashboard requires JavaScript to display live calls.</noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>

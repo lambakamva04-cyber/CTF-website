@@ -4,7 +4,8 @@ import type { SessionUser, TeamMember, UserRole } from '../../shared/types';
 import { api, ApiError } from '../lib/api';
 import { formatRelativeDate } from '../lib/format';
 import { ConfirmDialog } from './ConfirmDialog';
-import { Banner, Spinner } from './ui';
+import { TableSkeleton } from './Skeleton';
+import { Banner } from './ui';
 
 /**
  * Shown once after a login is created or reset. The password is never
@@ -286,7 +287,11 @@ export function TeamPanel({ currentUser, timeZone }: Props) {
       )}
 
       {loading ? (
-        <Spinner label="Loading team" />
+        <TableSkeleton
+          label="Loading your team"
+          rows={3}
+          className="border-t border-b border-gray-100"
+        />
       ) : (
         <div className="divide-y divide-gray-100 border-t border-b border-gray-100">
           {members.map((member) => (

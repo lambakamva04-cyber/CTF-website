@@ -1,8 +1,12 @@
 import type { Env } from '../env';
 import { createSession, sessionCookie } from '../lib/auth';
+import { requiresSecondFactor, startChallenge } from '../lib/twoFactor';
 import { randomToken } from '../lib/crypto';
 import { writeAudit, type OrgRow, type UserRow } from '../lib/db';
 import { clientIp, notFound } from '../lib/http';
+import { isReservedCtfAddress } from '../lib/platform';
+import { isBlockedEmail } from './platform';
+import { createPendingOrganization, parseSignupPayload } from './signup';
 import {
   buildAuthorizeUrl,
   exchangeCodeForIdentity,
@@ -77,10 +81,10 @@ export async function handleGoogleCallback(request: Request, env: Env): Promise<
   // Redeem the state: a single DELETE...RETURNING makes it impossible for two
   // concurrent callbacks to both succeed with the same state.
   const stateRow = await env.DB.prepare(
-    'DELETE FROM oauth_states WHERE state = ? RETURNING nonce, expires_at',
+    'DELETE FROM oauth_states WHERE state = ? RETURNING nonce, expires_at, signup_payload',
   )
     .bind(state)
-    .first<{ nonce: string; expires_at: number }>();
+    .first<{ nonce: string; expires_at: number; signup_payload: string | null }>();
 
   if (!stateRow) return redirect('/?auth_error=google_expired');
   if (stateRow.expires_at < Date.now()) return redirect('/?auth_error=google_expired');
@@ -114,11 +118,31 @@ export async function handleGoogleCallback(request: Request, env: Env): Promise<
   // Match an already-provisioned login. Google sign-in is a way to authenticate
   // as an existing user, never a way to become one — the dashboard exposes live
   // calls and caller phone numbers, so account creation stays deliberate.
-  const user = await env.DB.prepare(
+  let user = await env.DB.prepare(
     'SELECT * FROM users WHERE google_sub = ?1 OR (google_sub IS NULL AND email = ?2)',
   )
     .bind(identity.sub, identity.email)
     .first<UserRow>();
+
+  // A signup carries its organization name and accepted policy versions in the
+  // state row, so this is the first point at which the email behind them is
+  // known to be real and verified — and therefore the right point to create the
+  // organization. It starts pending; signing up does not grant access.
+  const signup = parseSignupPayload(stateRow.signup_payload);
+  if (!user && signup) {
+    // A blocked client cannot come back under a new organization, and nobody
+    // can sign up as a client using a CTF address.
+    if (isReservedCtfAddress(identity.email) || (await isBlockedEmail(env, identity.email))) {
+      return redirect('/?auth_error=signup_refused');
+    }
+    try {
+      const created = await createPendingOrganization(env, request, identity, signup);
+      user = created.user;
+    } catch (error) {
+      console.error('signup_failed', error);
+      return redirect('/?auth_error=signup_failed');
+    }
+  }
 
   if (!user) {
     // Logged, not redirected: signing in with the wrong one of several Google
@@ -156,6 +180,24 @@ export async function handleGoogleCallback(request: Request, env: Env): Promise<
     await env.DB.prepare('UPDATE users SET must_change_password = 0 WHERE id = ?')
       .bind(user.id)
       .run();
+  }
+
+  // Google having vouched for the identity is the first factor, not both. An
+  // account with a second factor stops here exactly as a password sign-in does;
+  // the challenge id travels in the URL because this leg is a browser redirect
+  // and there is no response body to put it in. It grants nothing by itself.
+  if (requiresSecondFactor(user)) {
+    const challenge = await startChallenge(env, request, user);
+    await writeAudit(env.DB, {
+      orgId: org.id,
+      userId: user.id,
+      action: 'auth.second_factor_required',
+      detail: `google, ${challenge.method}`,
+      ip: clientIp(request),
+    });
+    const params = new URLSearchParams({ challenge: challenge.challengeId, method: challenge.method });
+    if (challenge.sentTo) params.set('sent_to', challenge.sentTo);
+    return redirect(`/?${params.toString()}`);
   }
 
   await env.DB.prepare('UPDATE users SET last_login_at = ? WHERE id = ?')

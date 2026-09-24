@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import type { CallDetail, CallOutcome, CallSummary } from '../../shared/types';
 import { api } from '../lib/api';
 import { formatDuration, formatRelativeDate, outcomeLabel } from '../lib/format';
+import { Skeleton, SkeletonRegion, SkeletonText } from './Skeleton';
 
 function CallIcon({ outcome }: { outcome: CallOutcome | null }) {
   const solid = outcome === 'booked' || outcome === 'resolved';
@@ -119,6 +120,16 @@ export function CallRow({ call, expanded, onToggle, timeZone }: Props) {
             <p className="text-sm text-gray-400 italic">
               Still being written up — the outcome appears when the call report arrives.
             </p>
+          )}
+
+          {/* The summary and the recording are a second request. Without a
+              placeholder the panel silently grows under the reader a moment
+              after they open it. */}
+          {!detail && !error && (
+            <SkeletonRegion label="Loading the rest of this call" className="pt-1 space-y-2">
+              <SkeletonText lines={2} />
+              <Skeleton className="h-8 w-full max-w-sm rounded-full" delay={2} />
+            </SkeletonRegion>
           )}
 
           {detail?.summary && <p className="text-sm text-gray-600 pt-1">{detail.summary}</p>}

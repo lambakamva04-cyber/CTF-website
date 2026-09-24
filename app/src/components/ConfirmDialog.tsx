@@ -11,6 +11,11 @@ interface Props {
   onConfirm: () => void;
   onCancel: () => void;
   children?: ReactNode;
+  /**
+   * Where focus lands when the dialog opens. 'children' leaves it to an
+   * autoFocus field inside, for dialogs that ask for a reason or a code.
+   */
+  initialFocus?: 'confirm' | 'children';
 }
 
 /**
@@ -28,6 +33,7 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
   children,
+  initialFocus = 'confirm',
 }: Props) {
   const panelRef = useRef<HTMLDivElement>(null);
   const confirmRef = useRef<HTMLButtonElement>(null);
@@ -37,7 +43,7 @@ export function ConfirmDialog({
     if (!open) return;
 
     previouslyFocused.current = document.activeElement as HTMLElement | null;
-    confirmRef.current?.focus();
+    if (initialFocus === 'confirm') confirmRef.current?.focus();
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !busy) {
@@ -70,7 +76,7 @@ export function ConfirmDialog({
       document.removeEventListener('keydown', onKeyDown);
       previouslyFocused.current?.focus();
     };
-  }, [open, busy, onCancel]);
+  }, [open, busy, onCancel, initialFocus]);
 
   if (!open) return null;
 
