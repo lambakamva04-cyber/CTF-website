@@ -32,6 +32,7 @@ const AUTH_ERRORS: Record<string, string> = {
   account_disabled: 'That login has been disabled. Contact the owner of your dashboard.',
   no_org: 'That login is not linked to a business yet.',
   signup_failed: 'We could not finish creating your account. Please try again.',
+  signup_refused: 'That address cannot be used to sign up. Contact Cut Through Faster if you think this is a mistake.',
 };
 
 export function Login({

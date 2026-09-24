@@ -24,6 +24,11 @@ export interface OrgRow {
   subscription_zar: number;
   overage_rate_zar: number;
   setup_fee_zar: number;
+  /** 1 for CTF's own organization: never listed as a client, never suspendable. */
+  is_platform: number;
+  /** Set by a permanent block. A blocked organization stays 'suspended'. */
+  blocked_at: number | null;
+  status_reason: string | null;
   created_at: number;
   updated_at: number;
 }
@@ -50,6 +55,13 @@ export interface UserRow {
   totp_confirmed_at: number | null;
   /** Last accepted TOTP step, so a code cannot be replayed inside its window. */
   totp_last_counter: number | null;
+  /**
+   * An enforcement action CTF took against this login. `disabled` is set
+   * alongside it; this is what stops the client's owner re-enabling it.
+   */
+  platform_hold: 'disabled' | 'blocked' | null;
+  platform_hold_at: number | null;
+  platform_hold_reason: string | null;
   created_at: number;
   updated_at: number;
 }

@@ -9,7 +9,6 @@ import type {
 import { CallRow } from '../components/CallRow';
 import { LiveCallPanel } from '../components/LiveCallPanel';
 import { LogoMark } from '../components/Logo';
-import { PlatformPanel } from '../components/PlatformPanel';
 import { SecurityPanel } from '../components/SecurityPanel';
 import { TeamPanel } from '../components/TeamPanel';
 import {
@@ -353,7 +352,6 @@ export function Dashboard({ session, onSignOut, onSessionExpired }: Props) {
           <TeamPanel currentUser={user} timeZone={org.timezone} />
         )}
 
-        {user.isPlatformAdmin && <PlatformPanel timeZone={org.timezone} />}
 
         <footer className="pt-6 border-t border-line flex flex-wrap items-center justify-between gap-3">
           <span className="inline-flex items-center gap-2 text-slate">

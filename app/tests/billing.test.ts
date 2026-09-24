@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { billableMinutes, billableMinutesForCall, summariseBilling } from '../worker/lib/billing';
+import { createRequire } from 'node:module';
+import {
+  BILLABLE_MINUTES_SQL,
+  billableMinutes,
+  billableMinutesForCall,
+  summariseBilling,
+} from '../worker/lib/billing';
 import { startOfLocalMonth } from '../worker/lib/time';
 
 const JHB = 'Africa/Johannesburg';
@@ -149,3 +155,42 @@ describe('the month boundary billing is measured from', () => {
     expect(augustCall).toBeLessThan(september);
   });
 });
+
+describe('the SQL form of the rounding rule', () => {
+  // The admin console aggregates minutes in SQL; each client's own billing
+  // screen sums them in TypeScript. If the two ever disagree, CTF and the
+  // client are looking at different invoices. SQLite is what D1 runs.
+  // Loaded through Node's own require: Vite's resolver strips the node: prefix
+  // from the newer built-ins and then cannot find a package called "sqlite".
+  const { DatabaseSync } = createRequire(import.meta.url)(
+    'node:sqlite',
+  ) as typeof import('node:sqlite');
+  const db = new DatabaseSync(':memory:');
+  db.exec('CREATE TABLE calls (duration_s)');
+
+  const durations: (number | null)[] = [
+    null, 0, -5, 1, 29, 30, 59, 60, 60.5, 61, 90, 119, 120, 121, 179, 180, 181, 3599, 3600, 3601,
+  ];
+
+  it('rounds each call exactly as the TypeScript does', () => {
+    for (const duration of durations) {
+      db.exec('DELETE FROM calls');
+      db.prepare('INSERT INTO calls (duration_s) VALUES (?)').run(duration);
+      const row = db.prepare(`SELECT ${BILLABLE_MINUTES_SQL} AS minutes FROM calls`).get() as {
+        minutes: number;
+      };
+      expect(row.minutes, `duration ${duration}`).toBe(billableMinutesForCall(duration));
+    }
+  });
+
+  it('sums a month the same way, calls rounded before summing', () => {
+    db.exec('DELETE FROM calls');
+    const insert = db.prepare('INSERT INTO calls (duration_s) VALUES (?)');
+    for (const duration of durations) insert.run(duration);
+    const row = db
+      .prepare(`SELECT COALESCE(SUM(${BILLABLE_MINUTES_SQL}), 0) AS minutes FROM calls`)
+      .get() as { minutes: number };
+    expect(row.minutes).toBe(billableMinutes(durations));
+  });
+});
+

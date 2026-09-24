@@ -22,6 +22,21 @@ export function billableMinutesForCall(durationSeconds: number | null | undefine
   return Math.ceil(durationSeconds / 60);
 }
 
+/**
+ * {@link billableMinutesForCall}, as a SQL expression over a `duration_s`
+ * column, for aggregating many organizations without pulling every call row.
+ *
+ * The same rule written twice is how two screens end up disagreeing about an
+ * invoice, so `tests/billing.test.ts` runs this expression in SQLite against
+ * the TypeScript function over the edge cases and fails if they ever differ.
+ * SQLite has no CEIL before 3.44, so this is the ceiling spelled out: the
+ * whole minutes, plus one if anything is left over. It is exact for fractional
+ * seconds too, where the tempting `(d + 59) / 60` is not.
+ */
+export const BILLABLE_MINUTES_SQL =
+  'CASE WHEN duration_s > 0 THEN CAST(duration_s / 60.0 AS INTEGER)' +
+  ' + (duration_s / 60.0 > CAST(duration_s / 60.0 AS INTEGER)) ELSE 0 END';
+
 /** Sum of {@link billableMinutesForCall} across a month's calls. */
 export function billableMinutes(durations: readonly (number | null | undefined)[]): number {
   let total = 0;

@@ -137,3 +137,41 @@ export function verificationCodeEmail(options: {
     ].join('\n'),
   };
 }
+
+/**
+ * Sent to a CTF admin every time their account signs in. The alert goes to the
+ * inbox rather than the console on purpose: someone who has stolen the account
+ * is the one looking at the console.
+ */
+export function adminSignInEmail(options: {
+  when: string;
+  ip: string | null;
+  userAgent: string | null;
+}): { subject: string; text: string } {
+  return {
+    subject: 'New sign-in to the CTF admin console',
+    text: [
+      'Your Cut Through Faster admin account just signed in.',
+      '',
+      `When: ${options.when}`,
+      `From: ${options.ip ?? 'unknown address'}`,
+      `Browser: ${options.userAgent?.slice(0, 120) ?? 'unknown'}`,
+      '',
+      'If this was not you, change the password and reset the authenticator app',
+      'for this account straight away. This account can suspend every client.',
+    ].join('\n'),
+  };
+}
+
+/**
+ * Tells CTF staff that something happened on a client account. Minimal by
+ * design: which organization and what happened, never who was added or their
+ * address. The detail is in the console for someone signed in to see.
+ */
+export function platformNoticeEmail(summary: string): { subject: string; text: string } {
+  return {
+    subject: `CTF platform: ${summary}`,
+    text: [summary, '', 'Sign in to the CTF admin console for details.'].join('\n'),
+  };
+}
+

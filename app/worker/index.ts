@@ -31,9 +31,16 @@ import {
   hasCurrentConsent,
 } from './routes/signup';
 import {
-  handlePlatformOverview,
-  handlePlatformSetOrgStatus,
+  handleAdminAccountAction,
+  handleAdminAccounts,
+  handleAdminActivity,
+  handleAdminNotices,
+  handleAdminNoticesRead,
+  handleAdminOrgAction,
+  handleAdminOverview,
+  handleAdminStepUp,
 } from './routes/platform';
+import { methodFor } from './lib/twoFactor';
 import {
   handleChangePassword,
   handleLogin,
@@ -83,11 +90,22 @@ const PASSWORD_ROTATION_ALLOWLIST = new Set(['/api/me', '/api/auth/password', '/
  * else — every route that touches call data — is closed. A pending client can
  * sign in and see that they are waiting; they cannot see the product.
  */
-const INACTIVE_ORG_ALLOWLIST = new Set([
+const INACTIVE_ORG_ALLOWLIST = new Set(['/api/me', '/api/auth/logout', '/api/auth/accept-terms']);
+
+/**
+ * All a CTF admin can reach before an authenticator app is enrolled: enough to
+ * sign out, accept the policies, change the password and enrol the app. The
+ * console itself stays shut until the second factor exists.
+ */
+const ADMIN_SETUP_ALLOWLIST = new Set([
   '/api/me',
   '/api/auth/logout',
   '/api/auth/accept-terms',
-  '/api/platform/overview',
+  '/api/auth/password',
+  '/api/auth/2fa',
+  '/api/auth/2fa/totp/start',
+  '/api/auth/2fa/totp/confirm',
+  '/api/auth/2fa/backup-codes',
 ]);
 
 /** Reachable before the current policy versions have been accepted. */
@@ -248,6 +266,23 @@ async function handleApi(
     throw forbidden('Please accept the updated terms and privacy policy to continue.');
   }
 
+  if (isPlatformAdmin) {
+    // An account that can suspend every client does not run on a password
+    // alone. Until an authenticator app is enrolled, only setup is reachable.
+    if (methodFor(auth.user) !== 'totp' && !ADMIN_SETUP_ALLOWLIST.has(path)) {
+      throw forbidden('Set up an authenticator app before using the CTF console.');
+    }
+    // Admins oversee accounts and counts. Browsing a client's calls — or the
+    // empty call list of CTF's own organization — is not part of the console.
+    if (!ADMIN_SETUP_ALLOWLIST.has(path) && !path.startsWith('/api/platform/')) {
+      throw notFound('That endpoint does not exist.');
+    }
+  } else if (auth.org.is_platform === 1 && path !== '/api/me' && path !== '/api/auth/logout') {
+    // A login inside CTF's own organization that is not an admin has no job to
+    // do here, and must not be usable to add more logins to that organization.
+    throw forbidden('This login has no access. CTF accounts are admin accounts only.');
+  }
+
   // Opportunistic cleanup; runs after the response is already on its way.
   if (Math.random() < 0.01) ctx.waitUntil(pruneExpired(env));
 
@@ -283,19 +318,51 @@ async function handleApi(
   }
 
   if (path === '/api/platform/overview' && method === 'GET') {
-    return handlePlatformOverview(request, env, auth);
+    return handleAdminOverview(request, env, auth);
+  }
+  if (path === '/api/platform/accounts' && method === 'GET') {
+    return handleAdminAccounts(env, auth);
+  }
+  if (path === '/api/platform/activity' && method === 'GET') {
+    return handleAdminActivity(request, env, auth);
+  }
+  if (path === '/api/platform/notifications' && method === 'GET') {
+    return handleAdminNotices(env, auth);
+  }
+  if (path === '/api/platform/notifications/read') {
+    if (method !== 'POST') return methodNotAllowed('POST');
+    return handleAdminNoticesRead(env, auth);
+  }
+  if (path === '/api/platform/step-up') {
+    if (method !== 'POST') return methodNotAllowed('POST');
+    // Same budget as a sign-in code, and limited as the admin rather than by
+    // address, so a stolen cookie cannot guess its way to a step-up window.
+    await enforce(
+      env,
+      `step-up:${auth.user.id}`,
+      TWO_FACTOR_RULE,
+      'Too many code attempts. Please wait and try again.',
+    );
+    return handleAdminStepUp(request, env, auth);
   }
 
-  const platformOrgMatch = /^\/api\/platform\/organizations\/([^/]+)$/.exec(path);
-  if (platformOrgMatch) {
-    if (method !== 'PATCH') return methodNotAllowed('PATCH');
-    return handlePlatformSetOrgStatus(
+  const adminOrgMatch = /^\/api\/platform\/organizations\/([^/]+)$/.exec(path);
+  if (adminOrgMatch) {
+    if (method !== 'POST') return methodNotAllowed('POST');
+    return handleAdminOrgAction(request, env, auth, decodeURIComponent(adminOrgMatch[1] as string));
+  }
+
+  const adminAccountMatch = /^\/api\/platform\/accounts\/([^/]+)$/.exec(path);
+  if (adminAccountMatch) {
+    if (method !== 'POST') return methodNotAllowed('POST');
+    return handleAdminAccountAction(
       request,
       env,
       auth,
-      decodeURIComponent(platformOrgMatch[1] as string),
+      decodeURIComponent(adminAccountMatch[1] as string),
     );
   }
+
   if (path === '/api/auth/logout') {
     if (method !== 'POST') return methodNotAllowed('POST');
     return handleLogout(request, env, auth);

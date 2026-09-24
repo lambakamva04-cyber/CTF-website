@@ -4,6 +4,8 @@ import { requiresSecondFactor, startChallenge } from '../lib/twoFactor';
 import { randomToken } from '../lib/crypto';
 import { writeAudit, type OrgRow, type UserRow } from '../lib/db';
 import { clientIp, notFound } from '../lib/http';
+import { isReservedCtfAddress } from '../lib/platform';
+import { isBlockedEmail } from './platform';
 import { createPendingOrganization, parseSignupPayload } from './signup';
 import {
   buildAuthorizeUrl,
@@ -128,6 +130,11 @@ export async function handleGoogleCallback(request: Request, env: Env): Promise<
   // organization. It starts pending; signing up does not grant access.
   const signup = parseSignupPayload(stateRow.signup_payload);
   if (!user && signup) {
+    // A blocked client cannot come back under a new organization, and nobody
+    // can sign up as a client using a CTF address.
+    if (isReservedCtfAddress(identity.email) || (await isBlockedEmail(env, identity.email))) {
+      return redirect('/?auth_error=signup_refused');
+    }
     try {
       const created = await createPendingOrganization(env, request, identity, signup);
       user = created.user;

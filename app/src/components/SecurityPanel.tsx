@@ -12,8 +12,14 @@ type Stage =
   | { kind: 'codes'; codes: string[] }
   | { kind: 'disabling' };
 
-/** The account holder's own security settings. Not an admin screen. */
-export function SecurityPanel() {
+/**
+ * The account holder's own security settings.
+ *
+ * `adminMode` is for CTF admin accounts: only the authenticator app is
+ * offered, and there is no way to turn it off. The server refuses both anyway;
+ * this keeps the screen from offering what it would refuse.
+ */
+export function SecurityPanel({ adminMode = false }: { adminMode?: boolean } = {}) {
   const [status, setStatus] = useState<TwoFactorStatus | null>(null);
   const [stage, setStage] = useState<Stage>({ kind: 'idle' });
   const [code, setCode] = useState('');
@@ -206,9 +212,9 @@ export function SecurityPanel() {
           {!enabled ? (
             <>
               <p className="px-4 py-3 text-sm text-slate leading-relaxed">
-                Two-step verification asks for a code as well as your sign-in. It is the single
-                most useful thing you can switch on here — your dashboard carries your callers'
-                names, numbers and what they said.
+                {adminMode
+                  ? 'This account can suspend and block every client, so it needs an authenticator app before the console opens. Scan the code with Google Authenticator, 1Password, Authy or similar.'
+                  : "Two-step verification asks for a code as well as your sign-in. It is the single most useful thing you can switch on here — your dashboard carries your callers' names, numbers and what they said."}
               </p>
               <button
                 type="button"
@@ -226,6 +232,7 @@ export function SecurityPanel() {
                 </span>
                 <KeyRound className="h-4 w-4 shrink-0" aria-hidden="true" />
               </button>
+              {!adminMode && (
               <button
                 type="button"
                 onClick={() => void enableEmail()}
@@ -241,6 +248,7 @@ export function SecurityPanel() {
                   </span>
                 </span>
               </button>
+              )}
             </>
           ) : (
             <>
@@ -261,16 +269,18 @@ export function SecurityPanel() {
                   Generate new
                 </button>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setCode('');
-                  setStage({ kind: 'disabling' });
-                }}
-                className="w-full px-4 py-3 text-left text-sm hover:bg-cream transition"
-              >
-                Turn two-step verification off
-              </button>
+              {!adminMode && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCode('');
+                    setStage({ kind: 'disabling' });
+                  }}
+                  className="w-full px-4 py-3 text-left text-sm hover:bg-cream transition"
+                >
+                  Turn two-step verification off
+                </button>
+              )}
             </>
           )}
         </div>

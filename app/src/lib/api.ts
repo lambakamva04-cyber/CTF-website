@@ -1,4 +1,10 @@
 import type {
+  AccountAction,
+  AdminAccountsResponse,
+  AdminActivityResponse,
+  AdminNoticesResponse,
+  AdminOverview,
+  AdminPeriod,
   ApiErrorBody,
   AuthMethodsResponse,
   BackupCodesResponse,
@@ -9,10 +15,10 @@ import type {
   LoginResponse,
   MeResponse,
   MetricsResponse,
-  OrgStatus,
+  OrgAction,
   Period,
-  PlatformOverview,
   SignupStartResponse,
+  StepUpResponse,
   TakeoverResponse,
   TeamMember,
   TeamResponse,
@@ -97,13 +103,38 @@ export const api = {
 
   acceptTerms: () => request<void>('/api/auth/accept-terms', { method: 'POST' }),
 
-  platformOverview: (period: string, signal?: AbortSignal) =>
-    request<PlatformOverview>(`/api/platform/overview?period=${period}`, { signal }),
+  // --- CTF admin console --------------------------------------------------
+  adminOverview: (period: AdminPeriod, signal?: AbortSignal) =>
+    request<AdminOverview>(`/api/platform/overview?period=${period}`, { signal }),
 
-  setOrgStatus: (orgId: string, status: OrgStatus) =>
+  adminAccounts: (signal?: AbortSignal) =>
+    request<AdminAccountsResponse>('/api/platform/accounts', { signal }),
+
+  adminActivity: (before: number | null, signal?: AbortSignal) =>
+    request<AdminActivityResponse>(
+      before ? `/api/platform/activity?before=${before}` : '/api/platform/activity',
+      { signal },
+    ),
+
+  adminNotices: (signal?: AbortSignal) =>
+    request<AdminNoticesResponse>('/api/platform/notifications', { signal }),
+
+  markAdminNoticesRead: () =>
+    request<void>('/api/platform/notifications/read', { method: 'POST' }),
+
+  adminStepUp: (code: string) =>
+    request<StepUpResponse>('/api/platform/step-up', { method: 'POST', body: { code } }),
+
+  adminOrgAction: (orgId: string, action: OrgAction, reason: string) =>
     request<void>(`/api/platform/organizations/${encodeURIComponent(orgId)}`, {
-      method: 'PATCH',
-      body: { status },
+      method: 'POST',
+      body: { action, reason },
+    }),
+
+  adminAccountAction: (userId: string, action: AccountAction, reason: string) =>
+    request<void>(`/api/platform/accounts/${encodeURIComponent(userId)}`, {
+      method: 'POST',
+      body: { action, reason },
     }),
 
   team: (signal?: AbortSignal) => request<TeamResponse>('/api/users', { signal }),

@@ -9,6 +9,7 @@ import {
 import type { Env } from '../env';
 import { newId, randomToken } from '../lib/crypto';
 import { UNUSABLE_PASSWORD_HASH, writeAudit, type OrgRow, type UserRow } from '../lib/db';
+import { recordPlatformNotice } from '../lib/notices';
 import { badRequest, clientIp, json, notFound, readJson } from '../lib/http';
 import { buildAuthorizeUrl, googleConfigured, redirectUriFor } from '../lib/google';
 import { enforce, SIGNUP_RULE } from '../lib/rateLimit';
@@ -160,6 +161,12 @@ export async function createPendingOrganization(
     target: orgId,
     detail: `${payload.orgName} (${identity.email}) — pending approval`,
     ip: clientIp(request),
+  });
+
+  await recordPlatformNotice(env, {
+    kind: 'org_signup',
+    orgId,
+    summary: `${payload.orgName} signed up and is waiting for approval`,
   });
 
   const org = await env.DB.prepare('SELECT * FROM organizations WHERE id = ?')

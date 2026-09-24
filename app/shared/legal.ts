@@ -12,8 +12,8 @@
 // the country, and callers are not users of this platform and have agreed to
 // nothing at all.
 
-export const TERMS_VERSION = '2026-08-12';
-export const PRIVACY_VERSION = '2026-08-11';
+export const TERMS_VERSION = '2026-09-24';
+export const PRIVACY_VERSION = '2026-09-24';
 export const OPERATOR_VERSION = '2026-08-11';
 
 export type LegalDocumentId = 'terms' | 'privacy' | 'operator';
@@ -147,6 +147,8 @@ export const TERMS: LegalDocument = {
       heading: '7. Suspension',
       body: [
         'We may suspend an account for non-payment, for a breach of these terms, or where continuing would put other clients or callers at risk. Where circumstances allow, we will tell you first.',
+        'We may also disable an individual login on your account for the same reasons. A login we disable stays disabled until we re-enable it.',
+        'For a serious or repeated breach, we may close an account or a login permanently. The email addresses involved may then not be used to sign up again.',
         'Suspension withdraws access; it does not delete your data.',
       ],
     },
@@ -236,7 +238,8 @@ export const PRIVACY: LegalDocument = {
       heading: 'What Cut Through Faster can see',
       body: [
         'For billing we look at counts only: calls answered, appointments booked, and call minutes, per organization per month.',
-        'That view does not include caller names, telephone numbers, transcripts, recordings, or the content of any conversation.',
+        'To run and secure the platform we can also see the logins on your account — each person’s name, email address and role, whether the login is active, and when it last signed in — and a record of account activity such as sign-ins and logins being added or changed. We are notified, without names, when your organization adds a login.',
+        'None of that includes caller names, telephone numbers, transcripts, recordings, or the content of any conversation.',
         'If you report a fault that cannot be diagnosed from counts alone, we will ask for your permission before looking at anything more, and the access will be recorded in our audit log.',
       ],
     },

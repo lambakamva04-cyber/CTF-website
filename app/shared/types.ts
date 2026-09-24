@@ -93,43 +93,117 @@ export interface SignupStartResponse {
   authorizeUrl: string;
 }
 
-export interface PlatformOrgSummary {
+// ---------------------------------------------------------------------------
+// CTF admin console. Everything below is reachable only by a ctf_admin with an
+// authenticator app enrolled, and none of it carries caller data: no names,
+// numbers, transcripts or recordings.
+// ---------------------------------------------------------------------------
+
+/** A client organization as the console sees it. Blocked is permanent. */
+export type OrgStanding = 'active' | 'pending' | 'suspended' | 'blocked';
+
+/**
+ * Whether a login can currently use the platform. 'inactive' is a login that is
+ * fine in itself but belongs to an organization that is pending or suspended.
+ */
+export type AccountStanding = 'active' | 'inactive' | 'disabled' | 'blocked';
+
+export interface AdminClient {
   id: string;
   name: string;
   slug: string;
-  status: OrgStatus;
-  plan: string;
-  billingEmail: string | null;
-  signupNote: string | null;
+  standing: OrgStanding;
+  /** Why it was last suspended or blocked, as the admin entered it. */
+  statusReason: string | null;
   createdAt: number;
   activatedAt: number | null;
   logins: number;
+  activeLogins: number;
+  lastSignInAt: number | null;
   calls: number;
   booked: number;
-  escalated: number;
-  missed: number;
-  /** Rounded up per call — a 20-second call is a billable minute. */
-  minutes: number;
+  /** Booked as a percentage of every call taken, missed calls included. */
   bookingRate: number;
-  lastCallAt: number | null;
+  /** Minutes against this client's own plan, each call rounded up. */
+  billing: BillingSummary;
 }
 
-/**
- * Billing figures only. Deliberately carries no caller names, numbers,
- * transcripts or recordings — the privacy policy promises clients as much.
- */
-export interface PlatformOverview {
-  period: 'this-month' | 'last-month' | 'all-time';
-  organizations: PlatformOrgSummary[];
+export type AdminPeriod = 'this-month' | 'last-month';
+
+export interface AdminOverview {
+  period: AdminPeriod;
+  clients: AdminClient[];
   totals: {
-    organizations: number;
-    pending: number;
+    clients: number;
     active: number;
+    pending: number;
+    suspended: number;
+    blocked: number;
     calls: number;
     booked: number;
-    minutes: number;
+    minutesUsed: number;
+    extraMinutes: number;
+    extraCostZar: number;
   };
 }
+
+export interface AdminAccount {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  orgId: string;
+  orgName: string;
+  standing: AccountStanding;
+  /** Set when CTF disabled or blocked this login: why. */
+  holdReason: string | null;
+  lastSignInAt: number | null;
+  createdAt: number;
+}
+
+export interface AdminAccountsResponse {
+  accounts: AdminAccount[];
+  totals: { total: number; active: number; inactive: number };
+}
+
+export interface AdminActivityItem {
+  id: number;
+  at: number;
+  /** A fixed label for the action; never the raw audit detail. */
+  label: string;
+  orgName: string | null;
+  actorName: string | null;
+  /** True when a CTF admin did it. */
+  byCtf: boolean;
+}
+
+export interface AdminActivityResponse {
+  items: AdminActivityItem[];
+  nextCursor: number | null;
+}
+
+export type AdminNoticeKind = 'login_added' | 'org_signup';
+
+export interface AdminNotice {
+  id: number;
+  kind: AdminNoticeKind;
+  summary: string;
+  at: number;
+  read: boolean;
+}
+
+export interface AdminNoticesResponse {
+  unread: number;
+  items: AdminNotice[];
+}
+
+export interface StepUpResponse {
+  /** Destructive console actions are allowed until this time (epoch ms). */
+  steppedUpUntil: number;
+}
+
+export type OrgAction = 'activate' | 'suspend' | 'block';
+export type AccountAction = 'disable' | 'enable' | 'block';
 
 /**
  * What /api/auth/login answers with when the password was right but the account

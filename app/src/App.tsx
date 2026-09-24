@@ -5,6 +5,7 @@ import { BrandShell } from './components/Brand';
 import { DashboardSkeleton } from './components/Skeleton';
 import { api, ApiError } from './lib/api';
 import { AcceptTerms } from './pages/AcceptTerms';
+import { AdminConsole } from './pages/AdminConsole';
 import { ChangePassword } from './pages/ChangePassword';
 import { Dashboard } from './pages/Dashboard';
 import { Legal } from './pages/Legal';
@@ -172,6 +173,18 @@ export default function App() {
               : previous,
           )
         }
+      />
+    );
+  }
+
+  // A CTF admin oversees the platform; they do not get a client's dashboard,
+  // not even their own organization's. The server refuses those routes too.
+  if (session.user.isPlatformAdmin) {
+    return (
+      <AdminConsole
+        session={session}
+        onSignOut={handleSignedOut}
+        onSessionExpired={handleSignedOut}
       />
     );
   }

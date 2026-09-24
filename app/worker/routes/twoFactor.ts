@@ -4,7 +4,7 @@ import type { AuthContext } from '../lib/auth';
 import { createSession, sessionCookie } from '../lib/auth';
 import { writeAudit, type OrgRow, type UserRow } from '../lib/db';
 import { emailConfigured } from '../lib/email';
-import { badRequest, clientIp, json, notFound, readJson, unauthorized } from '../lib/http';
+import { badRequest, clientIp, forbidden, json, notFound, readJson, unauthorized } from '../lib/http';
 import { decryptSecret, encryptSecret, encryptionConfigured } from '../lib/secretbox';
 import { generateSecret, otpauthUri, verifyTotp } from '../lib/totp';
 import { toSessionOrg, toSessionUser } from './auth';
@@ -130,6 +130,11 @@ export async function handleEmailFactorEnable(
   env: Env,
   auth: AuthContext,
 ): Promise<Response> {
+  // A code in an inbox is only as safe as the inbox. The account that can
+  // suspend every client uses an authenticator app, and nothing weaker.
+  if (auth.user.platform_role === 'ctf_admin') {
+    throw forbidden('CTF admin accounts must use an authenticator app.');
+  }
   if (!emailConfigured(env)) {
     throw notFound('Email codes are not available on this deployment yet.');
   }
@@ -166,6 +171,12 @@ export async function handleTwoFactorDisable(
   env: Env,
   auth: AuthContext,
 ): Promise<Response> {
+  // Switching the factor off would re-open the console to a password alone.
+  // A lost phone is recovered with a backup code, or by resetting the factor
+  // in the database, never by turning it off from inside the account.
+  if (auth.user.platform_role === 'ctf_admin') {
+    throw forbidden('Two-factor sign-in cannot be turned off on a CTF admin account.');
+  }
   const method = methodFor(auth.user);
   if (method === 'none') throw badRequest('Two-factor authentication is not switched on.');
 
