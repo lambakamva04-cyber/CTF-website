@@ -309,6 +309,44 @@ Guards worth knowing about:
 - Temporary passwords are shown exactly once, at the moment they are issued.
   They are never stored in readable form and cannot be retrieved afterwards.
 
+## The CTF admin console
+
+A CTF admin gets the console instead of a dashboard. It shows every client
+organization with its calls, bookings, booking rate, minutes against plan and
+overage for this or last month (each in the client's own month), every client
+login with whether it is active, a platform activity feed, and a notice
+whenever a client adds a login. It shows no caller names, numbers, summaries or
+transcripts; the admin API refuses the client routes outright.
+
+What an admin can do:
+
+- **Suspend** an organization: everyone in it is signed out and kept out until
+  it is reactivated. Data is kept. For an unpaid subscription.
+- **Disable** one login: reversible, and the client's owner cannot undo it.
+- **Block** an organization or a login: permanent. Its email addresses go on a
+  blocklist that sign-up, Google sign-in and "add a login" all check.
+
+Suspend, disable and block each need a recorded reason and a fresh code from
+the admin's authenticator app. One code covers five minutes of further actions.
+
+Admin accounts are made in SQL, never in the app, and only inside CTF's own
+organization (the one with `is_platform = 1`). The console refuses to act on
+that organization or on another admin. A client cannot register or add a
+cutthroughfaster.com address, or any Gmail spelling of cutthroughfaster@gmail.com.
+
+```sh
+node scripts/seed.mjs --org "Cut Through Faster" --email hello@cutthroughfaster.com \
+  --name "Cut Through Faster" > ~/ctf-admin.sql
+npx wrangler d1 execute ctf-app --remote --file ~/ctf-admin.sql
+npx wrangler d1 execute ctf-app --remote --command "UPDATE organizations SET is_platform = 1, status = 'active', activated_at = CAST(strftime('%s','now') AS INTEGER) * 1000 WHERE slug = 'cut-through-faster'; UPDATE users SET platform_role = 'ctf_admin' WHERE email = 'hello@cutthroughfaster.com' AND org_id = (SELECT id FROM organizations WHERE slug = 'cut-through-faster');"
+```
+
+On first sign-in the admin accepts the terms and replaces the temporary
+password. The console does not open until an authenticator app is enrolled, and
+an admin cannot switch it off or fall back to email codes. Admin sessions end
+after 30 minutes idle or 12 hours in total, and every admin sign-in is emailed
+to all admins when `EMAIL_API_KEY` is set.
+
 ## Security model
 
 - **Sessions** are opaque 256-bit tokens in an `HttpOnly; Secure; SameSite=Lax`
