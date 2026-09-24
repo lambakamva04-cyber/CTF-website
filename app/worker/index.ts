@@ -82,8 +82,17 @@ import { handleVapiWebhook } from './routes/webhook';
 /**
  * Routes a client user must be able to reach even while their password is
  * flagged for rotation — everything else is withheld until they change it.
+ *
+ * Accepting the terms is included because the consent gate withholds the
+ * password change until they are accepted. Without it a new login on a
+ * temporary password can do neither, and never gets in.
  */
-const PASSWORD_ROTATION_ALLOWLIST = new Set(['/api/me', '/api/auth/password', '/api/auth/logout']);
+const PASSWORD_ROTATION_ALLOWLIST = new Set([
+  '/api/me',
+  '/api/auth/password',
+  '/api/auth/logout',
+  '/api/auth/accept-terms',
+]);
 
 /**
  * Reachable while an organization is pending approval or suspended. Everything
