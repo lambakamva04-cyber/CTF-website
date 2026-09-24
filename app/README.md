@@ -334,12 +334,18 @@ organization (the one with `is_platform = 1`). The console refuses to act on
 that organization or on another admin. A client cannot register or add a
 cutthroughfaster.com address, or any Gmail spelling of cutthroughfaster@gmail.com.
 
+On a database with no platform organization yet, that is:
+
 ```sh
 node scripts/seed.mjs --org "Cut Through Faster" --email hello@cutthroughfaster.com \
   --name "Cut Through Faster" > ~/ctf-admin.sql
 npx wrangler d1 execute ctf-app --remote --file ~/ctf-admin.sql
 npx wrangler d1 execute ctf-app --remote --command "UPDATE organizations SET is_platform = 1, status = 'active', activated_at = CAST(strftime('%s','now') AS INTEGER) * 1000 WHERE slug = 'cut-through-faster'; UPDATE users SET platform_role = 'ctf_admin' WHERE email = 'hello@cutthroughfaster.com' AND org_id = (SELECT id FROM organizations WHERE slug = 'cut-through-faster');"
 ```
+
+Where CTF's organization already exists, skip the seed: set `is_platform = 1`
+on it and `platform_role = 'ctf_admin'` on the login, and nothing else. There
+must only ever be one platform organization.
 
 On first sign-in the admin accepts the terms and replaces the temporary
 password. The console does not open until an authenticator app is enrolled, and
