@@ -7,6 +7,7 @@ import type {
   Period,
 } from '../../shared/types';
 import { CallRow } from '../components/CallRow';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { LiveCallPanel } from '../components/LiveCallPanel';
 import { LogoMark } from '../components/Logo';
 import { SecurityPanel } from '../components/SecurityPanel';
@@ -39,6 +40,8 @@ export function Dashboard({ session, onSignOut, onSessionExpired }: Props) {
   const [period, setPeriod] = useState<Period>('today');
   const [filter, setFilter] = useState<Filter>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [confirmingSignOut, setConfirmingSignOut] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const [lastEnded, setLastEnded] = useState<{ name: string; outcome: string | null } | null>(null);
 
   const live = usePoll(api.liveCall, 3000);
@@ -132,6 +135,7 @@ export function Dashboard({ session, onSignOut, onSessionExpired }: Props) {
   };
 
   const handleSignOut = async () => {
+    setSigningOut(true);
     try {
       await api.logout();
     } finally {
@@ -164,7 +168,7 @@ export function Dashboard({ session, onSignOut, onSessionExpired }: Props) {
             <p className="text-sm text-gray-500 truncate">Signed in as {user.name}</p>
             <button
               type="button"
-              onClick={() => void handleSignOut()}
+              onClick={() => setConfirmingSignOut(true)}
               className="text-xs text-gray-400 hover:text-black transition flex items-center gap-1.5 shrink-0"
             >
               <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
@@ -172,6 +176,17 @@ export function Dashboard({ session, onSignOut, onSessionExpired }: Props) {
             </button>
           </div>
         </header>
+
+        {/* The button sits beside the header text, where a stray tap is easy. */}
+        <ConfirmDialog
+          open={confirmingSignOut}
+          title="Sign out?"
+          description="Hope keeps answering your calls while you're signed out. You'll need to sign in again to see them."
+          confirmLabel="Sign out"
+          busy={signingOut}
+          onConfirm={() => void handleSignOut()}
+          onCancel={() => setConfirmingSignOut(false)}
+        />
 
         {connectionError && <Banner tone="warning" onRetry={live.refresh}>{connectionError}</Banner>}
 

@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 interface Props {
   open: boolean;
@@ -80,7 +81,10 @@ export function ConfirmDialog({
 
   if (!open) return null;
 
-  return (
+  // Rendered into <body> so no parent can shrink or clip the fixed backdrop:
+  // `space-y-*` puts a margin on every child but the last, and a margin on a
+  // fixed element with inset-0 pulls its edge in.
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4"
       onMouseDown={(event) => {
@@ -121,6 +125,7 @@ export function ConfirmDialog({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
