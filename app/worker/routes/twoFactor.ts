@@ -8,6 +8,7 @@ import { badRequest, clientIp, forbidden, json, notFound, readJson, unauthorized
 import { decryptSecret, encryptSecret, encryptionConfigured } from '../lib/secretbox';
 import { generateSecret, otpauthUri, verifyTotp } from '../lib/totp';
 import { toSessionOrg, toSessionUser } from './auth';
+import { hasCurrentConsent } from './signup';
 import {
   consumeBackupCode,
   countUnusedBackupCodes,
@@ -318,9 +319,12 @@ export async function handleChallengeVerify(request: Request, env: Env): Promise
     ip: clientIp(request),
   });
 
-  // Consent is re-checked on the very next request by the router's gate, so it
-  // is reported optimistically here rather than queried a second time.
-  const payload: MeResponse = { user: toSessionUser(user), org: toSessionOrg(org) };
+  // Reported truthfully: the app shows the terms screen from this flag, and a
+  // stale `true` after a terms update lands the user on a page of refusals.
+  const payload: MeResponse = {
+    user: { ...toSessionUser(user), termsAccepted: await hasCurrentConsent(env, user.id) },
+    org: toSessionOrg(org),
+  };
   return json(payload, { headers: { 'set-cookie': sessionCookie(token, maxAgeSeconds) } });
 }
 

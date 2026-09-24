@@ -1,5 +1,5 @@
 import { Bell, LogOut, ShieldCheck } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type {
   AccountAction,
   AccountStanding,
@@ -518,7 +518,25 @@ function ActivitySection() {
 function NoticeBell() {
   const notices = usePoll((signal) => api.adminNotices(signal), 60_000);
   const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const unread = notices.data?.unread ?? 0;
+
+  // A dropdown left hanging over the page hides the client cards beneath it.
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
 
   const markRead = async () => {
     await api.markAdminNoticesRead();
@@ -526,7 +544,7 @@ function NoticeBell() {
   };
 
   return (
-    <div className="relative">
+    <div ref={containerRef} className="relative">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}

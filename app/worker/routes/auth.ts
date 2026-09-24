@@ -21,6 +21,7 @@ import { badRequest, clientIp, json, noContent, readJson, unauthorized } from '.
 import { permissionsFor } from '../lib/permissions';
 import { MIN_PASSWORD_LENGTH, passwordRejectionMessage } from '../../shared/password';
 import { requiresSecondFactor, startChallenge } from '../lib/twoFactor';
+import { hasCurrentConsent } from './signup';
 
 
 export function toSessionUser(user: UserRow): SessionUser {
@@ -123,7 +124,12 @@ export async function handleLogin(request: Request, env: Env): Promise<Response>
     ip,
   });
 
-  const payload: MeResponse = { user: toSessionUser(user), org: toSessionOrg(org) };
+  // Reported truthfully: the app shows the terms screen from this flag, and a
+  // stale `true` after a terms update lands the user on a page of refusals.
+  const payload: MeResponse = {
+    user: { ...toSessionUser(user), termsAccepted: await hasCurrentConsent(env, user.id) },
+    org: toSessionOrg(org),
+  };
   return json(payload, { headers: { 'set-cookie': sessionCookie(token, maxAgeSeconds) } });
 }
 

@@ -135,6 +135,12 @@ describe('activity feed', () => {
     }
   });
 
+  it('keeps labels actor-free, because the console prefixes who did it', () => {
+    for (const action of ACTIVITY_ACTIONS) {
+      expect(activityLabel(action)).not.toMatch(/^CTF\b/i);
+    }
+  });
+
   it('shows a login being added, which is what CTF is notified about', () => {
     expect(activityLabel('users.create')).toBe('Added a login');
   });

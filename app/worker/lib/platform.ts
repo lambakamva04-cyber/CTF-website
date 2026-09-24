@@ -111,13 +111,13 @@ export const ACTIVITY_LABELS: Readonly<Record<string, string>> = {
   '2fa.enabled': 'Turned on two-factor sign-in',
   '2fa.disabled': 'Turned off two-factor sign-in',
   '2fa.backup_code_used': 'Used a backup code',
-  'platform.org_active': 'CTF activated the organization',
-  'platform.org_pending': 'CTF returned the organization to pending',
-  'platform.org_suspended': 'CTF suspended the organization',
-  'platform.org_blocked': 'CTF blocked the organization',
-  'platform.user_disabled': 'CTF disabled a login',
-  'platform.user_enabled': 'CTF re-enabled a login',
-  'platform.user_blocked': 'CTF blocked a login',
+  'platform.org_active': 'Activated the organization',
+  'platform.org_pending': 'Returned the organization to pending',
+  'platform.org_suspended': 'Suspended the organization',
+  'platform.org_blocked': 'Blocked the organization',
+  'platform.user_disabled': 'Disabled a login',
+  'platform.user_enabled': 'Re-enabled a login',
+  'platform.user_blocked': 'Blocked a login',
 };
 
 export const ACTIVITY_ACTIONS: readonly string[] = Object.keys(ACTIVITY_LABELS);
