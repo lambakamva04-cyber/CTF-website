@@ -32,7 +32,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <h1 className="font-display text-2xl font-semibold tracking-tight">
             Something went wrong
           </h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-slate">
             The dashboard hit an unexpected error. Reloading usually clears it. Your calls and
             bookings are unaffected.
           </p>

@@ -33,16 +33,23 @@ export function PasswordField({
   autoFocus?: boolean;
 }) {
   const [visible, setVisible] = useState(false);
+  const inputId = useId();
   const listId = useId();
   const result = checkPassword(value);
   const started = value.length > 0;
 
   return (
     <div className="space-y-2">
-      <label className="block space-y-1.5">
-        <span className="text-xs font-medium text-gray-500">{label}</span>
-        <span className="relative block">
+      {/* The label names the input alone. It used to wrap the show/hide button
+          too, which is invalid HTML and let the button's name leak into the
+          field's ("Password Show password"). */}
+      <div className="space-y-1.5">
+        <label htmlFor={inputId} className="block text-xs font-medium text-slate">
+          {label}
+        </label>
+        <div className="relative">
           <input
+            id={inputId}
             // Toggling type rather than rendering two inputs keeps the value,
             // the cursor position and the password manager's binding intact.
             type={visible ? 'text' : 'password'}
@@ -52,7 +59,7 @@ export function PasswordField({
             autoComplete={autoComplete}
             autoFocus={autoFocus}
             aria-describedby={showRequirements ? listId : undefined}
-            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 pr-11 text-sm focus:outline-none focus:border-black"
+            className="w-full border border-field rounded-xl px-4 py-2.5 pr-11 text-sm focus:outline-none focus:border-black"
           />
           <button
             type="button"
@@ -61,7 +68,8 @@ export function PasswordField({
             // hole: it is what lets someone confidently use a long password
             // instead of a short one they can retype blind.
             aria-label={visible ? 'Hide password' : 'Show password'}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition"
+            // p-1 around a 16px icon: a 24px target, the WCAG 2.2 minimum.
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-slate hover:text-black transition"
           >
             {visible ? (
               <EyeOff className="h-4 w-4" aria-hidden="true" />
@@ -69,8 +77,8 @@ export function PasswordField({
               <Eye className="h-4 w-4" aria-hidden="true" />
             )}
           </button>
-        </span>
-      </label>
+        </div>
+      </div>
 
       {showRequirements && (
         <div id={listId} className="space-y-2">

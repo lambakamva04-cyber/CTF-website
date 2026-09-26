@@ -10,7 +10,9 @@
   --color-paper-dim: #efeeea;
   --color-ink: #14161a;
   --color-ink-soft: #4a4e55;
-  --color-ink-faint: #767a80;
+  /* 5.3:1 on paper, 4.9:1 on paper-dim; the grey it replaced was 3.99:1.
+     The same slate as the control platform's. */
+  --color-ink-faint: #63666d;
   --color-line: #dedcd6;
   --color-line-strong: #c9c7bf;
   /* Used only to mean "live": the connected dot and the countdown bar. */

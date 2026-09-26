@@ -80,7 +80,7 @@ export function TextField({
       <span className="text-xs font-medium text-slate">{label}</span>
       <input
         {...props}
-        className="w-full border border-line rounded-lg px-4 py-2.5 text-sm bg-white focus:outline-none focus:border-ink transition"
+        className="w-full border border-field rounded-lg px-4 py-2.5 text-sm bg-white focus:outline-none focus:border-ink transition"
       />
       {hint && <span className="block text-xs text-slate">{hint}</span>}
     </label>

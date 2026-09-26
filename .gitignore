@@ -4,6 +4,10 @@ dist/
 
 # Local secrets — never commit.
 .dev.vars
+.env
+.env.*
+!.env.example
+infra/n8n/backups/
 
 *.log
 .DS_Store

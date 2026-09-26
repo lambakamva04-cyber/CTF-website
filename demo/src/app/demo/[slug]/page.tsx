@@ -105,6 +105,11 @@ export default async function DemoPage({ params }: PageProps) {
           would otherwise ring out, and every one of them lands in your team&rsquo;s inbox with a
           transcript.
         </p>
+        <p className="mt-3 text-[13px] text-ink-faint">
+          <a href="/privacy" className="underline underline-offset-2">
+            Privacy policy
+          </a>
+        </p>
       </footer>
     </main>
   );
