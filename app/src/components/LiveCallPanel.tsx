@@ -21,7 +21,7 @@ interface Props {
 function TranscriptRow({ line }: { line: TranscriptLine }) {
   if (line.speaker === 'system') {
     return (
-      <p className="transcript-line text-xs text-center text-gray-400 italic py-1">— {line.text} —</p>
+      <p className="transcript-line text-xs text-center text-slate italic py-1">— {line.text} —</p>
     );
   }
 
@@ -30,12 +30,12 @@ function TranscriptRow({ line }: { line: TranscriptLine }) {
 
   return (
     <div className={`transcript-line flex flex-col ${isBusinessSide ? 'items-end' : 'items-start'}`}>
-      <span className="text-xs uppercase tracking-wide text-gray-400 mb-0.5 font-medium">
+      <span className="text-xs uppercase tracking-wide text-slate mb-0.5 font-medium">
         {speakerLabel}
       </span>
       <p
         className={`text-sm max-w-xs leading-relaxed ${
-          line.speaker === 'ai' ? 'text-gray-500' : 'text-black font-medium'
+          line.speaker === 'ai' ? 'text-slate' : 'text-black font-medium'
         }`}
       >
         {line.text}
@@ -63,7 +63,6 @@ export function LiveCallPanel({
   const [numberDraft, setNumberDraft] = useState('');
 
   const scrollRef = useRef<HTMLDivElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
 
   const defaultNumber = user.phone ?? org.takeoverNumber ?? '';
   const transferring = call?.status === 'transferring';
@@ -98,7 +97,14 @@ export function LiveCallPanel({
     const distanceFromBottom =
       container.scrollHeight - container.scrollTop - container.clientHeight;
     if (distanceFromBottom < 80) {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      // Scroll the transcript box alone. scrollIntoView would also scroll the
+      // page to it, pulling someone away from whatever else they were reading,
+      // and its explicit 'smooth' ignored a request for reduced motion.
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: reduceMotion ? 'auto' : 'smooth',
+      });
     }
   }, [transcript.length]);
 
@@ -120,11 +126,11 @@ export function LiveCallPanel({
       <section className="border border-gray-200 rounded-2xl p-6 sm:p-8">
         <div className="text-center py-10 space-y-3">
           <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center mx-auto">
-            <Phone className="h-4 w-4 text-gray-400" aria-hidden="true" />
+            <Phone className="h-4 w-4 text-slate" aria-hidden="true" />
           </div>
-          <p className="text-sm font-medium text-gray-500">No active calls</p>
+          <p className="text-sm font-medium text-slate">No active calls</p>
           {lastEnded && (
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-slate">
               Last call with {lastEnded.name}
               {lastEnded.outcome ? ` · ${lastEnded.outcome}` : ''}
             </p>
@@ -136,7 +142,7 @@ export function LiveCallPanel({
             </p>
           )}
           {connectionError && (
-            <p className="text-xs text-gray-400 pt-2">{connectionError}</p>
+            <p className="text-xs text-slate pt-2">{connectionError}</p>
           )}
         </div>
       </section>
@@ -161,7 +167,7 @@ export function LiveCallPanel({
                 {call.callerName ?? call.callerNumber ?? 'Incoming call'}
               </p>
               {call.callerNumber && (
-                <p className="text-sm text-gray-500 font-mono-data">{call.callerNumber}</p>
+                <p className="text-sm text-slate font-mono-data">{call.callerNumber}</p>
               )}
             </div>
           </div>
@@ -169,7 +175,7 @@ export function LiveCallPanel({
             <p className="font-mono-data text-lg font-semibold tabular-nums">
               {formatDuration(elapsed)}
             </p>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-slate">
               {transferring
                 ? 'Transferring to you'
                 : call.status === 'ringing'
@@ -180,7 +186,7 @@ export function LiveCallPanel({
         </div>
 
         {call.intent && (
-          <div className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 border border-gray-200 rounded-full px-2.5 py-1">
+          <div className="inline-flex items-center gap-1.5 text-xs font-medium text-slate border border-gray-200 rounded-full px-2.5 py-1">
             {call.intent}
           </div>
         )}
@@ -192,28 +198,31 @@ export function LiveCallPanel({
           </Banner>
         )}
 
+        {/* role="log": new lines are read out as they arrive, in order, and
+            earlier ones are not repeated. tabIndex so a keyboard can scroll
+            back through a long conversation. */}
         <div
           ref={scrollRef}
           className="bg-gray-50 rounded-xl p-4 max-h-64 overflow-y-auto space-y-3"
-          aria-live="polite"
+          role="log"
           aria-label="Live transcript"
+          tabIndex={0}
         >
           {transcript.length === 0 && (
-            <p className="text-sm text-gray-400 italic">
+            <p className="text-sm text-slate italic">
               {call.status === 'ringing' ? 'Connecting…' : 'Waiting for the first words…'}
             </p>
           )}
           {transcript.map((line) => (
             <TranscriptRow key={line.seq} line={line} />
           ))}
-          <div ref={bottomRef} />
         </div>
 
         {actionError && <Banner tone="error">{actionError}</Banner>}
 
         <div className="space-y-3">
           {!canControl && (
-            <p className="text-xs text-gray-400 text-center">
+            <p className="text-xs text-slate text-center">
               You can follow this call, but only staff with call control can take it over or end
               it.
             </p>
@@ -246,7 +255,7 @@ export function LiveCallPanel({
             </button>
           )}
           {canControl && !call.controllable && !transferring && (
-            <p className="text-xs text-gray-400 text-center">
+            <p className="text-xs text-slate text-center">
               This call can no longer be controlled — it may be wrapping up.
             </p>
           )}
@@ -262,7 +271,7 @@ export function LiveCallPanel({
               The AI will tell the caller you are joining, then ring the number below. Answer your
               phone to speak to the caller.
             </p>
-            <p className="flex items-center gap-1.5 text-gray-400">
+            <p className="flex items-center gap-1.5 text-slate">
               <PhoneForwarded className="h-3.5 w-3.5" aria-hidden="true" />
               The caller stays on the line while it rings.
             </p>
@@ -274,14 +283,14 @@ export function LiveCallPanel({
         onConfirm={() => void runAction(() => onTakeover(numberDraft.trim()), () => setTakeoverOpen(false))}
       >
         <label className="block space-y-1.5">
-          <span className="text-xs font-medium text-gray-500">Number to ring</span>
+          <span className="text-xs font-medium text-slate">Number to ring</span>
           <input
             type="tel"
             value={numberDraft}
             onChange={(event) => setNumberDraft(event.target.value)}
             placeholder="082 555 0134"
             autoComplete="tel"
-            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-mono-data focus:outline-none focus:border-black"
+            className="w-full border border-field rounded-xl px-4 py-2.5 text-sm font-mono-data focus:outline-none focus:border-black"
           />
         </label>
         {!defaultNumber && (

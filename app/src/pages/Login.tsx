@@ -1,5 +1,5 @@
 import { Loader2 } from 'lucide-react';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { MeResponse, TwoFactorChallenge } from '../../shared/types';
 import { isTwoFactorChallenge } from '../../shared/types';
 import { api, ApiError } from '../lib/api';
@@ -53,6 +53,7 @@ export function Login({
   // the button and the divider into existence a moment later — on the screen a
   // client sees most often.
   const [googleEnabled, setGoogleEnabled] = useState<boolean | null>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
 
   // Surface a failed Google round trip, then strip the parameter so a refresh
   // does not show a stale error.
@@ -94,6 +95,10 @@ export function Login({
         caught instanceof ApiError ? caught.message : 'Could not sign you in. Please try again.',
       );
       setPassword('');
+      // Clearing the password disables the button that has focus, which would
+      // drop a keyboard user back to the top of the page. Start them where the
+      // retry begins.
+      passwordRef.current?.focus();
     } finally {
       setSubmitting(false);
     }
@@ -138,7 +143,7 @@ export function Login({
 
             <div className="flex items-center gap-3" aria-hidden="true">
               <span className="h-px flex-1 bg-gray-100" />
-              <span className="text-xs text-gray-400">or</span>
+              <span className="text-xs text-slate">or</span>
               <span className="h-px flex-1 bg-gray-100" />
             </div>
           </>
@@ -146,26 +151,27 @@ export function Login({
 
         <form onSubmit={onSubmit} className="space-y-4" noValidate>
           <label className="block space-y-1.5">
-            <span className="text-xs font-medium text-gray-500">Email address</span>
+            <span className="text-xs font-medium text-slate">Email address</span>
             <input
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               required
               autoComplete="username"
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-black"
+              className="w-full border border-field rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-black"
             />
           </label>
 
           <label className="block space-y-1.5">
-            <span className="text-xs font-medium text-gray-500">Password</span>
+            <span className="text-xs font-medium text-slate">Password</span>
             <input
+              ref={passwordRef}
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
               autoComplete="current-password"
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-black"
+              className="w-full border border-field rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-black"
             />
           </label>
 

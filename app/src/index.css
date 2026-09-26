@@ -15,6 +15,9 @@
   --color-cream: #f7f6f3;
   --color-cream-dim: #ebeae6;
   --color-slate: #63666d;
+  /* Input borders: 3.5:1 on white, 3.2:1 on cream, so a field reads as a field
+     (WCAG 1.4.11 asks 3:1 of the edge that identifies a control). */
+  --color-field: #868a91;
   --color-line: rgba(20, 22, 26, 0.12);
   --color-line-strong: rgba(20, 22, 26, 0.24);
   --color-line-dark: rgba(247, 246, 243, 0.12);
@@ -127,4 +130,10 @@ h3 {
   html {
     scroll-behavior: auto;
   }
+}
+
+/* A heading focused by the app after a screen change is a reading position,
+   not a control; it needs no ring. */
+h1[tabindex='-1']:focus {
+  outline: none;
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { LegalDocumentId } from '../shared/legal';
 import type { MeResponse, TwoFactorChallenge as Challenge } from '../shared/types';
 import { BrandShell } from './components/Brand';
@@ -35,6 +35,25 @@ function currentRoute(): Route {
 function isLegalRoute(route: Route): route is LegalDocumentId {
   return route === 'terms' || route === 'privacy' || route === 'operator';
 }
+
+/** What the browser tab says on each screen. */
+const SCREEN_TITLES = {
+  terms: 'Terms of Service',
+  privacy: 'Privacy Policy',
+  operator: 'Operator Agreement',
+  loading: 'Receptionist Dashboard',
+  unavailable: 'Dashboard unavailable',
+  challenge: 'Two-step verification',
+  signup: 'Set up your dashboard',
+  login: 'Sign in',
+  consent: 'Before you continue',
+  pending: 'Account status',
+  password: 'Choose a new password',
+  admin: 'Admin console',
+  dashboard: 'Receptionist Dashboard',
+} as const;
+
+type Screen = keyof typeof SCREEN_TITLES;
 
 export default function App() {
   const [session, setSession] = useState<MeResponse | null>(null);
@@ -96,6 +115,42 @@ export default function App() {
     setSession(null);
     setStatus('signed-out');
   }, []);
+
+  // Mirrors the branches below, one name per screen.
+  let screen: Screen;
+  if (isLegalRoute(route)) screen = route;
+  else if (status === 'loading') screen = 'loading';
+  else if (status === 'unavailable') screen = 'unavailable';
+  else if (status === 'signed-out' || !session) {
+    screen = challenge ? 'challenge' : route === 'signup' ? 'signup' : 'login';
+  } else if (!session.user.termsAccepted) screen = 'consent';
+  else if (session.org.status !== 'active' && !session.user.isPlatformAdmin) screen = 'pending';
+  else if (session.user.mustChangePassword) screen = 'password';
+  else if (session.user.isPlatformAdmin) screen = 'admin';
+  else screen = 'dashboard';
+
+  // Every screen swap here happens without a page load, so nothing tells a
+  // screen reader that the page changed, and the button that was pressed is
+  // gone — focus falls back to the top of the document. Name the tab after the
+  // new screen and, if focus has been dropped, put it on the new heading.
+  // Screens that place focus themselves (a code field, a first input) keep it.
+  const previousScreen = useRef<Screen | null>(null);
+  useEffect(() => {
+    document.title =
+      screen === 'dashboard' && session
+        ? `${session.org.name} · Receptionist Dashboard`
+        : `${SCREEN_TITLES[screen]} · Cut Through Faster`;
+
+    const previous = previousScreen.current;
+    previousScreen.current = screen;
+    if (previous === null || previous === screen || previous === 'loading') return;
+    if (document.activeElement && document.activeElement !== document.body) return;
+
+    const heading = document.querySelector<HTMLElement>('h1');
+    if (!heading) return;
+    heading.setAttribute('tabindex', '-1');
+    heading.focus();
+  }, [screen, session]);
 
   // The policies are readable without an account — someone deciding whether to
   // sign up needs to read them before they have one.

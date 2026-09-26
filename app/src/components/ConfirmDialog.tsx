@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 interface Props {
@@ -39,17 +39,48 @@ export function ConfirmDialog({
   const panelRef = useRef<HTMLDivElement>(null);
   const confirmRef = useRef<HTMLButtonElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
+  // Generated, so two dialogs on one page never share an id.
+  const titleId = useId();
+  const descriptionId = useId();
+
+  // Read through refs so the effect below runs once per opening. Callers pass
+  // `onCancel` inline, and the dashboard re-renders every few seconds while
+  // it polls; with these as dependencies the effect re-ran on each render and
+  // threw focus back to the confirm button, or out of the dialog altogether.
+  const onCancelRef = useRef(onCancel);
+  const busyRef = useRef(busy);
+  const initialFocusRef = useRef(initialFocus);
+  useEffect(() => {
+    onCancelRef.current = onCancel;
+    busyRef.current = busy;
+    initialFocusRef.current = initialFocus;
+  });
+
+  // Where focus goes back to on close: the control that opened the dialog.
+  // Read during render, on the render that opens it, because a field inside
+  // with autoFocus takes focus during commit — before any effect could see the
+  // opener.
+  const wasOpen = useRef(false);
+  if (open && !wasOpen.current) {
+    previouslyFocused.current = document.activeElement as HTMLElement | null;
+  }
+  wasOpen.current = open;
 
   useEffect(() => {
     if (!open) return;
 
-    previouslyFocused.current = document.activeElement as HTMLElement | null;
-    if (initialFocus === 'confirm') confirmRef.current?.focus();
+    if (initialFocusRef.current === 'confirm') confirmRef.current?.focus();
+
+    // The page behind the dialog is taken out of reach entirely — not
+    // clickable, not focusable, not read out — rather than relying on
+    // aria-modal alone, which some screen readers still ignore.
+    const app = document.getElementById('root');
+    app?.setAttribute('inert', '');
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !busy) {
+      if (event.key === 'Escape' && !busyRef.current) {
         event.preventDefault();
-        onCancel();
+        onCancelRef.current();
         return;
       }
 
@@ -57,7 +88,7 @@ export function ConfirmDialog({
 
       // Keep focus inside the dialog while it is open.
       const focusable = panelRef.current.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
       );
       if (focusable.length === 0) return;
       const first = focusable[0] as HTMLElement;
@@ -75,9 +106,11 @@ export function ConfirmDialog({
     document.addEventListener('keydown', onKeyDown);
     return () => {
       document.removeEventListener('keydown', onKeyDown);
+      // Inert first: an inert element cannot take focus back.
+      app?.removeAttribute('inert');
       previouslyFocused.current?.focus();
     };
-  }, [open, busy, onCancel, initialFocus]);
+  }, [open]);
 
   if (!open) return null;
 
@@ -95,13 +128,16 @@ export function ConfirmDialog({
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="confirm-dialog-title"
+        aria-labelledby={titleId}
+        aria-describedby={descriptionId}
         className="w-full max-w-sm bg-white rounded-2xl p-6 space-y-4 shadow-xl"
       >
-        <h2 id="confirm-dialog-title" className="font-display text-lg font-semibold">
+        <h2 id={titleId} className="font-display text-lg font-semibold">
           {title}
         </h2>
-        <div className="text-sm text-gray-500 space-y-3">{description}</div>
+        <div id={descriptionId} className="text-sm text-slate space-y-3">
+          {description}
+        </div>
         {children}
         <div className="flex gap-2 pt-1">
           <button

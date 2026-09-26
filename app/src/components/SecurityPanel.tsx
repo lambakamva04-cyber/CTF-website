@@ -1,5 +1,5 @@
 import { KeyRound, ShieldCheck, ShieldAlert } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { TwoFactorStatus } from '../../shared/types';
 import { api, ApiError } from '../lib/api';
 import { QrCode } from './QrCode';
@@ -25,6 +25,24 @@ export function SecurityPanel({ adminMode = false }: { adminMode?: boolean } = {
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const codesHeadingRef = useRef<HTMLHeadingElement>(null);
+  const codeInputRef = useRef<HTMLInputElement>(null);
+  const enrolHelpId = useId();
+  const enrolKeyId = useId();
+  const disableHelpId = useId();
+
+  // Each stage replaces the button that led to it, which would drop keyboard
+  // focus to the top of the page. Send it to where the next step begins.
+  const previousStage = useRef(stage.kind);
+  useEffect(() => {
+    if (previousStage.current === stage.kind) return;
+    previousStage.current = stage.kind;
+    if (stage.kind === 'enrolling' || stage.kind === 'disabling') codeInputRef.current?.focus();
+    else if (stage.kind === 'codes') codesHeadingRef.current?.focus();
+    else headingRef.current?.focus();
+  }, [stage.kind]);
 
   const load = useCallback(async () => {
     try {
@@ -92,11 +110,13 @@ export function SecurityPanel({ adminMode = false }: { adminMode?: boolean } = {
   return (
     <section className="space-y-5">
       <div className="flex items-center justify-between gap-4">
-        <h2 className="font-display text-lg font-semibold">Security</h2>
+        <h2 ref={headingRef} tabIndex={-1} className="font-display text-lg font-semibold focus:outline-none">
+          Security
+        </h2>
         {status && (
           <span
             className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border ${
-              enabled ? 'border-black' : 'border-gray-200 text-gray-500'
+              enabled ? 'border-black' : 'border-gray-200 text-slate'
             }`}
           >
             {enabled ? (
@@ -119,9 +139,13 @@ export function SecurityPanel({ adminMode = false }: { adminMode?: boolean } = {
         <TableSkeleton label="Loading your security settings" rows={2} />
       ) : stage.kind === 'codes' ? (
         <div className="border-2 border-ink rounded-xl p-5 space-y-3 bg-cream-dim/40">
-          <p className="text-[0.65rem] tracking-widest uppercase font-semibold">
+          <h3
+            ref={codesHeadingRef}
+            tabIndex={-1}
+            className="text-[0.65rem] tracking-widest uppercase font-semibold focus:outline-none"
+          >
             Save these now — they are not shown again
-          </p>
+          </h3>
           <p className="text-sm text-slate leading-relaxed">
             Each code signs you in once if you lose your phone. There is no other way back into
             your account, so print them or put them somewhere safe before you close this.
@@ -141,25 +165,31 @@ export function SecurityPanel({ adminMode = false }: { adminMode?: boolean } = {
         </div>
       ) : stage.kind === 'enrolling' ? (
         <div className="border border-line rounded-xl p-5 space-y-4">
-          <p className="text-sm text-slate leading-relaxed">
+          <p id={enrolHelpId} className="text-sm text-slate leading-relaxed">
             Scan this with Google Authenticator, 1Password, or any authenticator app, then enter
             the six-digit code it shows.
           </p>
           <div className="flex flex-col sm:flex-row gap-5 items-start">
             <QrCode value={stage.otpauthUri} size={180} />
             <div className="space-y-2 min-w-0">
-              <p className="text-xs text-gray-500">Cannot scan? Enter this key by hand:</p>
-              <p className="font-mono-data text-xs break-all">{stage.secret}</p>
+              <p id={enrolKeyId} className="space-y-2">
+                <span className="block text-xs text-slate">Cannot scan? Enter this key by hand:</span>
+                <span className="block font-mono-data text-xs break-all">{stage.secret}</span>
+              </p>
             </div>
           </div>
           <div className="flex gap-2">
             <input
+              ref={codeInputRef}
               value={code}
               onChange={(event) => setCode(event.target.value)}
+              aria-label="Six-digit code from your app"
+              aria-describedby={`${enrolHelpId} ${enrolKeyId}`}
               inputMode="numeric"
+              autoComplete="one-time-code"
               maxLength={7}
               placeholder="000000"
-              className="border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono-data w-32 focus:outline-none focus:border-black"
+              className="border border-field rounded-lg px-3 py-2 text-sm font-mono-data w-32 focus:outline-none focus:border-black"
             />
             <button
               type="button"
@@ -180,15 +210,19 @@ export function SecurityPanel({ adminMode = false }: { adminMode?: boolean } = {
         </div>
       ) : stage.kind === 'disabling' ? (
         <div className="border border-line rounded-xl p-5 space-y-3">
-          <p className="text-sm text-slate">
+          <p id={disableHelpId} className="text-sm text-slate">
             Enter a current code — or a backup code — to switch two-step verification off.
           </p>
           <div className="flex gap-2">
             <input
+              ref={codeInputRef}
               value={code}
               onChange={(event) => setCode(event.target.value)}
+              aria-label="Current code or backup code"
+              aria-describedby={disableHelpId}
+              autoComplete="one-time-code"
               maxLength={12}
-              className="border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono-data w-40 focus:outline-none focus:border-black"
+              className="border border-field rounded-lg px-3 py-2 text-sm font-mono-data w-40 focus:outline-none focus:border-black"
             />
             <button
               type="button"

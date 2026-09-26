@@ -56,6 +56,7 @@ export function Signup({ onBackToSignIn }: { onBackToSignIn: () => void }) {
             value={orgName}
             onChange={(event) => setOrgName(event.target.value)}
             placeholder="Riverside Dental Studio"
+            autoComplete="organization"
             required
             maxLength={80}
             autoFocus

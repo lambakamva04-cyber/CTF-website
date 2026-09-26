@@ -92,7 +92,7 @@ export function TwoFactorChallenge({
 
         <form onSubmit={submit} className="space-y-4" noValidate>
           <label className="block space-y-1.5">
-            <span className="text-xs font-medium text-gray-500">
+            <span className="text-xs font-medium text-slate">
               {useBackup ? 'Backup code' : 'Six-digit code'}
             </span>
             <input
@@ -106,7 +106,7 @@ export function TwoFactorChallenge({
               autoComplete={useBackup ? 'off' : 'one-time-code'}
               maxLength={useBackup ? 12 : 7}
               required
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-lg font-mono-data tracking-[0.3em] text-center focus:outline-none focus:border-black"
+              className="w-full border border-field rounded-xl px-4 py-3 text-lg font-mono-data tracking-[0.3em] text-center focus:outline-none focus:border-black"
             />
           </label>
 
