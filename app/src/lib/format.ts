@@ -12,6 +12,22 @@ export function formatDuration(totalSeconds: number): string {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
+/**
+ * Rand, always with cents: R1,499.00.
+ *
+ * Grouping is taken from `en-US` rather than `en-ZA` on purpose. The formally
+ * correct South African rendering is "R 1 499,00" — space-grouped, comma
+ * decimal — but CTF quotes its own prices as R1,499 and R7.99, and a dashboard
+ * that disagrees with the contract the client signed reads as a bug. The digits
+ * are what matter here, not the typographic standard.
+ */
+export function formatZar(amount: number): string {
+  return `R${new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount)}`;
+}
+
 export function outcomeLabel(outcome: CallOutcome | null): string {
   switch (outcome) {
     case 'booked':

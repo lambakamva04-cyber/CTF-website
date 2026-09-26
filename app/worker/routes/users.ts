@@ -9,8 +9,11 @@ import type { AuthContext } from '../lib/auth';
 import { newId, pbkdf2Iterations } from '../lib/auth';
 import { hashPassword, randomToken } from '../lib/crypto';
 import { UNUSABLE_PASSWORD_HASH, writeAudit, type UserRow } from '../lib/db';
-import { badRequest, clientIp, conflict, json, notFound, readJson } from '../lib/http';
+import { badRequest, clientIp, conflict, forbidden, json, notFound, readJson } from '../lib/http';
+import { recordPlatformNotice } from '../lib/notices';
 import { requirePermission } from '../lib/permissions';
+import { isReservedCtfAddress } from '../lib/platform';
+import { isBlockedEmail } from './platform';
 
 const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const MAX_MEMBERS_PER_ORG = 50;
@@ -80,6 +83,16 @@ export async function handleCreateTeamMember(
   if (!EMAIL_PATTERN.test(email)) throw badRequest('Enter a valid email address.');
   if (!name) throw badRequest('Enter the person’s name.');
 
+  // A client may not create a login under a CTF address. Otherwise it could
+  // claim hello@cutthroughfaster.com inside its own organization before CTF
+  // does, and a careless grant of admin by email would hand it the console.
+  if (isReservedCtfAddress(email)) {
+    throw badRequest('That address belongs to Cut Through Faster and cannot be used here.');
+  }
+  if (await isBlockedEmail(env, email)) {
+    throw badRequest('That email address cannot be used on this platform.');
+  }
+
   const existing = await env.DB.prepare('SELECT org_id FROM users WHERE email = ?')
     .bind(email)
     .first<{ org_id: string }>();
@@ -142,6 +155,13 @@ export async function handleCreateTeamMember(
     .first<UserRow>();
   if (!created) throw notFound('The login could not be created.');
 
+  // CTF is told that the organization grew, and nothing about who joined it.
+  await recordPlatformNotice(env, {
+    kind: 'login_added',
+    orgId: auth.org.id,
+    summary: `${auth.org.name} added a ${role} login`,
+  });
+
   const payload: CreatedTeamMember = {
     member: toTeamMember(created, auth.user.id),
     temporaryPassword,
@@ -162,6 +182,17 @@ export async function handleUpdateTeamMember(
     .bind(userId, auth.org.id)
     .first<UserRow>();
   if (!target) throw notFound('That login could not be found.');
+
+  // A login CTF has disabled or blocked stays that way until CTF says
+  // otherwise. Letting the client's owner re-enable it, or reset its password,
+  // would make the enforcement a suggestion.
+  if (target.platform_hold) {
+    throw forbidden(
+      target.platform_hold === 'blocked'
+        ? 'Cut Through Faster has closed this login. It cannot be changed.'
+        : 'Cut Through Faster has disabled this login. Please contact CTF.',
+    );
+  }
 
   const body = await readJson<{
     role?: unknown;

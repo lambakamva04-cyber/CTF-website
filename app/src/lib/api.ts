@@ -1,17 +1,31 @@
 import type {
+  AccountAction,
+  AdminAccountsResponse,
+  AdminActivityResponse,
+  AdminNoticesResponse,
+  AdminOverview,
+  AdminPeriod,
   ApiErrorBody,
   AuthMethodsResponse,
+  BackupCodesResponse,
   CallDetail,
   CallsResponse,
   CreatedTeamMember,
   LiveResponse,
+  LoginResponse,
   MeResponse,
   MetricsResponse,
+  OrgAction,
   Period,
+  SignupStartResponse,
+  StepUpResponse,
   TakeoverResponse,
   TeamMember,
   TeamResponse,
+  TotpEnrollment,
   TranscriptResponse,
+  TwoFactorChallenge,
+  TwoFactorStatus,
   UserRole,
 } from '../../shared/types';
 
@@ -81,6 +95,48 @@ export const api = {
   authMethods: (signal?: AbortSignal) =>
     request<AuthMethodsResponse>('/api/auth/methods', { signal }),
 
+  startSignup: (orgName: string, note: string) =>
+    request<SignupStartResponse>('/api/auth/signup/start', {
+      method: 'POST',
+      body: { orgName, note, accept: true },
+    }),
+
+  acceptTerms: () => request<void>('/api/auth/accept-terms', { method: 'POST' }),
+
+  // --- CTF admin console --------------------------------------------------
+  adminOverview: (period: AdminPeriod, signal?: AbortSignal) =>
+    request<AdminOverview>(`/api/platform/overview?period=${period}`, { signal }),
+
+  adminAccounts: (signal?: AbortSignal) =>
+    request<AdminAccountsResponse>('/api/platform/accounts', { signal }),
+
+  adminActivity: (before: number | null, signal?: AbortSignal) =>
+    request<AdminActivityResponse>(
+      before ? `/api/platform/activity?before=${before}` : '/api/platform/activity',
+      { signal },
+    ),
+
+  adminNotices: (signal?: AbortSignal) =>
+    request<AdminNoticesResponse>('/api/platform/notifications', { signal }),
+
+  markAdminNoticesRead: () =>
+    request<void>('/api/platform/notifications/read', { method: 'POST' }),
+
+  adminStepUp: (code: string) =>
+    request<StepUpResponse>('/api/platform/step-up', { method: 'POST', body: { code } }),
+
+  adminOrgAction: (orgId: string, action: OrgAction, reason: string) =>
+    request<void>(`/api/platform/organizations/${encodeURIComponent(orgId)}`, {
+      method: 'POST',
+      body: { action, reason },
+    }),
+
+  adminAccountAction: (userId: string, action: AccountAction, reason: string) =>
+    request<void>(`/api/platform/accounts/${encodeURIComponent(userId)}`, {
+      method: 'POST',
+      body: { action, reason },
+    }),
+
   team: (signal?: AbortSignal) => request<TeamResponse>('/api/users', { signal }),
 
   createTeamMember: (member: {
@@ -108,7 +164,37 @@ export const api = {
     }),
 
   login: (email: string, password: string) =>
-    request<MeResponse>('/api/auth/login', { method: 'POST', body: { email, password } }),
+    request<LoginResponse>('/api/auth/login', { method: 'POST', body: { email, password } }),
+
+  /** Answers a second-factor challenge; a session cookie comes back with it. */
+  verifyTwoFactor: (challengeId: string, input: { code?: string; backupCode?: string }) =>
+    request<MeResponse>('/api/auth/2fa/verify', {
+      method: 'POST',
+      body: { challengeId, ...input },
+    }),
+
+  resendTwoFactorCode: (challengeId: string) =>
+    request<TwoFactorChallenge>('/api/auth/2fa/resend', {
+      method: 'POST',
+      body: { challengeId },
+    }),
+
+  twoFactorStatus: (signal?: AbortSignal) => request<TwoFactorStatus>('/api/auth/2fa', { signal }),
+
+  startTotpEnrollment: () =>
+    request<TotpEnrollment>('/api/auth/2fa/totp/start', { method: 'POST' }),
+
+  confirmTotpEnrollment: (code: string) =>
+    request<BackupCodesResponse>('/api/auth/2fa/totp/confirm', { method: 'POST', body: { code } }),
+
+  enableEmailFactor: () =>
+    request<BackupCodesResponse>('/api/auth/2fa/email/enable', { method: 'POST' }),
+
+  disableTwoFactor: (code: string) =>
+    request<{ ok: true }>('/api/auth/2fa/disable', { method: 'POST', body: { code } }),
+
+  regenerateBackupCodes: () =>
+    request<BackupCodesResponse>('/api/auth/2fa/backup-codes', { method: 'POST' }),
 
   logout: () => request<void>('/api/auth/logout', { method: 'POST' }),
 

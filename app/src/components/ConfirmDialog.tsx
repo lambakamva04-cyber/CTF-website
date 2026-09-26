@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 interface Props {
   open: boolean;
@@ -11,6 +12,11 @@ interface Props {
   onConfirm: () => void;
   onCancel: () => void;
   children?: ReactNode;
+  /**
+   * Where focus lands when the dialog opens. 'children' leaves it to an
+   * autoFocus field inside, for dialogs that ask for a reason or a code.
+   */
+  initialFocus?: 'confirm' | 'children';
 }
 
 /**
@@ -28,6 +34,7 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
   children,
+  initialFocus = 'confirm',
 }: Props) {
   const panelRef = useRef<HTMLDivElement>(null);
   const confirmRef = useRef<HTMLButtonElement>(null);
@@ -37,7 +44,7 @@ export function ConfirmDialog({
     if (!open) return;
 
     previouslyFocused.current = document.activeElement as HTMLElement | null;
-    confirmRef.current?.focus();
+    if (initialFocus === 'confirm') confirmRef.current?.focus();
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !busy) {
@@ -70,11 +77,14 @@ export function ConfirmDialog({
       document.removeEventListener('keydown', onKeyDown);
       previouslyFocused.current?.focus();
     };
-  }, [open, busy, onCancel]);
+  }, [open, busy, onCancel, initialFocus]);
 
   if (!open) return null;
 
-  return (
+  // Rendered into <body> so no parent can shrink or clip the fixed backdrop:
+  // `space-y-*` puts a margin on every child but the last, and a margin on a
+  // fixed element with inset-0 pulls its edge in.
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4"
       onMouseDown={(event) => {
@@ -115,6 +125,7 @@ export function ConfirmDialog({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

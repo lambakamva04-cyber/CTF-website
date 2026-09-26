@@ -1,0 +1,80 @@
+@import 'tailwindcss';
+
+/*
+ * Brand tokens, carried over from the marketing site so a prospect who clicks
+ * through from cutthroughfaster.com lands somewhere recognisable. Ink on cream,
+ * one signal colour, no gradients.
+ */
+@theme {
+  --color-paper: #f7f6f3;
+  --color-paper-dim: #efeeea;
+  --color-ink: #14161a;
+  --color-ink-soft: #4a4e55;
+  --color-ink-faint: #767a80;
+  --color-line: #dedcd6;
+  --color-line-strong: #c9c7bf;
+  /* Used only to mean "live": the connected dot and the countdown bar. */
+  --color-signal: #0b7a4b;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-space-grotesk), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2 {
+    font-family: var(--font-display);
+    letter-spacing: -0.025em;
+  }
+
+  /* Nothing on this page animates for its own sake. The two that do — the live
+     dot and the connecting spinner — carry state, so they stop when the
+     viewer has asked for less motion. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@keyframes ctf-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.86);
+  }
+}
+
+@keyframes ctf-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ctf-pulse {
+  animation: ctf-pulse 1.6s ease-in-out infinite;
+}
+
+.ctf-spin {
+  animation: ctf-spin 0.7s linear infinite;
+}

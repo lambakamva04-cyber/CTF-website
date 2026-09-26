@@ -1,0 +1,43 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ctf-demo",
+
+  // Built by `opennextjs-cloudflare build`, which compiles the Next server into
+  // a Worker and emits the static assets beside it. Neither path is committed.
+  "main": ".open-next/worker.js",
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+
+  "compatibility_date": "2026-09-01",
+  // Required by the adapter: the Next server expects Node built-ins.
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Also serve on ctf-demo.<account>.workers.dev, so there is a working URL
+  // before DNS is attached.
+  "workers_dev": true,
+
+  // The address that goes in the cold email. Wrangler creates the DNS record
+  // and certificate on deploy, because cutthroughfaster.com is already a zone
+  // in this Cloudflare account.
+  //
+  // This is a NEW, separately named Worker. It has nothing to do with the
+  // `ctf-website` or `throbbing-disk-fd8d` builds wired to the marketing site,
+  // and deploying it does not touch them.
+  "routes": [
+    {
+      "pattern": "demo.cutthroughfaster.com",
+      "custom_domain": true
+    }
+  ],
+
+  "observability": { "enabled": true }
+
+  // Secrets — set with `wrangler secret put <NAME>`, never in this file:
+  //   SUPABASE_URL
+  //   SUPABASE_SERVICE_ROLE_KEY   bypasses RLS; server-side only
+  //   VAPI_PUBLIC_KEY
+  //   VAPI_ASSISTANT_ID
+  //   BOOKING_URL
+}

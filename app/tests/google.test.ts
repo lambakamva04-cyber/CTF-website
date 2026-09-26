@@ -54,12 +54,31 @@ describe('configuration', () => {
     expect(googleConfigured({ GOOGLE_CLIENT_ID: 'x', GOOGLE_CLIENT_SECRET: 'y' } as Env)).toBe(true);
   });
 
-  it('derives the callback from the request origin so both hostnames work', () => {
+  it('derives the callback host from the request so both hostnames work', () => {
     expect(redirectUriFor(new URL('https://app.cutthroughfaster.com/api/auth/google/start'))).toBe(
       'https://app.cutthroughfaster.com/api/auth/google/callback',
     );
     expect(redirectUriFor(new URL('https://ctf-app.workers.dev/anything'))).toBe(
       'https://ctf-app.workers.dev/api/auth/google/callback',
+    );
+  });
+
+  it('never builds an http callback, however the request arrived', () => {
+    // Typing "app.cutthroughfaster.com" into a browser tries http first. An
+    // origin-derived callback then becomes http, and Google refuses the whole
+    // sign-in: http redirect URIs cannot be registered for a web client, so
+    // there is no console setting that would make it work.
+    expect(redirectUriFor(new URL('http://app.cutthroughfaster.com/api/auth/google/start'))).toBe(
+      'https://app.cutthroughfaster.com/api/auth/google/callback',
+    );
+  });
+
+  it('leaves a local dev server on http, where Google does allow it', () => {
+    expect(redirectUriFor(new URL('http://localhost:8787/api/auth/google/start'))).toBe(
+      'http://localhost:8787/api/auth/google/callback',
+    );
+    expect(redirectUriFor(new URL('http://127.0.0.1:8787/x'))).toBe(
+      'http://127.0.0.1:8787/api/auth/google/callback',
     );
   });
 

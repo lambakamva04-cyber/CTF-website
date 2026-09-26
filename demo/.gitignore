@@ -1,0 +1,17 @@
+node_modules/
+.next/
+out/
+next-env.d.ts
+tsconfig.tsbuildinfo
+
+# Local secrets — never commit. SUPABASE_SERVICE_ROLE_KEY lives here.
+.env.local
+.env*.local
+
+
+# OpenNext build output for the Cloudflare Worker.
+.open-next/
+cloudflare-env.d.ts
+
+# Local secrets for `wrangler dev`. Never commit.
+.dev.vars

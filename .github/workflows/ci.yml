@@ -39,3 +39,60 @@ jobs:
         env:
           WRANGLER_SEND_METRICS: 'false'
           CLOUDFLARE_API_TOKEN: ''
+
+  demo-pages:
+    name: Demo pages (typecheck, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: demo
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: demo/package-lock.json
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # No secrets here on purpose: every environment variable is read per
+      # request, so a build that needs Supabase credentials would be a bug.
+      - name: Build (Next)
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+
+      # The deployable artefact. A green `next build` says nothing about
+      # whether the OpenNext adapter can still turn it into a Worker, and that
+      # is the thing that actually ships.
+      - name: Build (Cloudflare Worker)
+        run: npm run build:worker
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+
+  demo-heartbeat:
+    name: Demo heartbeat (typecheck)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: demo/heartbeat
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: demo/heartbeat/package-lock.json
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck

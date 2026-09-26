@@ -1,0 +1,23 @@
+# Workers config for the CTF marketing site (www + apex).
+#
+# This exists because the repo-root wrangler.toml is a *Pages* config
+# (`pages_build_output_dir`), so any `wrangler deploy` run from the root fails
+# with "you've run a Workers-specific command in a Pages project". Always
+# deploy this site with:
+#
+#   npx wrangler deploy --config ctf-website/wrangler.toml
+#
+# The Worker name is the auto-generated one it was first created with. Renaming
+# it would create a NEW Worker and leave www.cutthroughfaster.com pointing at
+# the old one, so it stays as is.
+name = "throbbing-disk-fd8d"
+compatibility_date = "2026-09-01"
+
+# Static site: no entrypoint, assets served straight from the edge.
+[assets]
+directory = "./public"
+
+# Routes and custom domains (www.cutthroughfaster.com, cutthroughfaster.com)
+# are deliberately NOT declared here. They are already attached to the Worker,
+# and leaving them out means a deploy publishes new assets without touching
+# live routing.
