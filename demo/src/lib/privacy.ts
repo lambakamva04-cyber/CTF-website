@@ -44,6 +44,11 @@ export const DEMO_SUB_PROCESSORS: SubProcessor[] = [
     role: 'Runs the conversation with Hope and keeps its recording and transcript, using speech-recognition, AI language-model and voice providers to understand and answer you.',
     location: 'United States',
   },
+  {
+    name: 'Resend',
+    role: 'Emails us each callback request sent from our website, so we can call you back.',
+    location: 'United States',
+  },
 ];
 
 export const DEMO_PRIVACY: {
@@ -96,6 +101,7 @@ export const DEMO_PRIVACY: {
       heading: 'Callback requests from our website',
       body: [
         'If you ask us to call you back using the form on cutthroughfaster.com, we keep what you enter — your name, type of business, phone number and message — with the time you sent it, the kind of browser you used, and a scrambled version of your IP address made the same way as above, which we use to stop the form being flooded.',
+        'What you enter is also emailed to us, so we see it straight away. The scrambled IP address and browser type are not.',
       ],
     },
     {
@@ -121,7 +127,7 @@ export const DEMO_PRIVACY: {
     {
       heading: 'Sending information outside South Africa',
       body: [
-        'The records are stored in Ireland and the conversation is handled in the United States, so this information leaves South Africa.',
+        'The records are stored in Ireland, and the conversation and callback emails are handled in the United States, so this information leaves South Africa.',
         'Section 72 of POPIA allows this where the recipient is bound by protections substantially similar to those POPIA sets. We rely on each provider’s data processing terms for that.',
       ],
     },

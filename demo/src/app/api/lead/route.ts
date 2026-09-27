@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 
 import { hashCallerIp } from '@/lib/caller';
-import { leadLimitReached, saveLead } from '@/lib/leads';
+import { leadLimitReached, saveLead, type LeadInput } from '@/lib/leads';
+import { emailNewLead } from '@/lib/notify';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,7 +70,7 @@ export async function OPTIONS(request: Request) {
  * POST /api/lead
  *
  * A callback request from the marketing site's contact form, saved to the
- * `leads` table. Unauthenticated by necessity, so:
+ * `leads` table and emailed to LEAD_NOTIFY_TO. Unauthenticated by necessity, so:
  *
  * - Only JSON is accepted. That forces a browser on any other site through a
  *   CORS preflight this route refuses, so a stranger's page cannot post a lead
@@ -109,23 +110,35 @@ export async function POST(request: Request) {
     return reply(request, { error: 'invalid_fields', fields: invalid }, 400);
   }
 
+  let lead: LeadInput;
   try {
     const ipHash = await hashCallerIp(request);
     if (await leadLimitReached(ipHash)) {
       return reply(request, { error: 'too_many_requests' }, 429);
     }
 
-    await saveLead({
+    lead = {
       name,
       phone,
       businessType: text(body.business_type, LIMITS.businessType),
       message: text(body.message, LIMITS.message),
       ipHash,
       userAgent: text(request.headers.get('user-agent'), LIMITS.userAgent),
-    });
+    };
+    await saveLead(lead);
   } catch (error) {
     console.error('lead not saved', error);
     return reply(request, { error: 'not_saved' }, 500);
+  }
+
+  // The request is saved by now, so a failed email must not turn into an
+  // error on the form: the visitor would try again and be saved twice. It is
+  // logged, and the request waits in `leads` either way.
+  try {
+    const sent = await emailNewLead(lead, new Date());
+    if (!sent) console.warn('lead saved; no email sent because EMAIL_API_KEY is not set');
+  } catch (error) {
+    console.error('lead saved; email failed', error);
   }
 
   return reply(request, { ok: true });
