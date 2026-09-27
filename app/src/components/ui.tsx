@@ -18,7 +18,7 @@ export function StatCard({ label, value }: { label: string; value: string | numb
   return (
     <div className="border border-gray-200 rounded-2xl p-4 sm:p-5 text-center">
       <p className="font-display text-xl sm:text-2xl font-semibold tabular-nums">{value}</p>
-      <p className="text-xs text-gray-400 mt-1">{label}</p>
+      <p className="text-xs text-slate mt-1">{label}</p>
     </div>
   );
 }
@@ -59,7 +59,7 @@ export function MinuteMeter({ used, plan }: { used: number; plan: number }) {
           />
         )}
       </div>
-      <div className="mt-2 flex justify-between text-xs text-gray-400 tabular-nums">
+      <div className="mt-2 flex justify-between text-xs text-slate tabular-nums">
         <span>
           {safeUsed} of {safePlan} min
         </span>
@@ -82,17 +82,18 @@ export function SegmentedControl<T extends string>({
   options,
   ariaLabel,
 }: SegmentedControlProps<T>) {
+  // A set of toggle buttons rather than tabs: each option filters what is
+  // already on the page, and there is no panel for a tab to control.
   return (
-    <div role="tablist" aria-label={ariaLabel} className="inline-flex items-center bg-gray-50 rounded-full p-1 text-xs">
+    <div role="group" aria-label={ariaLabel} className="inline-flex items-center bg-gray-50 rounded-full p-1 text-xs">
       {options.map((option) => (
         <button
           key={option.value}
           type="button"
-          role="tab"
-          aria-selected={value === option.value}
+          aria-pressed={value === option.value}
           onClick={() => onChange(option.value)}
           className={`px-3 py-1.5 rounded-full transition font-medium ${
-            value === option.value ? 'bg-black text-white' : 'text-gray-500 hover:text-black'
+            value === option.value ? 'bg-black text-white' : 'text-slate hover:text-black'
           }`}
         >
           {option.label}
@@ -149,7 +150,7 @@ export function Banner({
  */
 export function Spinner({ label = 'Loading' }: { label?: string }) {
   return (
-    <div role="status" className="flex items-center justify-center gap-2 py-8 text-gray-400">
+    <div role="status" className="flex items-center justify-center gap-2 py-8 text-slate">
       <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
       <span className="text-sm">{label}</span>
     </div>

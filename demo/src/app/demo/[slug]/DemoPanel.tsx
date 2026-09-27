@@ -27,6 +27,12 @@ export default function DemoPanel({ prospect, bookingUrl, vapiPublicKey, vapiAss
   const [phase, setPhase] = useState<Phase>(prospect.expired ? 'expired' : 'ready');
   const [remaining, setRemaining] = useState(DEMO_MAX_SECONDS);
   const [lastDuration, setLastDuration] = useState<number | null>(null);
+  // Read out by a screen reader. Kept to what a sighted person would notice
+  // without being told: the connection starting and the time running short.
+  const [announcement, setAnnouncement] = useState('');
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const previousPhaseRef = useRef<Phase>(phase);
+  const warnedRef = useRef<Set<number>>(new Set());
 
   const vapiRef = useRef<Vapi | null>(null);
   const loaderRef = useRef<Promise<Vapi> | null>(null);
@@ -211,6 +217,36 @@ export default function DemoPanel({ prospect, bookingUrl, vapiPublicKey, vapiAss
     return () => window.removeEventListener('pagehide', onPageHide);
   }, [finishCall, phase]);
 
+  // ---- accessibility -------------------------------------------------------
+  // Each phase replaces the panel before it, taking the button that had focus
+  // with it. Put focus on the new panel's heading so a keyboard or screen
+  // reader user starts there instead of back at the top of the page.
+  useEffect(() => {
+    const previous = previousPhaseRef.current;
+    previousPhaseRef.current = phase;
+    if (previous === phase) return;
+    if (phase === 'connecting') {
+      setAnnouncement('Connecting to Hope…');
+      return;
+    }
+    setAnnouncement('');
+    headingRef.current?.focus();
+  }, [phase]);
+
+  // The countdown is not read out every second; these two marks are.
+  useEffect(() => {
+    if (phase !== 'live') {
+      warnedRef.current.clear();
+      return;
+    }
+    for (const mark of [60, 15]) {
+      if (remaining <= mark && !warnedRef.current.has(mark)) {
+        warnedRef.current.add(mark);
+        setAnnouncement(mark === 60 ? 'One minute left.' : 'Fifteen seconds left.');
+      }
+    }
+  }, [phase, remaining]);
+
   // ---- starting ------------------------------------------------------------
   const handleStart = useCallback(async () => {
     if (phase === 'connecting' || phase === 'live' || phase === 'expired') return;
@@ -266,7 +302,11 @@ export default function DemoPanel({ prospect, bookingUrl, vapiPublicKey, vapiAss
   const progress = Math.max(0, Math.min(1, remaining / DEMO_MAX_SECONDS));
 
   return (
-    <section className="mt-7" aria-live="polite">
+    <section className="mt-7">
+      <p role="status" className="sr-only">
+        {announcement}
+      </p>
+
       {(phase === 'ready' || phase === 'connecting') && (
         <>
           <button
@@ -290,16 +330,30 @@ export default function DemoPanel({ prospect, bookingUrl, vapiPublicKey, vapiAss
           <p className="mt-3 text-center text-[13px] text-ink-faint">
             Uses your phone&rsquo;s microphone. Three minutes, one conversation, nothing to install.
           </p>
+          {/* Said before the tap, because the recording starts with it. */}
+          <p className="mt-1 text-center text-[13px] text-ink-faint">
+            Hope is an AI, and the conversation is recorded and transcribed.{' '}
+            <a href="/privacy" className="font-medium underline underline-offset-2">
+              How we handle it
+            </a>
+          </p>
         </>
       )}
 
       {phase === 'live' && (
         <div className="rounded-xl border border-ink bg-white p-5">
           <div className="flex items-center justify-between">
-            <p className="flex items-center gap-2.5 text-[15px] font-semibold">
-              <span className="ctf-pulse inline-block h-2.5 w-2.5 rounded-full bg-signal" />
+            <h2
+              ref={headingRef}
+              tabIndex={-1}
+              className="flex items-center gap-2.5 font-sans text-[15px] font-semibold tracking-normal focus:outline-none"
+            >
+              <span
+                className="ctf-pulse inline-block h-2.5 w-2.5 rounded-full bg-signal"
+                aria-hidden="true"
+              />
               Hope is on the line
-            </p>
+            </h2>
             <p className="font-mono text-[15px] tabular-nums text-ink-soft">
               {formatCountdown(remaining)}
             </p>
@@ -312,6 +366,7 @@ export default function DemoPanel({ prospect, bookingUrl, vapiPublicKey, vapiAss
             aria-valuemin={0}
             aria-valuemax={DEMO_MAX_SECONDS}
             aria-valuenow={Math.ceil(remaining)}
+            aria-valuetext={describeRemaining(remaining)}
           >
             <div
               className="h-full rounded-full bg-signal transition-[width] duration-200 ease-linear"
@@ -336,7 +391,9 @@ export default function DemoPanel({ prospect, bookingUrl, vapiPublicKey, vapiAss
 
       {phase === 'ended' && (
         <div className="rounded-xl border border-line bg-white p-5">
-          <h2 className="text-xl font-semibold">That was Hope.</h2>
+          <h2 ref={headingRef} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
+            That was Hope.
+          </h2>
           <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
             {lastDuration !== null ? `${formatCountdown(lastDuration)} on the line. ` : ''}
             She was primed with nothing but your practice name, your services and your hours. Live,
@@ -352,7 +409,9 @@ export default function DemoPanel({ prospect, bookingUrl, vapiPublicKey, vapiAss
 
       {phase === 'expired' && (
         <div className="rounded-xl border border-line bg-white p-5">
-          <h2 className="text-xl font-semibold">You&rsquo;ve already spoken to Hope.</h2>
+          <h2 ref={headingRef} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
+            You&rsquo;ve already spoken to Hope.
+          </h2>
           <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
             This link runs one live conversation, and it has had its turn. The next step is a real
             one: fifteen minutes with us, with Hope connected to your actual diary and answering
@@ -364,10 +423,12 @@ export default function DemoPanel({ prospect, bookingUrl, vapiPublicKey, vapiAss
 
       {phase === 'mic_denied' && (
         <div className="rounded-xl border border-line bg-white p-5">
-          <h2 className="text-xl font-semibold">Your browser is blocking the microphone.</h2>
+          <h2 ref={headingRef} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
+            Your browser is blocking the microphone.
+          </h2>
           <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
-            Hope has to hear you to answer. Nothing is recorded to your device, and the microphone
-            switches off the moment the call ends.
+            Hope has to hear you to answer. The microphone is used only during the call, and
+            switches off the moment it ends.
           </p>
           <ul className="mt-4 space-y-2 text-[14px] leading-relaxed text-ink-soft">
             <li>
@@ -399,7 +460,9 @@ export default function DemoPanel({ prospect, bookingUrl, vapiPublicKey, vapiAss
 
       {phase === 'failed' && (
         <div className="rounded-xl border border-line bg-white p-5">
-          <h2 className="text-xl font-semibold">Hope couldn&rsquo;t connect.</h2>
+          <h2 ref={headingRef} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
+            Hope couldn&rsquo;t connect.
+          </h2>
           <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
             That one is on us, not on you — a weak connection or a dropped line on our side. Your
             demo has not been used up.
@@ -455,6 +518,7 @@ function BookingLink({ href }: { href: string }) {
       className="mt-5 flex w-full items-center justify-center rounded-xl bg-ink px-6 py-4 text-[16px] font-semibold text-paper transition-opacity hover:opacity-90"
     >
       Book a 15-minute call
+      <span className="sr-only"> (opens in a new tab)</span>
     </a>
   );
 }
@@ -463,8 +527,20 @@ function BookingTextLink({ href }: { href: string }) {
   return (
     <a href={href} target="_blank" rel="noopener noreferrer" className="font-medium underline">
       book a 15-minute call instead
+      <span className="sr-only"> (opens in a new tab)</span>
     </a>
   );
+}
+
+/** "2 minutes 30 seconds left", for the progress bar's spoken value. */
+function describeRemaining(secondsRemaining: number): string {
+  const whole = Math.max(0, Math.ceil(secondsRemaining));
+  const minutes = Math.floor(whole / 60);
+  const seconds = whole % 60;
+  const parts: string[] = [];
+  if (minutes) parts.push(`${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`);
+  if (seconds || !minutes) parts.push(`${seconds} ${seconds === 1 ? 'second' : 'seconds'}`);
+  return `${parts.join(' ')} left`;
 }
 
 function MicIcon() {

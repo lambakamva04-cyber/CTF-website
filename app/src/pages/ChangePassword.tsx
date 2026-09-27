@@ -38,12 +38,12 @@ export function ChangePassword({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="min-h-screen bg-white text-black font-body flex items-center justify-center px-6 py-12">
-      <div className="w-full max-w-sm space-y-8">
+      <main className="w-full max-w-sm space-y-8">
         <div className="space-y-2">
           <h1 className="font-display text-2xl font-semibold tracking-tight">
             Choose a new password
           </h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-slate">
             Set your own password before you carry on. Signing in elsewhere will need the new one.
           </p>
         </div>
@@ -68,7 +68,11 @@ export function ChangePassword({ onDone }: { onDone: () => void }) {
             showRequirements={false}
           />
 
-          {mismatch && <p className="text-xs text-red-600">Those two passwords do not match.</p>}
+          {mismatch && (
+            <p role="alert" className="text-xs text-red-600">
+              Those two passwords do not match.
+            </p>
+          )}
 
           <button
             type="submit"
@@ -78,7 +82,7 @@ export function ChangePassword({ onDone }: { onDone: () => void }) {
             {submitting ? 'Saving…' : 'Save password'}
           </button>
         </form>
-      </div>
+      </main>
     </div>
   );
 }

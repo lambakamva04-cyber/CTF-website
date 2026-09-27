@@ -1,5 +1,5 @@
 import { Bell, LogOut, ShieldCheck } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import type {
   AccountAction,
   AccountStanding,
@@ -78,11 +78,11 @@ export function AdminConsole({ session, onSignOut, onSessionExpired }: Props) {
             {ready && <NoticeBell />}
           </div>
           <div className="flex items-center justify-between gap-4">
-            <p className="text-sm text-gray-500 truncate">Signed in as {session.user.email}</p>
+            <p className="text-sm text-slate truncate">Signed in as {session.user.email}</p>
             <button
               type="button"
               onClick={() => void handleSignOut()}
-              className="text-xs text-gray-400 hover:text-black transition flex items-center gap-1.5 shrink-0"
+              className="text-xs text-slate hover:text-black transition flex items-center gap-1.5 shrink-0"
             >
               <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
               Sign out
@@ -90,36 +90,38 @@ export function AdminConsole({ session, onSignOut, onSessionExpired }: Props) {
           </div>
         </header>
 
-        {twoFactorError && (
-          <Banner tone="error" onRetry={() => void loadTwoFactor()}>
-            {twoFactorError}
-          </Banner>
-        )}
+        <main className="space-y-10">
+          {twoFactorError && (
+            <Banner tone="error" onRetry={() => void loadTwoFactor()}>
+              {twoFactorError}
+            </Banner>
+          )}
 
-        {!twoFactor && !twoFactorError ? (
-          <StatGridSkeleton />
-        ) : !ready ? (
-          <section className="space-y-5">
-            <div className="flex items-start gap-3 border border-line rounded-2xl p-5">
-              <ShieldCheck className="h-5 w-5 shrink-0 mt-0.5" aria-hidden="true" />
-              <p className="text-sm text-slate leading-relaxed">
-                The console opens once this account has an authenticator app. After that, every
-                sign-in asks for a code, and every suspension, disable or block asks for a fresh
-                one.
-              </p>
-            </div>
-            <SecurityPanel adminMode />
-            <button
-              type="button"
-              onClick={() => void loadTwoFactor()}
-              className="bg-black text-white rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-gray-800 transition"
-            >
-              I have set it up — open the console
-            </button>
-          </section>
-        ) : (
-          <Console onSessionExpired={onSessionExpired} />
-        )}
+          {!twoFactor && !twoFactorError ? (
+            <StatGridSkeleton />
+          ) : !ready ? (
+            <section className="space-y-5">
+              <div className="flex items-start gap-3 border border-line rounded-2xl p-5">
+                <ShieldCheck className="h-5 w-5 shrink-0 mt-0.5" aria-hidden="true" />
+                <p className="text-sm text-slate leading-relaxed">
+                  The console opens once this account has an authenticator app. After that, every
+                  sign-in asks for a code, and every suspension, disable or block asks for a fresh
+                  one.
+                </p>
+              </div>
+              <SecurityPanel adminMode />
+              <button
+                type="button"
+                onClick={() => void loadTwoFactor()}
+                className="bg-black text-white rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-gray-800 transition"
+              >
+                I have set it up — open the console
+              </button>
+            </section>
+          ) : (
+            <Console onSessionExpired={onSessionExpired} />
+          )}
+        </main>
       </div>
     </div>
   );
@@ -271,7 +273,7 @@ function ClientCard({
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="font-medium truncate">{client.name}</p>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-slate">
             {client.activeLogins} of {client.logins} logins active
             {client.lastSignInAt
               ? ` · last sign-in ${formatRelativeDate(client.lastSignInAt, CTF_TIME_ZONE)}`
@@ -297,14 +299,16 @@ function ClientCard({
       {client.standing !== 'blocked' && (
         <div className="flex flex-wrap gap-2 pt-1">
           {client.standing !== 'active' && (
-            <ActionButton onClick={() => onAction('activate')}>
+            <ActionButton target={client.name} onClick={() => onAction('activate')}>
               {client.standing === 'pending' ? 'Approve' : 'Reactivate'}
             </ActionButton>
           )}
           {client.standing !== 'suspended' && (
-            <ActionButton onClick={() => onAction('suspend')}>Suspend</ActionButton>
+            <ActionButton target={client.name} onClick={() => onAction('suspend')}>
+              Suspend
+            </ActionButton>
           )}
-          <ActionButton danger onClick={() => onAction('block')}>
+          <ActionButton danger target={client.name} onClick={() => onAction('block')}>
             Block
           </ActionButton>
         </div>
@@ -315,9 +319,9 @@ function ClientCard({
 
 function Figure({ label, value }: { label: string; value: string | number }) {
   return (
-    <div>
+    <div className="flex flex-col-reverse">
+      <dt className="text-[11px] text-slate mt-0.5">{label}</dt>
       <dd className="font-display text-base font-semibold tabular-nums">{value}</dd>
-      <dt className="text-[11px] text-gray-400 mt-0.5">{label}</dt>
     </div>
   );
 }
@@ -326,10 +330,14 @@ function ActionButton({
   children,
   onClick,
   danger = false,
+  target,
 }: {
   children: ReactNode;
   onClick: () => void;
   danger?: boolean;
+  /** Who the action is for, read out after the visible label. Every row has
+      the same buttons, so "Suspend" on its own does not say whose. */
+  target?: string;
 }) {
   return (
     <button
@@ -342,6 +350,7 @@ function ActionButton({
       }`}
     >
       {children}
+      {target && <span className="sr-only"> {target}</span>}
     </button>
   );
 }
@@ -407,9 +416,9 @@ function AccountsSection({
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium truncate">
                   {account.name}{' '}
-                  <span className="text-gray-400 font-normal">· {account.orgName}</span>
+                  <span className="text-slate font-normal">· {account.orgName}</span>
                 </p>
-                <p className="text-xs text-gray-400 truncate">
+                <p className="text-xs text-slate truncate">
                   {account.email} · {account.role}
                   {account.lastSignInAt
                     ? ` · signed in ${formatRelativeDate(account.lastSignInAt, CTF_TIME_ZONE)}`
@@ -423,11 +432,15 @@ function AccountsSection({
               {account.standing !== 'blocked' && (
                 <div className="flex gap-2">
                   {account.standing === 'disabled' && account.holdReason ? (
-                    <ActionButton onClick={() => onAction(account, 'enable')}>Re-enable</ActionButton>
+                    <ActionButton target={account.name} onClick={() => onAction(account, 'enable')}>
+                      Re-enable
+                    </ActionButton>
                   ) : account.standing !== 'disabled' ? (
-                    <ActionButton onClick={() => onAction(account, 'disable')}>Disable</ActionButton>
+                    <ActionButton target={account.name} onClick={() => onAction(account, 'disable')}>
+                      Disable
+                    </ActionButton>
                   ) : null}
-                  <ActionButton danger onClick={() => onAction(account, 'block')}>
+                  <ActionButton danger target={account.name} onClick={() => onAction(account, 'block')}>
                     Block
                   </ActionButton>
                 </div>
@@ -482,10 +495,10 @@ function ActivitySection() {
                 <p className="text-sm min-w-0">
                   <span className="font-medium">{item.byCtf ? 'CTF' : (item.actorName ?? 'Someone')}</span>{' '}
                   <span className="text-gray-600">{item.label.charAt(0).toLowerCase() + item.label.slice(1)}</span>
-                  {item.orgName && <span className="text-gray-400"> · {item.orgName}</span>}
+                  {item.orgName && <span className="text-slate"> · {item.orgName}</span>}
                 </p>
                 <time
-                  className="text-xs text-gray-400 shrink-0"
+                  className="text-xs text-slate shrink-0"
                   title={formatAbsolute(item.at, CTF_TIME_ZONE)}
                 >
                   {formatRelativeDate(item.at, CTF_TIME_ZONE)}
@@ -519,6 +532,8 @@ function NoticeBell() {
   const notices = usePoll((signal) => api.adminNotices(signal), 60_000);
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelId = useId();
   const unread = notices.data?.unread ?? 0;
 
   // A dropdown left hanging over the page hides the client cards beneath it.
@@ -528,7 +543,10 @@ function NoticeBell() {
       if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key !== 'Escape') return;
+      setOpen(false);
+      // Back to the bell, rather than to nowhere once the panel unmounts.
+      buttonRef.current?.focus();
     };
     document.addEventListener('pointerdown', onPointerDown);
     document.addEventListener('keydown', onKeyDown);
@@ -546,10 +564,12 @@ function NoticeBell() {
   return (
     <div ref={containerRef} className="relative">
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-label={unread ? `${unread} unread notifications` : 'Notifications'}
         aria-expanded={open}
+        aria-controls={panelId}
         className="relative p-2 rounded-full border border-gray-200 hover:border-black transition"
       >
         <Bell className="h-4 w-4" aria-hidden="true" />
@@ -560,7 +580,10 @@ function NoticeBell() {
         )}
       </button>
       {open && (
-        <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-3rem)] bg-white border border-gray-200 rounded-2xl shadow-xl z-40">
+        <div
+          id={panelId}
+          className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-3rem)] bg-white border border-gray-200 rounded-2xl shadow-xl z-40"
+        >
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
             <p className="text-sm font-medium">Notifications</p>
             {unread > 0 && (
@@ -581,10 +604,10 @@ function NoticeBell() {
             <ul className="max-h-80 overflow-y-auto divide-y divide-gray-100">
               {notices.data.items.map((notice) => (
                 <li key={notice.id} className="px-4 py-3">
-                  <p className={`text-sm ${notice.read ? 'text-gray-500' : 'font-medium'}`}>
+                  <p className={`text-sm ${notice.read ? 'text-slate' : 'font-medium'}`}>
                     {notice.summary}
                   </p>
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-xs text-slate mt-0.5">
                     {formatRelativeDate(notice.at, CTF_TIME_ZONE)}
                   </p>
                 </li>
@@ -730,7 +753,7 @@ function ActionDialog({
               rows={2}
               autoFocus={!needsCode}
               disabled={needsCode}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black disabled:bg-cream"
+              className="w-full border border-field rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black disabled:bg-cream"
             />
           </label>
         )}
@@ -745,14 +768,18 @@ function ActionDialog({
               inputMode="numeric"
               autoComplete="one-time-code"
               autoFocus
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono-data tracking-widest focus:outline-none focus:border-black"
+              className="w-full border border-field rounded-lg px-3 py-2 text-sm font-mono-data tracking-widest focus:outline-none focus:border-black"
             />
-            <span className="block text-xs text-gray-400">
+            <span className="block text-xs text-slate">
               Confirms it is you. Good for five minutes of further actions.
             </span>
           </label>
         )}
-        {error && <p className="text-xs text-red-600">{error}</p>}
+        {error && (
+          <p role="alert" className="text-xs text-red-600">
+            {error}
+          </p>
+        )}
       </div>
     </ConfirmDialog>
   );

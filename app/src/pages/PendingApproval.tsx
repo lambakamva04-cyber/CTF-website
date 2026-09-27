@@ -39,7 +39,7 @@ export function PendingApproval({
             {suspended ? (
               <>
                 Access to <strong className="text-ink">{session.org.name}</strong> has been
-                withdrawn. Your call history is safe. Get in touch and we will sort it out.
+                withdrawn. Your call history has been kept, not deleted. Get in touch and we will sort it out.
               </>
             ) : (
               <>

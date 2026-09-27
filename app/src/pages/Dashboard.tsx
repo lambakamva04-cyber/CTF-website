@@ -43,6 +43,11 @@ export function Dashboard({ session, onSignOut, onSessionExpired }: Props) {
   const [confirmingSignOut, setConfirmingSignOut] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [lastEnded, setLastEnded] = useState<{ name: string; outcome: string | null } | null>(null);
+  // Spoken by a screen reader when something changes that a sighted client
+  // would notice at a glance: a call arriving, being transferred, ending, or a
+  // filter changing the list.
+  const [announcement, setAnnouncement] = useState('');
+  const announceNextLoad = useRef(false);
 
   const live = usePoll(api.liveCall, 3000);
   const liveCall = live.data?.call ?? null;
@@ -110,14 +115,30 @@ export function Dashboard({ session, onSignOut, onSessionExpired }: Props) {
     previousCallRef.current = liveCall;
 
     if (previous && !liveCall) {
-      setLastEnded({
-        name: previous.callerName ?? previous.callerNumber ?? 'Caller',
-        outcome: previous.outcome ? outcomeLabel(previous.outcome).toLowerCase() : null,
-      });
+      const name = previous.callerName ?? previous.callerNumber ?? 'Caller';
+      const outcome = previous.outcome ? outcomeLabel(previous.outcome).toLowerCase() : null;
+      setLastEnded({ name, outcome });
+      setAnnouncement(`Call with ${name} ended${outcome ? `: ${outcome}` : ''}.`);
       void loadCalls(filter, null);
       metrics.refresh();
+    } else if (!previous && liveCall) {
+      setAnnouncement(
+        `Live call from ${liveCall.callerName ?? liveCall.callerNumber ?? 'a caller'}. The transcript is read out as it arrives.`,
+      );
+    } else if (previous?.status !== 'transferring' && liveCall?.status === 'transferring') {
+      setAnnouncement(`Transferring the call to ${liveCall.transferTo ?? 'your phone'}.`);
     }
   }, [liveCall, filter, loadCalls, metrics]);
+
+  // After a filter change, say how many calls the list now holds; otherwise
+  // the list changes silently under a screen reader.
+  useEffect(() => {
+    if (callsLoading || !announceNextLoad.current) return;
+    announceNextLoad.current = false;
+    setAnnouncement(
+      `${calls.length} ${calls.length === 1 ? 'call' : 'calls'} shown${cursor ? ', more available' : ''}.`,
+    );
+  }, [callsLoading, calls.length, cursor]);
 
   const handleTakeover = async (number: string) => {
     if (!liveCall) throw new Error('That call has already ended.');
@@ -165,11 +186,11 @@ export function Dashboard({ session, onSignOut, onSessionExpired }: Props) {
             <StatusPill active={org.receptionistLinked} />
           </div>
           <div className="flex items-center justify-between gap-4">
-            <p className="text-sm text-gray-500 truncate">Signed in as {user.name}</p>
+            <p className="text-sm text-slate truncate">Signed in as {user.name}</p>
             <button
               type="button"
               onClick={() => setConfirmingSignOut(true)}
-              className="text-xs text-gray-400 hover:text-black transition flex items-center gap-1.5 shrink-0"
+              className="text-xs text-slate hover:text-black transition flex items-center gap-1.5 shrink-0"
             >
               <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
               Sign out
@@ -177,196 +198,202 @@ export function Dashboard({ session, onSignOut, onSessionExpired }: Props) {
           </div>
         </header>
 
-        {/* The button sits beside the header text, where a stray tap is easy. */}
-        <ConfirmDialog
-          open={confirmingSignOut}
-          title="Sign out?"
-          description="Hope keeps answering your calls while you're signed out. You'll need to sign in again to see them."
-          confirmLabel="Sign out"
-          busy={signingOut}
-          onConfirm={() => void handleSignOut()}
-          onCancel={() => setConfirmingSignOut(false)}
-        />
+        <main className="space-y-10">
+          <p role="status" className="sr-only">
+            {announcement}
+          </p>
 
-        {connectionError && <Banner tone="warning" onRetry={live.refresh}>{connectionError}</Banner>}
-
-        {live.loading && !live.data ? (
-          <LiveCallSkeleton />
-        ) : (
-          <LiveCallPanel
-            call={liveCall}
-            transcript={transcript.lines}
-            user={user}
-            org={org}
-            clockSkewMs={clockSkewMs}
-            lastEnded={lastEnded}
-            connectionError={connectionError}
-            onTakeover={handleTakeover}
-            onEndCall={handleEndCall}
-          />
-        )}
-
-        <section className="space-y-5">
-          <h2 className="font-display text-lg font-semibold">Performance</h2>
-          <SegmentedControl
-            ariaLabel="Reporting period"
-            value={period}
-            onChange={setPeriod}
-            options={[
-              { value: 'today', label: 'Today' },
-              { value: 'week', label: 'This Week' },
-              { value: 'month', label: 'This Month' },
-            ]}
+          {/* The button sits beside the header text, where a stray tap is easy. */}
+          <ConfirmDialog
+            open={confirmingSignOut}
+            title="Sign out?"
+            description="Hope keeps answering your calls while you're signed out. You'll need to sign in again to see them."
+            confirmLabel="Sign out"
+            busy={signingOut}
+            onConfirm={() => void handleSignOut()}
+            onCancel={() => setConfirmingSignOut(false)}
           />
 
-          {metrics.error && !metrics.data ? (
-            <Banner tone="error" onRetry={metrics.refresh}>
-              {metrics.error.message}
-            </Banner>
-          ) : metrics.loading && !metrics.data ? (
-            <StatGridSkeleton />
+          {connectionError && <Banner tone="warning" onRetry={live.refresh}>{connectionError}</Banner>}
+
+          {live.loading && !live.data ? (
+            <LiveCallSkeleton />
           ) : (
-            <>
-              <div className="grid grid-cols-3 gap-3">
-                <StatCard label="Calls Taken" value={metrics.data?.total ?? 0} />
-                <StatCard label="Booked" value={metrics.data?.booked ?? 0} />
-                <StatCard label="Booking Rate" value={`${metrics.data?.rate ?? 0}%`} />
+            <LiveCallPanel
+              call={liveCall}
+              transcript={transcript.lines}
+              user={user}
+              org={org}
+              clockSkewMs={clockSkewMs}
+              lastEnded={lastEnded}
+              connectionError={connectionError}
+              onTakeover={handleTakeover}
+              onEndCall={handleEndCall}
+            />
+          )}
+
+          <section className="space-y-5">
+            <h2 className="font-display text-lg font-semibold">Performance</h2>
+            <SegmentedControl
+              ariaLabel="Reporting period"
+              value={period}
+              onChange={setPeriod}
+              options={[
+                { value: 'today', label: 'Today' },
+                { value: 'week', label: 'This Week' },
+                { value: 'month', label: 'This Month' },
+              ]}
+            />
+
+            {metrics.error && !metrics.data ? (
+              <Banner tone="error" onRetry={metrics.refresh}>
+                {metrics.error.message}
+              </Banner>
+            ) : metrics.loading && !metrics.data ? (
+              <StatGridSkeleton />
+            ) : (
+              <>
+                <div className="grid grid-cols-3 gap-3">
+                  <StatCard label="Calls Taken" value={metrics.data?.total ?? 0} />
+                  <StatCard label="Booked" value={metrics.data?.booked ?? 0} />
+                  <StatCard label="Booking Rate" value={`${metrics.data?.rate ?? 0}%`} />
+                </div>
+
+                {period !== 'today' && (metrics.data?.trend.length ?? 0) > 0 && (
+                  <div className="border border-gray-200 rounded-2xl p-5 sm:p-6">
+                    <p className="text-xs font-medium text-slate uppercase tracking-wide mb-4">
+                      {period === 'week' ? 'Last 7 Days' : 'Last 5 Weeks'}
+                    </p>
+                    {/* The chart is a lazy chunk and the largest one in the app.
+                        Holding its exact height keeps the page from jumping when
+                        it arrives. */}
+                    <Suspense fallback={<Skeleton className="h-[140px] w-full rounded-lg" />}>
+                      <TrendChart data={metrics.data?.trend ?? []} />
+                    </Suspense>
+                  </div>
+                )}
+              </>
+            )}
+          </section>
+
+          {/* Billing is always the calendar month, whatever the period toggle
+              above is set to — the subscription renews monthly regardless. Kept
+              as its own block so the two are never read as one figure. */}
+          {metrics.data && (
+            <section className="space-y-5">
+              <div>
+                <h2 className="font-display text-lg font-semibold">This Month</h2>
+                {/* The period control above also offers "This Month". This line
+                    says which one this is, so the two are not read as linked. */}
+                <p className="text-xs text-slate mt-1">
+                  Usage and billing, always the calendar month.
+                </p>
               </div>
 
-              {period !== 'today' && (metrics.data?.trend.length ?? 0) > 0 && (
-                <div className="border border-gray-200 rounded-2xl p-5 sm:p-6">
-                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-4">
-                    {period === 'week' ? 'Last 7 Days' : 'Last 5 Weeks'}
-                  </p>
-                  {/* The chart is a lazy chunk and the largest one in the app.
-                      Holding its exact height keeps the page from jumping when
-                      it arrives. */}
-                  <Suspense fallback={<Skeleton className="h-[140px] w-full rounded-lg" />}>
-                    <TrendChart data={metrics.data?.trend ?? []} />
-                  </Suspense>
-                </div>
-              )}
-            </>
-          )}
-        </section>
-
-        {/* Billing is always the calendar month, whatever the period toggle
-            above is set to — the subscription renews monthly regardless. Kept
-            as its own block so the two are never read as one figure. */}
-        {metrics.data && (
-          <section className="space-y-5">
-            <div>
-              <h2 className="font-display text-lg font-semibold">This Month</h2>
-              {/* The period control above also offers "This Month". This line
-                  says which one this is, so the two are not read as linked. */}
-              <p className="text-xs text-gray-400 mt-1">
-                Usage and billing, always the calendar month.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <StatCard
-                label="Minutes Used"
-                value={`${metrics.data.billing.minutesUsed} / ${metrics.data.billing.planMinutes}`}
-              />
-              <StatCard label="Extra Minutes" value={metrics.data.billing.extraMinutes} />
-              <StatCard
-                label="Overage"
-                value={formatZar(metrics.data.billing.extraCostZar)}
-              />
-            </div>
-
-            <div className="border border-gray-200 rounded-2xl p-5 sm:p-6">
-              <MinuteMeter
-                used={metrics.data.billing.minutesUsed}
-                plan={metrics.data.billing.planMinutes}
-              />
-              <p className="text-xs text-gray-400 mt-4">
-                {metrics.data.billing.planMinutes} minutes included at{' '}
-                {formatZar(metrics.data.billing.subscriptionZar)} a month, then{' '}
-                {formatZar(metrics.data.billing.overageRateZar)} a minute. Each call is
-                rounded up to the next whole minute.
-              </p>
-            </div>
-          </section>
-        )}
-
-        <section className="space-y-5">
-          <h2 className="font-display text-lg font-semibold">Recent Activity</h2>
-          <div className="flex gap-2">
-            {(
-              [
-                { value: 'all', label: 'All' },
-                { value: 'booked', label: 'Bookings' },
-                { value: 'escalated', label: 'Escalated' },
-              ] as const
-            ).map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                aria-pressed={filter === option.value}
-                onClick={() => {
-                  setFilter(option.value);
-                  setExpandedId(null);
-                }}
-                className={`text-xs px-3 py-1.5 rounded-full border transition font-medium ${
-                  filter === option.value
-                    ? 'border-black bg-black text-white'
-                    : 'border-gray-200 text-gray-500 hover:border-black hover:text-black'
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-
-          {callsError && (
-            <Banner tone="error" onRetry={() => void loadCalls(filter, null)}>
-              {callsError}
-            </Banner>
-          )}
-
-          {callsLoading ? (
-            <CallListSkeleton />
-          ) : (
-            <div className="divide-y divide-gray-100 border-t border-b border-gray-100">
-              {calls.map((call) => (
-                <CallRow
-                  key={call.id}
-                  call={call}
-                  timeZone={org.timezone}
-                  expanded={expandedId === call.id}
-                  onToggle={() => setExpandedId(expandedId === call.id ? null : call.id)}
+              <div className="grid grid-cols-3 gap-3">
+                <StatCard
+                  label="Minutes Used"
+                  value={`${metrics.data.billing.minutesUsed} / ${metrics.data.billing.planMinutes}`}
                 />
-              ))}
-              {calls.length === 0 && !callsError && (
-                <p className="text-sm text-gray-400 py-6 text-center">
-                  {filter === 'all'
-                    ? 'No calls yet. They will appear here the moment your receptionist answers one.'
-                    : 'No calls in this view yet.'}
+                <StatCard label="Extra Minutes" value={metrics.data.billing.extraMinutes} />
+                <StatCard
+                  label="Overage"
+                  value={formatZar(metrics.data.billing.extraCostZar)}
+                />
+              </div>
+
+              <div className="border border-gray-200 rounded-2xl p-5 sm:p-6">
+                <MinuteMeter
+                  used={metrics.data.billing.minutesUsed}
+                  plan={metrics.data.billing.planMinutes}
+                />
+                <p className="text-xs text-slate mt-4">
+                  {metrics.data.billing.planMinutes} minutes included at{' '}
+                  {formatZar(metrics.data.billing.subscriptionZar)} a month, then{' '}
+                  {formatZar(metrics.data.billing.overageRateZar)} a minute. Each call is
+                  rounded up to the next whole minute.
                 </p>
-              )}
+              </div>
+            </section>
+          )}
+
+          <section className="space-y-5">
+            <h2 className="font-display text-lg font-semibold">Recent Activity</h2>
+            <div className="flex gap-2" role="group" aria-label="Show calls">
+              {(
+                [
+                  { value: 'all', label: 'All' },
+                  { value: 'booked', label: 'Bookings' },
+                  { value: 'escalated', label: 'Escalated' },
+                ] as const
+              ).map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-pressed={filter === option.value}
+                  onClick={() => {
+                    if (option.value !== filter) announceNextLoad.current = true;
+                    setFilter(option.value);
+                    setExpandedId(null);
+                  }}
+                  className={`text-xs px-3 py-1.5 rounded-full border transition font-medium ${
+                    filter === option.value
+                      ? 'border-black bg-black text-white'
+                      : 'border-gray-200 text-slate hover:border-black hover:text-black'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
             </div>
+
+            {callsError && (
+              <Banner tone="error" onRetry={() => void loadCalls(filter, null)}>
+                {callsError}
+              </Banner>
+            )}
+
+            {callsLoading ? (
+              <CallListSkeleton />
+            ) : (
+              <div className="divide-y divide-gray-100 border-t border-b border-gray-100">
+                {calls.map((call) => (
+                  <CallRow
+                    key={call.id}
+                    call={call}
+                    timeZone={org.timezone}
+                    expanded={expandedId === call.id}
+                    onToggle={() => setExpandedId(expandedId === call.id ? null : call.id)}
+                  />
+                ))}
+                {calls.length === 0 && !callsError && (
+                  <p className="text-sm text-slate py-6 text-center">
+                    {filter === 'all'
+                      ? 'No calls yet. They will appear here the moment your receptionist answers one.'
+                      : 'No calls in this view yet.'}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {cursor && (
+              <button
+                type="button"
+                onClick={() => void loadCalls(filter, cursor)}
+                disabled={loadingMore}
+                className="w-full border border-gray-200 rounded-xl py-2.5 text-sm font-medium text-gray-600 hover:border-black hover:text-black transition disabled:opacity-50"
+              >
+                {loadingMore ? 'Loading…' : 'Load more'}
+              </button>
+            )}
+          </section>
+
+          <SecurityPanel />
+
+          {user.permissions.includes('users:manage') && (
+            <TeamPanel currentUser={user} timeZone={org.timezone} />
           )}
-
-          {cursor && (
-            <button
-              type="button"
-              onClick={() => void loadCalls(filter, cursor)}
-              disabled={loadingMore}
-              className="w-full border border-gray-200 rounded-xl py-2.5 text-sm font-medium text-gray-600 hover:border-black hover:text-black transition disabled:opacity-50"
-            >
-              {loadingMore ? 'Loading…' : 'Load more'}
-            </button>
-          )}
-        </section>
-
-        <SecurityPanel />
-
-        {user.permissions.includes('users:manage') && (
-          <TeamPanel currentUser={user} timeZone={org.timezone} />
-        )}
-
+        </main>
 
         <footer className="pt-6 border-t border-line flex flex-wrap items-center justify-between gap-3">
           <span className="inline-flex items-center gap-2 text-slate">

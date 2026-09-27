@@ -1,0 +1,121 @@
+# n8n, self-hosted, reachable only through a Cloudflare Tunnel.
+#
+# The security model in one line: nothing listens on a public interface. n8n
+# listens inside the container, Docker publishes it on the host's loopback only,
+# and cloudflared makes an *outbound* connection to Cloudflare's edge. The VPS
+# needs zero inbound ports open — not 80, not 443, not 5678.
+#
+#   browser --https--> Cloudflare edge --tunnel--> cloudflared --> 127.0.0.1:5678
+#
+# Start it with:  docker compose up -d      (from this directory)
+# Read the logs:  docker compose logs -f n8n
+
+services:
+  n8n:
+    # Pinned by bootstrap.sh, which rewrites N8N_IMAGE in .env to the exact
+    # sha256 digest it installed. A digest can't be moved under you the way a
+    # tag can, so `docker compose up -d` months from now brings up the same
+    # bytes you tested. `./scripts/update.sh` is how you move to a new version
+    # on purpose.
+    image: ${N8N_IMAGE:-docker.n8n.io/n8nio/n8n:latest}
+    container_name: n8n
+    restart: unless-stopped
+
+    # The official image already ships a `node` user (uid/gid 1000). Naming it
+    # explicitly means an upstream change to the image default can't silently
+    # promote this container to root.
+    user: "node"
+
+    # ------------------------------------------------------------------
+    # Networking — this is the part people get wrong.
+    #
+    # LEFT of the colons is the HOST side: 127.0.0.1 means the port exists only
+    # on the VPS's loopback interface. Nothing on the internet can reach it,
+    # even if the firewall is misconfigured. (Docker writes its own iptables
+    # rules and routinely punches straight through ufw — binding to 127.0.0.1
+    # is what actually protects you here, not `ufw deny`.)
+    #
+    # RIGHT of the colons is the CONTAINER side, and it must stay 0.0.0.0 —
+    # see N8N_LISTEN_ADDRESS below.
+    # ------------------------------------------------------------------
+    ports:
+      - "${N8N_BIND_ADDRESS:-127.0.0.1}:${N8N_PORT:-5678}:5678"
+
+    env_file:
+      - .env
+
+    environment:
+      # Pinned here, deliberately, and NOT taken from .env.
+      #
+      # This is the address n8n binds to *inside its own container*, where it is
+      # the only process and the network namespace is private. Setting it to
+      # 127.0.0.1 would make n8n unreachable even from Docker's port publisher —
+      # the container would come up, pass no health check, and serve nobody. The
+      # "only on loopback" requirement is satisfied by the host-side 127.0.0.1
+      # in `ports:` above, which is where it actually belongs.
+      N8N_LISTEN_ADDRESS: "0.0.0.0"
+      N8N_PORT: "5678"
+
+      # n8n sits behind exactly one proxy (cloudflared), so trust exactly one
+      # X-Forwarded-For hop. Without this, every request looks like it came from
+      # the tunnel and per-IP rate limiting is meaningless.
+      N8N_PROXY_HOPS: "1"
+
+    volumes:
+      # Everything irreplaceable lives here: the SQLite database, the workflows,
+      # the encrypted credentials, and the settings file. Back it up
+      # (./scripts/backup.sh) — losing it loses every credential you stored.
+      - n8n_data:/home/node/.n8n
+
+    # ------------------------------------------------------------------
+    # Hardening
+    # ------------------------------------------------------------------
+    security_opt:
+      # Blocks setuid binaries from gaining privileges — a container escape
+      # needs one more thing to go right.
+      - no-new-privileges:true
+    cap_drop:
+      # n8n binds 5678 (unprivileged) and writes to a volume it already owns.
+      # It needs no Linux capabilities at all.
+      - ALL
+
+    # Reaps zombie processes. n8n shells out for some nodes; without an init
+    # PID 1 those children accumulate until the process table fills up.
+    init: true
+
+    # Let an in-flight workflow finish instead of being killed mid-HTTP-request.
+    stop_grace_period: 30s
+
+    healthcheck:
+      # `node` is guaranteed present in this image; curl and wget are not
+      # promised across base-image changes, so the check uses node itself.
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('http').get('http://127.0.0.1:5678/healthz',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      # A 1 vCPU free-tier box takes a while to boot n8n. Failures before this
+      # elapses don't count against `retries`.
+      start_period: 90s
+
+    logging:
+      # Unbounded container logs are the single most common way a free-tier
+      # disk fills up and takes the box down at 3am.
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    deploy:
+      resources:
+        limits:
+          # Keeps a runaway workflow from OOM-killing sshd and locking you out
+          # of your own VPS. Raise on a bigger box; see NODE_OPTIONS in .env.
+          memory: ${N8N_MEMORY_LIMIT:-768M}
+
+volumes:
+  n8n_data:
+    name: n8n_data

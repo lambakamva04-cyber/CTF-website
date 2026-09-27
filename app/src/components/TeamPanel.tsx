@@ -1,5 +1,5 @@
 import { Check, Copy, Plus, ShieldCheck, UserCog } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { SessionUser, TeamMember, UserRole } from '../../shared/types';
 import { api, ApiError } from '../lib/api';
 import { formatRelativeDate } from '../lib/format';
@@ -22,6 +22,13 @@ function TemporaryPassword({
   onDismiss: () => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const headingRef = useRef<HTMLParagraphElement>(null);
+
+  // Shown once and never again, so it takes focus when it appears rather than
+  // waiting to be found.
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, []);
 
   const copy = async () => {
     try {
@@ -35,7 +42,9 @@ function TemporaryPassword({
 
   return (
     <div className="border border-black rounded-xl p-4 space-y-3">
-      <p className="text-sm font-medium">Temporary password for {email}</p>
+      <p ref={headingRef} tabIndex={-1} className="text-sm font-medium focus:outline-none">
+        Temporary password for {email}
+      </p>
       <div className="flex items-center gap-2">
         <code className="flex-1 font-mono-data text-sm bg-gray-50 rounded-lg px-3 py-2 break-all">
           {password}
@@ -52,8 +61,11 @@ function TemporaryPassword({
             <Copy className="h-4 w-4" aria-hidden="true" />
           )}
         </button>
+        <span role="status" className="sr-only">
+          {copied ? 'Password copied' : ''}
+        </span>
       </div>
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-slate">
         Send this over a channel you trust. It will not be shown again, and they must replace it
         the first time they sign in.
       </p>
@@ -92,9 +104,15 @@ export function TeamPanel({ currentUser, timeZone }: Props) {
   const [confirmReset, setConfirmReset] = useState<TeamMember | null>(null);
   const [editingPhone, setEditingPhone] = useState<string | null>(null);
   const [phoneDraft, setPhoneDraft] = useState('');
+  const [status, setStatus] = useState('');
+  const addButtonRef = useRef<HTMLButtonElement>(null);
+  const formId = useId();
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  // `quiet` refreshes after a change without swapping the list for a skeleton.
+  // Unmounting the rows would destroy the button that opened a dialog, and
+  // with it the place keyboard focus is meant to return to.
+  const load = useCallback(async (quiet = false) => {
+    if (!quiet) setLoading(true);
     setError(null);
     try {
       const response = await api.team();
@@ -110,6 +128,11 @@ export function TeamPanel({ currentUser, timeZone }: Props) {
     void load();
   }, [load]);
 
+  // The phone editor replaces its button, so put focus back on the new one.
+  const focusPhoneButton = (memberId: string) => {
+    requestAnimationFrame(() => document.getElementById(`phone-${memberId}`)?.focus());
+  };
+
   const create = async () => {
     setBusyId('new');
     setError(null);
@@ -124,10 +147,14 @@ export function TeamPanel({ currentUser, timeZone }: Props) {
       // A Google-only login has no password to show, so the panel is skipped.
       if (result.temporaryPassword) {
         setIssued({ email: result.member.email, password: result.temporaryPassword });
+      } else {
+        // No password panel to take focus, and the form that held it is gone.
+        requestAnimationFrame(() => addButtonRef.current?.focus());
       }
+      setStatus(`Login added for ${result.member.name}.`);
       setDraft({ email: '', name: '', role: 'staff', phone: '', signInMethod: 'google' });
       setAdding(false);
-      await load();
+      await load(true);
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : 'Could not create that login.');
     } finally {
@@ -141,7 +168,8 @@ export function TeamPanel({ currentUser, timeZone }: Props) {
     try {
       await api.updateTeamMember(member.id, { phone: phoneDraft.trim() || null });
       setEditingPhone(null);
-      await load();
+      focusPhoneButton(member.id);
+      await load(true);
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : 'Could not save that number.');
     } finally {
@@ -154,7 +182,7 @@ export function TeamPanel({ currentUser, timeZone }: Props) {
     setError(null);
     try {
       await api.updateTeamMember(member.id, changes);
-      await load();
+      await load(true);
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : 'Could not update that login.');
     } finally {
@@ -168,12 +196,15 @@ export function TeamPanel({ currentUser, timeZone }: Props) {
     setError(null);
     try {
       const result = await api.resetTeamMemberPassword(member.id);
+      // Closed in the same render that shows the password, so the dialog's
+      // return of focus does not land after the password panel has taken it.
+      setConfirmReset(null);
       // A reset always issues a password — it is what converts a Google-only
       // login into one that can also sign in with an email address.
       if (result.temporaryPassword) {
         setIssued({ email: result.member.email, password: result.temporaryPassword });
       }
-      await load();
+      await load(true);
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : 'Could not reset that password.');
     } finally {
@@ -187,9 +218,12 @@ export function TeamPanel({ currentUser, timeZone }: Props) {
       <div className="flex items-center justify-between gap-4">
         <h2 className="font-display text-lg font-semibold">Team</h2>
         <button
+          ref={addButtonRef}
           type="button"
           onClick={() => setAdding((value) => !value)}
-          className="text-xs px-3 py-1.5 rounded-full border border-gray-200 text-gray-500 hover:border-black hover:text-black transition font-medium flex items-center gap-1.5"
+          aria-expanded={adding}
+          aria-controls={formId}
+          className="text-xs px-3 py-1.5 rounded-full border border-gray-200 text-slate hover:border-black hover:text-black transition font-medium flex items-center gap-1.5"
         >
           <Plus className="h-3.5 w-3.5" aria-hidden="true" />
           Add login
@@ -197,6 +231,9 @@ export function TeamPanel({ currentUser, timeZone }: Props) {
       </div>
 
       {error && <Banner tone="error" onRetry={() => void load()}>{error}</Banner>}
+      <p role="status" className="sr-only">
+        {status}
+      </p>
 
       {issued && (
         <TemporaryPassword
@@ -208,6 +245,8 @@ export function TeamPanel({ currentUser, timeZone }: Props) {
 
       {adding && (
         <form
+          id={formId}
+          aria-label="Add a login"
           onSubmit={(event) => {
             event.preventDefault();
             void create();
@@ -216,40 +255,40 @@ export function TeamPanel({ currentUser, timeZone }: Props) {
         >
           <div className="grid sm:grid-cols-2 gap-3">
             <label className="block space-y-1.5">
-              <span className="text-xs font-medium text-gray-500">Name</span>
+              <span className="text-xs font-medium text-slate">Name</span>
               <input
                 value={draft.name}
                 onChange={(event) => setDraft({ ...draft, name: event.target.value })}
                 required
-                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-black"
+                className="w-full border border-field rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-black"
               />
             </label>
             <label className="block space-y-1.5">
-              <span className="text-xs font-medium text-gray-500">Email</span>
+              <span className="text-xs font-medium text-slate">Email</span>
               <input
                 type="email"
                 value={draft.email}
                 onChange={(event) => setDraft({ ...draft, email: event.target.value })}
                 required
-                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-black"
+                className="w-full border border-field rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-black"
               />
             </label>
             <label className="block space-y-1.5">
-              <span className="text-xs font-medium text-gray-500">Mobile for call takeover</span>
+              <span className="text-xs font-medium text-slate">Mobile for call takeover</span>
               <input
                 type="tel"
                 value={draft.phone}
                 onChange={(event) => setDraft({ ...draft, phone: event.target.value })}
                 placeholder="082 555 0134"
-                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm font-mono-data focus:outline-none focus:border-black"
+                className="w-full border border-field rounded-xl px-3 py-2 text-sm font-mono-data focus:outline-none focus:border-black"
               />
             </label>
             <label className="block space-y-1.5">
-              <span className="text-xs font-medium text-gray-500">Role</span>
+              <span className="text-xs font-medium text-slate">Role</span>
               <select
                 value={draft.role}
                 onChange={(event) => setDraft({ ...draft, role: event.target.value as UserRole })}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-black bg-white"
+                className="w-full border border-field rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-black bg-white"
               >
                 <option value="staff">Staff — answer and end calls</option>
                 <option value="owner">Owner — also manages logins</option>
@@ -257,13 +296,13 @@ export function TeamPanel({ currentUser, timeZone }: Props) {
             </label>
 
             <label className="block space-y-1.5 sm:col-span-2">
-              <span className="text-xs font-medium text-gray-500">How they sign in</span>
+              <span className="text-xs font-medium text-slate">How they sign in</span>
               <select
                 value={draft.signInMethod}
                 onChange={(event) =>
                   setDraft({ ...draft, signInMethod: event.target.value as 'google' | 'password' })
                 }
-                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-black bg-white"
+                className="w-full border border-field rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-black bg-white"
               >
                 <option value="google">Google — no password needed</option>
                 <option value="password">Email and password</option>
@@ -271,7 +310,7 @@ export function TeamPanel({ currentUser, timeZone }: Props) {
             </label>
           </div>
 
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-slate">
             {draft.signInMethod === 'google'
               ? 'They sign in with the Google account on that email address. Nothing to send them, and no password to leak.'
               : 'A temporary password is generated and shown to you once. They must replace it the first time they sign in.'}
@@ -299,10 +338,10 @@ export function TeamPanel({ currentUser, timeZone }: Props) {
               <div className="min-w-0">
                 <p className="text-sm font-medium truncate">
                   {member.name}
-                  {member.isSelf && <span className="text-gray-400 font-normal"> · you</span>}
+                  {member.isSelf && <span className="text-slate font-normal"> · you</span>}
                 </p>
-                <p className="text-xs text-gray-400 truncate">{member.email}</p>
-                <p className="text-xs text-gray-400 mt-1 flex items-center gap-1.5 flex-wrap">
+                <p className="text-xs text-slate truncate">{member.email}</p>
+                <p className="text-xs text-slate mt-1 flex items-center gap-1.5 flex-wrap">
                   {member.role === 'owner' ? (
                     <span className="inline-flex items-center gap-1">
                       <ShieldCheck className="h-3 w-3" aria-hidden="true" />
@@ -340,7 +379,7 @@ export function TeamPanel({ currentUser, timeZone }: Props) {
                       placeholder="082 555 0134"
                       autoFocus
                       aria-label={`Takeover number for ${member.name}`}
-                      className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-mono-data focus:outline-none focus:border-black w-40"
+                      className="border border-field rounded-lg px-3 py-1.5 text-xs font-mono-data focus:outline-none focus:border-black w-40"
                     />
                     <button
                       type="submit"
@@ -351,25 +390,35 @@ export function TeamPanel({ currentUser, timeZone }: Props) {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setEditingPhone(null)}
-                      className="text-xs text-gray-400 underline underline-offset-2"
+                      onClick={() => {
+                        setEditingPhone(null);
+                        focusPhoneButton(member.id);
+                      }}
+                      className="text-xs text-slate underline underline-offset-2"
                     >
                       Cancel
                     </button>
                   </form>
                 ) : (
                   <button
+                    id={`phone-${member.id}`}
                     type="button"
                     onClick={() => {
                       setEditingPhone(member.id);
                       setPhoneDraft(member.phone ?? '');
                     }}
-                    className="text-xs mt-1.5 underline underline-offset-2 text-gray-400 hover:text-black transition"
+                    className="text-xs mt-1.5 underline underline-offset-2 text-slate hover:text-black transition"
                   >
                     {member.phone ? (
-                      <span className="font-mono-data">{member.phone}</span>
+                      <>
+                        <span className="font-mono-data">{member.phone}</span>
+                        <span className="sr-only">, change {member.name}&rsquo;s takeover number</span>
+                      </>
                     ) : (
-                      'Add a mobile for call takeover'
+                      <>
+                        Add a mobile for call takeover
+                        <span className="sr-only"> for {member.name}</span>
+                      </>
                     )}
                   </button>
                 )}
@@ -380,9 +429,10 @@ export function TeamPanel({ currentUser, timeZone }: Props) {
                   type="button"
                   onClick={() => setConfirmReset(member)}
                   disabled={busyId === member.id}
-                  className="text-xs text-gray-400 hover:text-black underline underline-offset-2 disabled:opacity-40"
+                  className="text-xs text-slate hover:text-black underline underline-offset-2 disabled:opacity-40"
                 >
                   Reset password
+                  <span className="sr-only"> for {member.name}</span>
                 </button>
                 {!member.isSelf && (
                   <button
@@ -393,21 +443,22 @@ export function TeamPanel({ currentUser, timeZone }: Props) {
                         : setConfirmDisable(member)
                     }
                     disabled={busyId === member.id}
-                    className="text-xs text-gray-400 hover:text-black underline underline-offset-2 disabled:opacity-40"
+                    className="text-xs text-slate hover:text-black underline underline-offset-2 disabled:opacity-40"
                   >
                     {member.disabled ? 'Re-enable' : 'Disable'}
+                    <span className="sr-only"> {member.name}</span>
                   </button>
                 )}
               </div>
             </div>
           ))}
           {members.length === 0 && (
-            <p className="text-sm text-gray-400 py-6 text-center">No logins yet.</p>
+            <p className="text-sm text-slate py-6 text-center">No logins yet.</p>
           )}
         </div>
       )}
 
-      <p className="text-xs text-gray-400">
+      <p className="text-xs text-slate">
         Signed in as {currentUser.name}. Owners can add and disable logins; staff can view calls,
         take them over and end them.
       </p>

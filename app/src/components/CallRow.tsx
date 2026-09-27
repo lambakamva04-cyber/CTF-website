@@ -19,7 +19,7 @@ function CallIcon({ outcome }: { outcome: CallOutcome | null }) {
         solid ? 'bg-black' : 'bg-gray-100'
       }`}
     >
-      <Icon className={`h-4 w-4 ${solid ? 'text-white' : 'text-gray-400'}`} aria-hidden="true" />
+      <Icon className={`h-4 w-4 ${solid ? 'text-white' : 'text-slate'}`} aria-hidden="true" />
     </div>
   );
 }
@@ -77,7 +77,7 @@ export function CallRow({ call, expanded, onToggle, timeZone }: Props) {
             <p className="text-sm font-medium truncate">
               {call.callerName ?? call.callerNumber ?? 'Unknown caller'}
             </p>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-slate">
               {formatRelativeDate(call.startedAt, timeZone)}
               {call.durationS !== null ? ` · ${formatDuration(call.durationS)}` : ''}
             </p>
@@ -88,15 +88,15 @@ export function CallRow({ call, expanded, onToggle, timeZone }: Props) {
             className={`text-xs font-medium ${
               call.outcome === 'booked' || call.outcome === 'resolved'
                 ? 'text-black'
-                : 'text-gray-400'
+                : 'text-slate'
             }`}
           >
             {outcomeLabel(call.outcome)}
           </span>
           {expanded ? (
-            <ChevronUp className="h-4 w-4 text-gray-300" aria-hidden="true" />
+            <ChevronUp className="h-4 w-4 text-slate" aria-hidden="true" />
           ) : (
-            <ChevronDown className="h-4 w-4 text-gray-300" aria-hidden="true" />
+            <ChevronDown className="h-4 w-4 text-slate" aria-hidden="true" />
           )}
         </div>
       </button>
@@ -104,7 +104,7 @@ export function CallRow({ call, expanded, onToggle, timeZone }: Props) {
       {expanded && (
         <div id={panelId} className="mt-4 pl-11 space-y-1.5">
           {call.callerNumber && (
-            <p className="text-xs text-gray-400 font-mono-data">{call.callerNumber}</p>
+            <p className="text-xs text-slate font-mono-data">{call.callerNumber}</p>
           )}
           {call.intent && <p className="text-sm text-gray-600">{call.intent}</p>}
 
@@ -117,7 +117,7 @@ export function CallRow({ call, expanded, onToggle, timeZone }: Props) {
             <p className="text-sm font-medium">Handled directly by staff</p>
           )}
           {!isSettled && (
-            <p className="text-sm text-gray-400 italic">
+            <p className="text-sm text-slate italic">
               Still being written up — the outcome appears when the call report arrives.
             </p>
           )}
@@ -134,19 +134,20 @@ export function CallRow({ call, expanded, onToggle, timeZone }: Props) {
 
           {detail?.summary && <p className="text-sm text-gray-600 pt-1">{detail.summary}</p>}
           {detail?.transferTo && (
-            <p className="text-xs text-gray-400">Transferred to {detail.transferTo}</p>
+            <p className="text-xs text-slate">Transferred to {detail.transferTo}</p>
           )}
           {detail?.recordingUrl && (
             <audio
               controls
               preload="none"
               src={detail.recordingUrl}
+              aria-label={`Recording of the call with ${call.callerName ?? call.callerNumber ?? 'this caller'}`}
               className="w-full max-w-sm pt-2"
             >
               Your browser cannot play this recording.
             </audio>
           )}
-          {error && <p className="text-xs text-gray-400">{error}</p>}
+          {error && <p className="text-xs text-slate">{error}</p>}
         </div>
       )}
     </div>
