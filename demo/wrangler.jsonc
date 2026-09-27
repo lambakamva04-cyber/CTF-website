@@ -41,4 +41,6 @@
   //   VAPI_ASSISTANT_ID
   //   BOOKING_URL
   //   DEMO_IP_SALT                salts the caller-IP hash the limits count
+  //   EMAIL_API_KEY               Resend key; emails each callback request
+  //   LEAD_NOTIFY_TO              the inbox those emails go to
 }

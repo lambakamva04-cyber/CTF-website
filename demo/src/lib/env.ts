@@ -51,3 +51,24 @@ export function bookingUrl(): string {
 export function demoIpSalt(): string | null {
   return process.env.DEMO_IP_SALT || null;
 }
+
+/**
+ * The email provider's key (Resend), under the same name the dashboard uses.
+ * Optional: without it a callback request is still saved, and nobody is
+ * emailed about it.
+ */
+export function emailApiKey(): string | null {
+  return process.env.EMAIL_API_KEY?.trim() || null;
+}
+
+/** Sender for the callback email. Must be on a domain verified with Resend. */
+export function emailFrom(): string {
+  return (
+    process.env.EMAIL_FROM?.trim() || 'CTF website <website@mail.cutthroughfaster.com>'
+  );
+}
+
+/** Who is told about a new callback request. */
+export function leadNotifyTo(): string {
+  return process.env.LEAD_NOTIFY_TO?.trim() || 'hello@cutthroughfaster.com';
+}

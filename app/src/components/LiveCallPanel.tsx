@@ -18,7 +18,7 @@ interface Props {
   onEndCall: () => Promise<void>;
 }
 
-function TranscriptRow({ line }: { line: TranscriptLine }) {
+export function TranscriptRow({ line }: { line: TranscriptLine }) {
   if (line.speaker === 'system') {
     return (
       <p className="transcript-line text-xs text-center text-slate italic py-1">— {line.text} —</p>

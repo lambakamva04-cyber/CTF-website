@@ -106,8 +106,11 @@ the marketing site's origin, drops anything that fills in the hidden
 `company_website` field, limits each sender to five requests an hour and
 everyone to 200 a day, and saves the rest to `leads`.
 
-Nobody is notified automatically. New requests are in Supabase → Table Editor
-→ `leads`, newest first; set `contacted_at` once you have called back.
+Each saved request is then emailed to `LEAD_NOTIFY_TO` through Resend
+(`EMAIL_API_KEY`), the provider the dashboard uses. A failed email does not
+fail the form — the request is already saved — so it is only logged. Every
+request is also in Supabase → Table Editor → `leads`, newest first; set
+`contacted_at` once you have called back.
 
 ## Setup
 
@@ -159,6 +162,9 @@ npm run preview           # builds with OpenNext, serves under wrangler
 | `VAPI_ASSISTANT_ID` | Rendered to the browser | The single shared demo assistant |
 | `BOOKING_URL` | Rendered to the browser | Where "Book a 15-minute call" points |
 | `DEMO_IP_SALT` | Server | Any long random string. Salts the IP hash; without it the per-person limits are skipped and only the daily caps apply |
+| `EMAIL_API_KEY` | Server | Resend API key. Without it callback requests are saved but not emailed |
+| `LEAD_NOTIFY_TO` | Server | Inbox for callback emails. Defaults to hello@cutthroughfaster.com |
+| `EMAIL_FROM` | Server | Optional sender, on a domain verified with Resend. Defaults to `website@mail.cutthroughfaster.com` |
 | `DEMO_BASE_URL` | `scripts/seed.mjs` only | Optional; makes the printed link use your real domain |
 
 The two Vapi values are passed from the server component as props rather than
