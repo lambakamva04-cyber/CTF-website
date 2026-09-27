@@ -1,9 +1,13 @@
 import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Phone, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import type { CallDetail, CallOutcome, CallSummary } from '../../shared/types';
+import type { CallDetail, CallOutcome, CallSummary, TranscriptLine } from '../../shared/types';
 import { api } from '../lib/api';
 import { formatDuration, formatRelativeDate, outcomeLabel } from '../lib/format';
+import { TranscriptRow } from './LiveCallPanel';
 import { Skeleton, SkeletonRegion, SkeletonText } from './Skeleton';
+
+/** A backstop on paging, far past any real call: the server sends 500 lines a page. */
+const MAX_TRANSCRIPT_PAGES = 10;
 
 function CallIcon({ outcome }: { outcome: CallOutcome | null }) {
   const solid = outcome === 'booked' || outcome === 'resolved';
@@ -58,6 +62,42 @@ export function CallRow({ call, expanded, onToggle, timeZone }: Props) {
       controller.abort();
     };
   }, [expanded, detail, call.id]);
+
+  // The written record of the call, beside the recording, for anyone who
+  // cannot listen to it. Fetched the first time "Read the transcript" is
+  // opened, not with the row: most rows are opened for the outcome alone.
+  const [transcript, setTranscript] = useState<TranscriptLine[] | null>(null);
+  const [transcriptError, setTranscriptError] = useState<string | null>(null);
+  const [transcriptRequested, setTranscriptRequested] = useState(false);
+
+  useEffect(() => {
+    if (!transcriptRequested || transcript) return;
+
+    const controller = new AbortController();
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const lines: TranscriptLine[] = [];
+        let after = 0;
+        for (let page = 0; page < MAX_TRANSCRIPT_PAGES; page++) {
+          const body = await api.transcript(call.id, after, controller.signal);
+          if (body.lines.length === 0) break;
+          lines.push(...body.lines);
+          after = body.cursor;
+        }
+        if (!cancelled) setTranscript(lines);
+      } catch (caught) {
+        if (caught instanceof DOMException && caught.name === 'AbortError') return;
+        if (!cancelled) setTranscriptError('Could not load the transcript.');
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [transcriptRequested, transcript, call.id]);
 
   const panelId = `call-panel-${call.id}`;
   const isSettled = call.outcome !== null;
@@ -147,6 +187,32 @@ export function CallRow({ call, expanded, onToggle, timeZone }: Props) {
               Your browser cannot play this recording.
             </audio>
           )}
+          <details
+            className="pt-2"
+            onToggle={(event) => {
+              if (event.currentTarget.open) setTranscriptRequested(true);
+            }}
+          >
+            <summary className="text-sm font-medium cursor-pointer w-fit">Read the transcript</summary>
+            <div className="pt-3 max-w-md">
+              {transcript === null && !transcriptError && (
+                <p role="status" className="text-xs text-slate">
+                  Loading the transcript…
+                </p>
+              )}
+              {transcript?.length === 0 && (
+                <p className="text-xs text-slate">No transcript was recorded for this call.</p>
+              )}
+              {transcript && transcript.length > 0 && (
+                <div className="space-y-3">
+                  {transcript.map((line) => (
+                    <TranscriptRow key={line.seq} line={line} />
+                  ))}
+                </div>
+              )}
+              {transcriptError && <p className="text-xs text-slate">{transcriptError}</p>}
+            </div>
+          </details>
           {error && <p className="text-xs text-slate">{error}</p>}
         </div>
       )}
