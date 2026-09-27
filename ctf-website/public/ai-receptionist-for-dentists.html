@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en-ZA">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Receptionist for Dental Practices in South Africa | CTF</title>
+<meta name="description" content="A 24/7 AI receptionist built for South African dental practices. It answers every call, books and reschedules appointments, escalates emergencies. Phone it free.">
+<meta name="theme-color" content="#14161A">
+<link rel="canonical" href="https://www.cutthroughfaster.com/ai-receptionist-for-dentists">
+<meta property="og:title" content="AI receptionist for dental practices | CTF">
+<meta property="og:description" content="A 24/7 AI receptionist built for South African dental practices. It answers every call, books and reschedules appointments, escalates emergencies. Phone it free.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.cutthroughfaster.com/ai-receptionist-for-dentists">
+<meta property="og:site_name" content="CTF: Cut Through Faster">
+<meta property="og:locale" content="en_ZA">
+<meta property="og:image" content="https://www.cutthroughfaster.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://www.cutthroughfaster.com/og.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#14161A; --ink-soft:#1E2126; --cream:#F7F6F3; --cream-dim:#EBEAE6;
+           --slate:#63666D; --line:rgba(20,22,26,0.12); --line-d:rgba(247,246,243,0.14); }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body { font-family:'Inter',system-ui,sans-serif; background:var(--cream); color:var(--ink);
+          line-height:1.6; -webkit-font-smoothing:antialiased; }
+  a { color:inherit; }
+  .container { max-width:1100px; margin:0 auto; padding:0 24px; }
+  .narrow { max-width:760px; }
+  nav { background:var(--ink); color:var(--cream); padding:16px 0; position:sticky; top:0; z-index:50; }
+  .nav-inner { display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; }
+  .nav-links { display:flex; gap:22px; font-size:14px; flex-wrap:wrap; }
+  .nav-links a { text-decoration:none; opacity:0.78; }
+  .nav-links a:hover { opacity:1; }
+  .brandmark { font-family:'Space Grotesk',sans-serif; font-weight:700; text-decoration:none; letter-spacing:-0.02em; }
+  .hero { background:var(--ink); color:var(--cream); padding:76px 0 84px; }
+  .eyebrow { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.18em;
+              text-transform:uppercase; opacity:0.62; display:block; margin-bottom:18px; }
+  h1 { font-family:'Space Grotesk',sans-serif; font-size:clamp(1.95rem,5vw,3rem); font-weight:700;
+        line-height:1.1; letter-spacing:-0.02em; margin-bottom:22px; max-width:15ch; }
+  .lede { font-size:clamp(1rem,2.2vw,1.18rem); color:rgba(247,246,243,0.76); max-width:60ch; }
+  .actions { display:flex; gap:12px; flex-wrap:wrap; margin-top:34px; }
+  .btn { display:inline-block; padding:14px 26px; border-radius:6px; text-decoration:none;
+          font-weight:600; font-size:15px; }
+  .btn-primary { background:var(--cream); color:var(--ink); }
+  .btn-secondary { border:1px solid var(--line-d); color:var(--cream); }
+  section { padding:72px 0; }
+  h2 { font-family:'Space Grotesk',sans-serif; font-size:clamp(1.45rem,3.2vw,2rem); font-weight:700;
+        line-height:1.2; margin-bottom:18px; letter-spacing:-0.01em; }
+  h3 { font-family:'Space Grotesk',sans-serif; font-size:1.05rem; font-weight:600; margin-bottom:8px; }
+  p { margin-bottom:16px; color:var(--slate); }
+  .lead-p { font-size:1.08rem; color:var(--ink); }
+  ul.ticks { list-style:none; margin:22px 0; }
+  ul.ticks li { padding:11px 0; border-top:1px solid var(--line); display:flex; gap:12px; color:var(--slate); }
+  ul.ticks li:first-child { border-top:none; }
+  ul.ticks .tick { color:var(--ink); font-weight:700; flex-shrink:0; }
+  .alt { background:var(--cream-dim); }
+  .dark { background:var(--ink); color:var(--cream); text-align:center; }
+  .dark h2 { color:var(--cream); }
+  .dark p { color:rgba(247,246,243,0.74); }
+  .areas { display:flex; flex-wrap:wrap; gap:9px; margin-top:24px; }
+  .areas span { font-family:'JetBrains Mono',monospace; font-size:12px; padding:7px 13px;
+                 border:1px solid var(--line); border-radius:999px; color:var(--slate); }
+  details.faq { border-bottom:1px solid var(--line); padding-bottom:16px; margin-bottom:4px; }
+  details.faq summary { list-style:none; cursor:pointer; display:flex; justify-content:space-between;
+                         align-items:flex-start; gap:18px; padding:8px 0; }
+  details.faq summary::-webkit-details-marker { display:none; }
+  details.faq summary h3 { margin-bottom:0; }
+  details.faq summary::after { content:"+"; font-family:'JetBrains Mono',monospace; font-size:1.25rem;
+                                color:var(--slate); flex-shrink:0; }
+  details.faq[open] summary::after { content:"\2212"; }
+  footer { background:var(--ink); color:rgba(247,246,243,0.45); padding:30px 0; font-size:13px; }
+  .footer-inner { display:flex; justify-content:space-between; gap:14px; flex-wrap:wrap; }
+  footer a { color:rgba(247,246,243,0.72); }
+  .stickybar { display:none; }
+  @media (max-width:760px) {
+    .stickybar { display:grid; grid-template-columns:1fr 1fr; gap:10px; position:fixed;
+      left:0; right:0; bottom:0; z-index:60; padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+      background:rgba(20,22,26,0.94); backdrop-filter:blur(10px); border-top:1px solid var(--line-d); }
+    .stickybar a { display:block; text-align:center; padding:13px 10px; border-radius:999px;
+      font-size:0.92rem; font-weight:600; text-decoration:none; }
+    .sb-call { background:var(--cream); color:var(--ink); }
+    .sb-wa { background:#25D366; color:#0B1F12; }
+    body { padding-bottom:78px; }
+    .nav-links { font-size:13px; gap:16px; }
+  }
+  /* ===== ACCESSIBILITY =====
+     Added on top of the rules above rather than by editing them, so the
+     design is untouched: these only show for keyboard users, screen readers,
+     people who ask for less motion, or where faint text failed WCAG AA. */
+  .skip-link { position:absolute; left:16px; top:-100px; z-index:200; background:var(--cream); color:var(--ink);
+               padding:10px 16px; border-radius:6px; font-weight:600; font-size:14px; text-decoration:none; }
+  .skip-link:focus { top:12px; }
+  .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
+             clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+  main:focus { outline:none; }
+  a:focus-visible, button:focus-visible, summary:focus-visible { outline:2px solid var(--ink); outline-offset:3px; border-radius:4px; }
+  nav a:focus-visible, .hero a:focus-visible, .dark a:focus-visible, footer a:focus-visible,
+  .stickybar a:focus-visible, .skip-link:focus-visible { outline-color:var(--cream); }
+  footer { color:rgba(247,246,243,0.62); }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior:auto; } }
+</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://www.cutthroughfaster.com/#org",
+      "name": "CTF: Cut Through Faster",
+      "alternateName": [
+        "Cut Through Faster",
+        "CTF",
+        "cutthroughfaster"
+      ],
+      "url": "https://www.cutthroughfaster.com/",
+      "email": "hello@cutthroughfaster.com",
+      "telephone": "+27764162531",
+      "sameAs": [
+        "https://www.instagram.com/cutthroughfaster"
+      ],
+      "founder": {
+        "@type": "Person",
+        "name": "Kamva Tiwani",
+        "jobTitle": "Co-founder",
+        "sameAs": [
+          "https://www.linkedin.com/in/kamva-tiwani-70586a407"
+        ]
+      },
+      "areaServed": {
+        "@type": "Country",
+        "name": "South Africa"
+      }
+    },
+    {
+      "@type": "Service",
+      "@id": "https://www.cutthroughfaster.com/ai-receptionist-for-dentists#service",
+      "name": "AI receptionist for dental practices",
+      "serviceType": "AI voice receptionist and appointment booking for dentists",
+      "description": "A 24/7 AI receptionist built for South African dental practices. It answers every call, books and reschedules appointments, handles cancellations and escalates emergencies.",
+      "provider": {
+        "@id": "https://www.cutthroughfaster.com/#org"
+      },
+      "areaServed": {
+        "@type": "Country",
+        "name": "South Africa"
+      },
+      "audience": {
+        "@type": "BusinessAudience",
+        "audienceType": "Dental practices, dentists, orthodontists, periodontists"
+      },
+      "availableChannel": {
+        "@type": "ServiceChannel",
+        "serviceUrl": "https://www.cutthroughfaster.com/ai-receptionist-for-dentists",
+        "servicePhone": {
+          "@type": "ContactPoint",
+          "telephone": "+27764162531"
+        }
+      },
+      "hoursAvailable": {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": [
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sunday"
+        ],
+        "opens": "00:00",
+        "closes": "23:59"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "ZAR",
+        "availability": "https://schema.org/InStock",
+        "description": "Once off build fee plus a monthly fee. Quoted per practice on a fifteen minute call."
+      }
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is an AI receptionist for a dental practice?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "It is a voice that answers your practice phone, understands what the caller wants, and books, reschedules or cancels the appointment in your diary. It runs 24 hours a day and answers every call at once, so a patient never hears a busy tone or a voicemail beep."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can it book, reschedule and cancel appointments?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. Booking and rescheduling are the two things it is built to do well, because they are the two things that cost a practice money when nobody answers. Cancellation handling matters just as much: a cancellation you hear about on the night frees a slot you can still fill."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Will it handle a dental emergency correctly?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "It does not give clinical advice and it does not try to triage. It recognises that the call is urgent, gives the caller the emergency route you have told us to give, and flags the call to you immediately rather than leaving it in a morning summary."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does it work with medical aid questions?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "It can answer the factual questions you have taught it, such as which schemes you are contracted to and whether you bill the scheme directly. It will not quote a patient a co-payment or interpret their benefits, because getting that wrong costs you a patient and a complaint."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is patient information safe?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The receptionist only holds what it needs to book the appointment, and it only passes that to you. Under POPIA your practice is the responsible party, which means the obligation lands on you, not on your supplier. So ask every provider you evaluate, including us, exactly what is stored, where it is stored and for how long, and get the answer in writing before you sign anything."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does it sound South African?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. It is built around South African accents, South African trading hours and the way South African patients actually talk on the phone. Phone the demo line on this page and judge the voice yourself before you believe anything written here."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What does it cost a dental practice?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "A once off build fee to configure and train the receptionist on your practice, then a monthly fee based on your call volume and how many locations you run. We quote on a fifteen minute call. If the maths does not work for your practice we will tell you on that call rather than sell you something."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Do I have to replace my receptionist?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No, and most practices should not. Your receptionist is at her best with the patient in front of her. CTF takes the calls that arrive while she is already on the phone, at lunch, or gone for the day."
+          }
+        }
+      ]
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://www.cutthroughfaster.com/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "AI receptionist for dentists",
+          "item": "https://www.cutthroughfaster.com/ai-receptionist-for-dentists"
+        }
+      ]
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<nav aria-label="Main">
+  <div class="container nav-inner">
+    <a href="/" class="brandmark">CTF</a>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/after-hours-answering-johannesburg">After hours</a>
+      <a href="/ai-receptionist-for-dentists">Dentists</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/#contact">Contact</a>
+    </div>
+  </div>
+</nav>
+
+<main id="main" tabindex="-1">
+
+<header class="hero">
+  <div class="container">
+    <span class="eyebrow">Built for dental practices</span>
+    <h1>An AI receptionist that books dental appointments.</h1>
+    <p class="lede">Every call answered, day or night. New patients booked while your front desk is on another line. Cancellations caught in the evening, while you can still fill the slot.</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="https://demo.cutthroughfaster.com/demo/try">Phone the demo practice, free</a>
+      <a class="btn btn-secondary" href="https://wa.me/27764162531?text=Hi%20CTF%2C%20I%27d%20like%20a%20demo%20line%20for%20my%20practice." target="_blank" rel="noopener">WhatsApp us<span class="sr-only"> (opens in a new tab)</span></a>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="container narrow">
+    <h2>A dental practice loses money in a very specific way.</h2>
+    <p class="lead-p">It is not the patient who phones and gets told to wait. It is the one who phones, hears a voicemail, and phones the next practice on the list instead. You never find out that call happened.</p>
+    <p>There are only a handful of moments where it goes wrong, and they are all the same moment: the phone rings and nobody can pick it up. Your receptionist is checking a patient in. She is on the other line. It is one o'clock. It is after five. It is Saturday. It is the week she is on leave.</p>
+    <p>A new patient is worth the whole course of treatment, not the one appointment. Which is why a phone that rings out is an expensive piece of equipment to own.</p>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="container narrow">
+    <h2>What it does for a practice</h2>
+    <ul class="ticks">
+      <li><span class="tick" aria-hidden="true">&bull;</span><span><strong>Books new patients.</strong> It qualifies the call, offers real slots and takes the appointment. The patient is booked before they have a chance to phone anyone else.</span></li>
+      <li><span class="tick" aria-hidden="true">&bull;</span><span><strong>Reschedules without a callback.</strong> The single most common call a practice gets, handled at the moment it comes in.</span></li>
+      <li><span class="tick" aria-hidden="true">&bull;</span><span><strong>Catches cancellations early.</strong> A patient who cancels at eight in the evening gives you the whole next morning to refill the slot. A patient who cancels to a voicemail gives you nothing.</span></li>
+      <li><span class="tick" aria-hidden="true">&bull;</span><span><strong>Answers the boring questions.</strong> Where you are, where to park, which schemes you are contracted to, what your hours are over the holidays.</span></li>
+      <li><span class="tick" aria-hidden="true">&bull;</span><span><strong>Escalates real emergencies.</strong> It does not triage and it does not give clinical advice. It gives the caller the emergency route you have chosen and flags the call to you straight away.</span></li>
+      <li><span class="tick" aria-hidden="true">&bull;</span><span><strong>Takes the overflow.</strong> Ten patients can phone at the same time and all ten get answered.</span></li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <div class="container narrow">
+    <h2>It is not there to replace your receptionist.</h2>
+    <p class="lead-p">Your receptionist is worth the most when she is with the patient standing in front of her, reading the room, handling the nervous one, sorting out an account query face to face. She is worth the least when she is apologising to a person on hold.</p>
+    <p>CTF takes the calls that arrive while she is already busy, and all the calls that arrive when the practice is shut. That is it. Practices that have tried to replace a front desk with software have learned an expensive lesson, and we are not going to sell you that.</p>
+    <p class="lead-p" style="margin-top:28px;"><strong>We can&rsquo;t guarantee that our AI receptionists will make you money, but we build them so they do.</strong></p>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="container narrow">
+    <h2>Built for South Africa, not adapted for it</h2>
+    <p>Most AI receptionists on the market were built for American practices and then pointed at us. That shows up in small ways that patients notice: the accent, the way dates and times are said, the assumption that everyone has insurance rather than a medical aid, a voice that does not recognise a Johannesburg suburb when it hears one.</p>
+    <p>CTF is built around South African accents, South African trading hours and South African medical aid language. If your practice is in Johannesburg, there is a page on <a href="/after-hours-answering-johannesburg"><strong>after hours answering for Johannesburg businesses</strong></a> that goes into the evening and weekend side of it in more detail.</p>
+  </div>
+</section>
+
+<section class="dark">
+  <div class="container narrow">
+    <h2>The demo is a dental practice.</h2>
+    <p>The line is a working receptionist for a fictional practice, free to phone, no form, no card. Book an appointment with it. Then try to trip it up. That is a far better test than anything we could write on this page.</p>
+    <div class="actions" style="justify-content:center;">
+      <a class="btn btn-primary" href="https://demo.cutthroughfaster.com/demo/try">Phone the demo practice</a>
+      <a class="btn btn-secondary" href="/#contact">Get a quote for your practice</a>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container narrow">
+    <h2>Dental practices ask us this</h2>
+    <details class="faq"><summary><h3>What is an AI receptionist for a dental practice?</h3></summary><p style="margin-top:10px;">It is a voice that answers your practice phone, understands what the caller wants, and books, reschedules or cancels the appointment in your diary. It runs 24 hours a day and answers every call at once, so a patient never hears a busy tone or a voicemail beep.</p></details>
+    <details class="faq"><summary><h3>Can it book, reschedule and cancel appointments?</h3></summary><p style="margin-top:10px;">Yes. Booking and rescheduling are the two things it is built to do well, because they are the two things that cost a practice money when nobody answers. Cancellation handling matters just as much: a cancellation you hear about on the night frees a slot you can still fill.</p></details>
+    <details class="faq"><summary><h3>Will it handle a dental emergency correctly?</h3></summary><p style="margin-top:10px;">It does not give clinical advice and it does not try to triage. It recognises that the call is urgent, gives the caller the emergency route you have told us to give, and flags the call to you immediately rather than leaving it in a morning summary.</p></details>
+    <details class="faq"><summary><h3>Does it work with medical aid questions?</h3></summary><p style="margin-top:10px;">It can answer the factual questions you have taught it, such as which schemes you are contracted to and whether you bill the scheme directly. It will not quote a patient a co-payment or interpret their benefits, because getting that wrong costs you a patient and a complaint.</p></details>
+    <details class="faq"><summary><h3>Is patient information safe?</h3></summary><p style="margin-top:10px;">The receptionist only holds what it needs to book the appointment, and it only passes that to you. Under POPIA your practice is the responsible party, which means the obligation lands on you, not on your supplier. So ask every provider you evaluate, including us, exactly what is stored, where it is stored and for how long, and get the answer in writing before you sign anything.</p></details>
+    <details class="faq"><summary><h3>Does it sound South African?</h3></summary><p style="margin-top:10px;">Yes. It is built around South African accents, South African trading hours and the way South African patients actually talk on the phone. Phone the demo line on this page and judge the voice yourself before you believe anything written here.</p></details>
+    <details class="faq"><summary><h3>What does it cost a dental practice?</h3></summary><p style="margin-top:10px;">A once off build fee to configure and train the receptionist on your practice, then a monthly fee based on your call volume and how many locations you run. We quote on a fifteen minute call. If the maths does not work for your practice we will tell you on that call rather than sell you something.</p></details>
+    <details class="faq"><summary><h3>Do I have to replace my receptionist?</h3></summary><p style="margin-top:10px;">No, and most practices should not. Your receptionist is at her best with the patient in front of her. CTF takes the calls that arrive while she is already on the phone, at lunch, or gone for the day.</p></details>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="container narrow" style="text-align:center;">
+    <h2>Next</h2>
+    <p><a href="/#pricing"><strong>See how pricing works</strong></a>, <a href="/after-hours-answering-johannesburg"><strong>read the Johannesburg after hours page</strong></a>, or <a href="/#contact"><strong>book a fifteen minute call</strong></a> and we will tell you on that call whether the maths works for your practice.</p>
+  </div>
+</section>
+
+</main>
+
+<div class="stickybar" role="complementary" aria-label="Quick contact">
+  <a class="sb-call" href="https://demo.cutthroughfaster.com/demo/try">Phone Hope</a>
+  <a class="sb-wa" href="https://wa.me/27764162531?text=Hi%20CTF%2C%20I%27d%20like%20a%20demo%20line%20for%20my%20practice." target="_blank" rel="noopener">WhatsApp<span class="sr-only"> (opens in a new tab)</span></a>
+</div>
+
+<footer>
+  <div class="container footer-inner">
+    <span>&copy; 2026 CTF (Cut Through Faster). <a href="/">cutthroughfaster.com</a></span>
+    <span><a href="mailto:hello@cutthroughfaster.com">hello@cutthroughfaster.com</a> &middot; <a href="tel:+27764162531">076&nbsp;416&nbsp;2531</a></span>
+  </div>
+</footer>
+</body>
+</html>

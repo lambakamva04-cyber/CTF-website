@@ -1,7 +1,14 @@
 import { NextResponse } from 'next/server';
 
+import { hashCallerIp } from '@/lib/caller';
 import { DEMO_MAX_SECONDS, isDemoEventType, isValidSlug } from '@/lib/demo';
-import { claimDemo, getProspectBySlug, recordEvent } from '@/lib/prospects';
+import {
+  checkPublicGate,
+  claimDemo,
+  getProspectBySlug,
+  isReusable,
+  recordEvent,
+} from '@/lib/prospects';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,7 +35,10 @@ function trim(value: unknown, max: number): string | null {
  * POST /api/demo/[slug]/event
  *
  * Writes one `demo_events` row. On `call_started` it also spends the link by
- * stamping `demo_used_at`, which is what makes a demo link single-use.
+ * stamping `demo_used_at`, which is what makes a demo link single-use — except
+ * on the public line and CTF's test links, which are never spent. A public
+ * line `call_started` carries the caller's hashed IP instead, because those
+ * rows are what `public_demo_gate()` counts.
  *
  * The endpoint is unauthenticated by necessity — the prospect has no login —
  * so everything it trusts is either validated here or taken from the request
@@ -64,8 +74,23 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
   // the race, or a replayed request. The event is still recorded either way;
   // the funnel should show what actually happened.
   let firstUse = false;
-  if (eventType === 'call_started') {
+  if (eventType === 'call_started' && !isReusable(prospect)) {
     firstUse = await claimDemo(prospect.id);
+  }
+
+  // The public line's limits count these rows, so one has to pass the same
+  // gate a real call did. Otherwise fifteen forged requests, with no call
+  // behind them, would close the line to everyone for the day.
+  let ipHash: string | null = null;
+  if (eventType === 'call_started' && prospect.is_public) {
+    ipHash = await hashCallerIp(request);
+    const verdict = await checkPublicGate(ipHash);
+    if (!verdict.allowed) {
+      return NextResponse.json(
+        { error: 'limit_reached', reason: verdict.reason },
+        { status: 429, headers: NO_STORE },
+      );
+    }
   }
 
   await recordEvent({
@@ -75,6 +100,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     endedReason:
       eventType === 'call_ended' ? trim(payload.ended_reason, MAX_ENDED_REASON_CHARS) : null,
     userAgent: trim(request.headers.get('user-agent'), MAX_USER_AGENT_CHARS),
+    ipHash,
   });
 
   return NextResponse.json({ ok: true, first_use: firstUse }, { headers: NO_STORE });

@@ -27,10 +27,14 @@ that will drift apart by March. Adding a practice is an `INSERT`.
 | `src/app/demo/[slug]/page.tsx` | The whole page, server-rendered from one Supabase row |
 | `src/app/demo/[slug]/DemoPanel.tsx` | The button and every state after it: live, ended, expired, mic denied, failed |
 | `src/app/api/demo/[slug]/route.ts` | `GET` — the prospect's display fields plus `expired` |
-| `src/app/api/demo/[slug]/event/route.ts` | `POST` — writes a `demo_events` row; spends the link on `call_started` |
-| `src/lib/prospects.ts` | Every Supabase query, server-only |
+| `src/app/api/demo/[slug]/event/route.ts` | `POST` — writes a `demo_events` row; spends a personal link on `call_started` |
+| `src/app/api/demo/[slug]/gate/route.ts` | `POST` — asked before every call on the public line; answers yes with the call length, or no with the reason |
+| `src/app/api/lead/route.ts` | `POST` — callback requests from the marketing site's contact form, saved to `leads` |
+| `src/lib/prospects.ts` | Every prospect, event and gate query, server-only |
+| `src/lib/leads.ts` | Saving callback requests and their flood limit |
+| `src/lib/caller.ts` | The salted hash of a caller's IP — all the limits ever store |
 | `src/lib/demo.ts` | The bits both sides share: the 180-second cap, event names, slug rule |
-| `migrations/0001_init.sql` | The two tables |
+| `migrations/` | Every change to the database, in order. 0002–0007 were made directly in Supabase and recorded here afterwards |
 | `vapi/assistant.md` | **The system prompt.** The positioning lives here as much as in the page copy |
 | `scripts/seed.mjs` | Adds a prospect |
 | `wrangler.jsonc`, `open-next.config.ts` | Cloudflare Worker build and deploy |
@@ -73,6 +77,38 @@ redundant:
   link is spent when Hope actually answers — a failed connection or a refused
   microphone leaves it intact.
 
+### The public line
+
+`/demo/try` is the "Phone Hope now" button on the marketing site: a prospect
+row with `is_public = true`, answering for a made-up sample practice. It is
+never spent. Instead, before every call the page asks
+`POST /api/demo/try/gate`, which runs `public_demo_gate()` in the database
+against two limits held in the one-row `demo_limits` table:
+
+- calls per person per hour (`per_ip_per_hour`), counted on a salted hash of
+  the caller's IP — never the address itself;
+- calls per day across everyone (`global_per_day`) — the real budget cap.
+
+The same row sets the call length (`max_seconds`, one minute). All three can
+be changed in the Supabase table editor without a deploy. A nightly pg_cron
+job, `prune-demo-identifiers`, strips the IP hashes after 30 days.
+
+The Vapi public key is in the page by design, so a browser that skips the gate
+can still start a call; the gate keeps an ordinary crowd within budget, it is
+not a lock. Rows with `is_test = true` (CTF's own test links) are never spent
+either, and have no gate.
+
+## Callback requests
+
+The contact form on www.cutthroughfaster.com posts JSON to
+`https://demo.cutthroughfaster.com/api/lead`. The route accepts only JSON from
+the marketing site's origin, drops anything that fills in the hidden
+`company_website` field, limits each sender to five requests an hour and
+everyone to 200 a day, and saves the rest to `leads`.
+
+Nobody is notified automatically. New requests are in Supabase → Table Editor
+→ `leads`, newest first; set `contacted_at` once you have called back.
+
 ## Setup
 
 Requires Node 22+.
@@ -83,9 +119,13 @@ npm install
 cp .env.example .env.local   # then fill it in
 ```
 
-**1. Supabase.** Create a project, then run `migrations/0001_init.sql` in the
-SQL editor (or `supabase db execute --file migrations/0001_init.sql`). Copy the
+**1. Supabase.** Create a project, then run every file in `migrations/` in the
+SQL editor, in order (or `supabase db execute --file ...` for each). Copy the
 project URL and the `service_role` key from Settings → API into `.env.local`.
+
+Change the database only by adding a new numbered file here and applying it.
+A change made straight in Supabase and never committed is how the public line
+and the callback form went missing from this code once already.
 
 **2. Vapi.** Create one assistant, and configure it exactly as
 [`vapi/assistant.md`](vapi/assistant.md) sets out — the system prompt there
@@ -118,6 +158,7 @@ npm run preview           # builds with OpenNext, serves under wrangler
 | `VAPI_PUBLIC_KEY` | Rendered to the browser | Vapi's public key is designed for this |
 | `VAPI_ASSISTANT_ID` | Rendered to the browser | The single shared demo assistant |
 | `BOOKING_URL` | Rendered to the browser | Where "Book a 15-minute call" points |
+| `DEMO_IP_SALT` | Server | Any long random string. Salts the IP hash; without it the per-person limits are skipped and only the daily caps apply |
 | `DEMO_BASE_URL` | `scripts/seed.mjs` only | Optional; makes the printed link use your real domain |
 
 The two Vapi values are passed from the server component as props rather than
