@@ -1,13 +1,13 @@
 // The demo's privacy policy, kept as data in the same shape as the control
 // platform's (app/shared/legal.ts), so the two read as one company's policies.
 //
-// Written to describe what this code actually does — the two Supabase tables in
-// migrations/0001_init.sql, the Vapi web call in DemoPanel.tsx, the Worker on
-// Cloudflare — and nothing it does not. Change it whenever those change. It is a
-// working draft, not a substitute for review by someone qualified in South
-// African law.
+// Written to describe what this code actually does — the Supabase tables in
+// migrations/, the Vapi web call in DemoPanel.tsx, the public line's gate, the
+// website's callback form posting to /api/lead, the Worker on Cloudflare — and
+// nothing it does not. Change it whenever those change. It is a working draft,
+// not a substitute for review by someone qualified in South African law.
 
-export const PRIVACY_VERSION = '2026-09-26';
+export const PRIVACY_VERSION = '2026-09-27';
 
 /** Same inbox as the control platform's Information Officer. */
 export const PRIVACY_CONTACT = 'privacy@cutthroughfaster.com';
@@ -36,7 +36,7 @@ export const DEMO_SUB_PROCESSORS: SubProcessor[] = [
   },
   {
     name: 'Supabase, Inc.',
-    role: 'Stores the practice details shown on the page and the record of what happened on it.',
+    role: 'Stores the practice details shown on the page, the record of what happened on it, and callback requests sent from our website.',
     location: 'Ireland (European Union)',
   },
   {
@@ -55,9 +55,9 @@ export const DEMO_PRIVACY: {
 } = {
   title: 'Privacy Policy',
   version: PRIVACY_VERSION,
-  updated: '26 September 2026',
+  updated: '27 September 2026',
   intro:
-    'This covers the Hope demo pages: the personal link we sent your practice, and the conversation you can have on it with Hope, our AI receptionist. It explains what we collect, why, who handles it, and what you can ask us to do about it.',
+    'This covers the Hope demo pages — the personal link we sent your practice, and the public line on our website — the conversation you can have on them with Hope, our AI receptionist, and the callback form on our website. It explains what we collect, why, who handles it, and what you can ask us to do about it.',
   sections: [
     {
       heading: 'Who we are',
@@ -71,13 +71,15 @@ export const DEMO_PRIVACY: {
       body: [
         'To prepare your demo we put together a short profile of your practice from publicly available business information, such as its website and online business listings: its name, its suburb, the services it offers and its opening hours.',
         'That profile is what the page shows under "What Hope already knows", and it is all Hope is told about your practice.',
+        'The public line on our website does not use your practice at all: Hope answers for a sample practice we made up.',
       ],
     },
     {
       heading: 'What the page records',
       body: [
         'When the page is opened, and when a call starts or ends, we record that it happened, when, how long the call lasted and how it ended, whether the microphone was refused, and the kind of browser and device you used (the "user agent" your browser sends).',
-        'We do not record your IP address ourselves. Cloudflare, which hosts the page, has to handle it to deliver the page to you, and keeps short-lived technical logs.',
+        'We do not store your IP address. Cloudflare, which hosts the page, has to handle it to deliver the page to you, and keeps short-lived technical logs.',
+        'On the public line, to limit how many calls one person can make, we keep a scrambled version of your IP address with the record of each call: a one-way code made from the address, which cannot be turned back into it. We delete that code after 30 days.',
         'The page uses no advertising or tracking cookies.',
       ],
     },
@@ -86,14 +88,22 @@ export const DEMO_PRIVACY: {
       body: [
         'When you tap "Talk to Hope", your browser asks to use your microphone and sends what you say to Vapi, the voice platform that runs the conversation. Vapi passes the audio and text to the speech-recognition, AI language-model and voice providers it uses, so that Hope can understand you and answer.',
         'Vapi keeps a recording and a transcript of the conversation. We can listen to and read them.',
-        'The microphone is used only during the call, and each link allows one conversation of up to three minutes.',
+        'The microphone is used only during the call. A personal link allows one conversation of up to three minutes; the public line allows calls of up to a minute, a few per person each hour.',
         'Hope is a demonstration. Please do not give her real patient details or anyone else’s personal information: whatever is said is recorded.',
+      ],
+    },
+    {
+      heading: 'Callback requests from our website',
+      body: [
+        'If you ask us to call you back using the form on cutthroughfaster.com, we keep what you enter — your name, type of business, phone number and message — with the time you sent it, the kind of browser you used, and a scrambled version of your IP address made the same way as above, which we use to stop the form being flooded.',
       ],
     },
     {
       heading: 'Why we use it',
       body: [
         'To run the demo: to show Hope your practice’s details, and to limit each link to one conversation.',
+        'To call you back when you ask us to.',
+        'To limit how often the public line and the callback form can be used, so they stay available to everyone.',
         'To see whether the demo works — which links are opened, which calls connect, where they fail — and to improve Hope from what callers ask her.',
         'To follow up with your practice about CTF. You can tell us at any time to stop, and we will.',
         'We do not sell this information or share it for advertising.',
@@ -118,7 +128,8 @@ export const DEMO_PRIVACY: {
     {
       heading: 'How long we keep it',
       body: [
-        'We keep the practice profile, the page records and the conversation only for as long as we need them to follow up with your practice about CTF, and we delete them when you ask us to.',
+        'We keep the practice profile, the page records, the conversation and any callback request only for as long as we need them to follow up with you about CTF, and we delete them when you ask us to.',
+        'The scrambled IP address kept with public line calls is deleted after 30 days, automatically.',
       ],
     },
     {

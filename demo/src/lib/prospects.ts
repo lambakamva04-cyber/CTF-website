@@ -2,7 +2,12 @@ import 'server-only';
 import { cache } from 'react';
 
 import { db } from './supabase';
-import type { DemoEventType, PublicProspect } from './demo';
+import {
+  PUBLIC_LINE_FALLBACK_SECONDS,
+  type DemoEventType,
+  type GateResponse,
+  type PublicProspect,
+} from './demo';
 
 type ProspectRow = {
   id: string;
@@ -12,9 +17,19 @@ type ProspectRow = {
   services: string[] | null;
   hours: string | null;
   demo_used_at: string | null;
+  /** The always-on line on the marketing site. Never spent; rate limited instead. */
+  is_public: boolean;
+  /** CTF's own test rows. Never spent and never shown as expired. */
+  is_test: boolean;
 };
 
-const PROSPECT_COLUMNS = 'id, slug, practice_name, suburb, services, hours, demo_used_at';
+const PROSPECT_COLUMNS =
+  'id, slug, practice_name, suburb, services, hours, demo_used_at, is_public, is_test';
+
+/** Public and test links are never spent: one call does not use them up. */
+export function isReusable(row: ProspectRow): boolean {
+  return row.is_public || row.is_test;
+}
 
 /**
  * Null for an unknown slug. Callers turn that into a bare 404.
@@ -44,7 +59,8 @@ export function toPublicProspect(row: ProspectRow): PublicProspect {
     suburb: row.suburb,
     services: row.services ?? [],
     hours: row.hours,
-    expired: row.demo_used_at !== null,
+    expired: !isReusable(row) && row.demo_used_at !== null,
+    public_line: row.is_public,
   };
 }
 
@@ -54,6 +70,8 @@ export type RecordEventInput = {
   durationSeconds?: number | null;
   endedReason?: string | null;
   userAgent?: string | null;
+  /** Public line `call_started` only: what the per-person limit counts. */
+  ipHash?: string | null;
 };
 
 export async function recordEvent(input: RecordEventInput): Promise<void> {
@@ -63,9 +81,49 @@ export async function recordEvent(input: RecordEventInput): Promise<void> {
     duration_seconds: input.durationSeconds ?? null,
     ended_reason: input.endedReason ?? null,
     user_agent: input.userAgent ?? null,
+    ip_hash: input.ipHash ?? null,
   });
 
   if (error) throw new Error(`event insert failed: ${error.message}`);
+}
+
+/**
+ * The public line's call length, from `demo_limits` so it can be changed in
+ * Supabase without a deploy. Only the page's copy uses this; the number a
+ * call actually runs to comes back from the gate. Memoised per request, like
+ * the prospect, for the page and its metadata.
+ */
+export const getPublicLineSeconds = cache(async (): Promise<number> => {
+  const { data, error } = await db()
+    .from('demo_limits')
+    .select('max_seconds')
+    .eq('id', 1)
+    .maybeSingle<{ max_seconds: number }>();
+
+  if (error || !data) return PUBLIC_LINE_FALLBACK_SECONDS;
+  return data.max_seconds;
+});
+
+/**
+ * Asks `public_demo_gate()` whether the public line may take another call. The
+ * limits live in the database function and the `demo_limits` row: calls per
+ * person per hour, and calls per day across everyone.
+ *
+ * A failed check refuses nothing here — it throws, and the route answers with
+ * an error, so an unreadable limit never turns into unlimited calls.
+ */
+export async function checkPublicGate(ipHash: string | null): Promise<GateResponse> {
+  const { data, error } = await db().rpc('public_demo_gate', { p_ip_hash: ipHash });
+  if (error) throw new Error(`public demo gate failed: ${error.message}`);
+
+  const result = (data ?? {}) as { allowed?: unknown; reason?: unknown; max_seconds?: unknown };
+  if (result.allowed === true && typeof result.max_seconds === 'number') {
+    return { allowed: true, max_seconds: result.max_seconds };
+  }
+  if (result.reason === 'ip_cooldown' || result.reason === 'daily_cap') {
+    return { allowed: false, reason: result.reason };
+  }
+  throw new Error('public demo gate returned an unexpected answer');
 }
 
 /**

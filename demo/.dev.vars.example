@@ -1,5 +1,5 @@
 # Copy to `.dev.vars` for `npm run preview` (the Worker running under wrangler).
-# `next dev` reads `.env.local` instead — same five names, same values.
+# `next dev` reads `.env.local` instead — same names, same values.
 # Never commit either file: SUPABASE_SERVICE_ROLE_KEY is a full-database credential.
 #
 # In production these are set with `wrangler secret put <NAME>`.
@@ -9,3 +9,4 @@ SUPABASE_SERVICE_ROLE_KEY=
 VAPI_PUBLIC_KEY=
 VAPI_ASSISTANT_ID=
 BOOKING_URL=
+DEMO_IP_SALT=

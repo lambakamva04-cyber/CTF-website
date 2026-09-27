@@ -39,3 +39,15 @@ export function vapiAssistantId(): string {
 export function bookingUrl(): string {
   return required('BOOKING_URL');
 }
+
+/**
+ * Salt for the one-way hash of a caller's IP address, which is all the public
+ * line's per-person limit and the callback form's flood limit ever store.
+ *
+ * Optional on purpose. Without it no hash is made, the per-person limit is
+ * skipped, and the public line falls back on its daily cap alone — a request
+ * still works, and a callback request is still saved.
+ */
+export function demoIpSalt(): string | null {
+  return process.env.DEMO_IP_SALT || null;
+}

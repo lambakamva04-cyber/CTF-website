@@ -40,4 +40,5 @@
   //   VAPI_PUBLIC_KEY
   //   VAPI_ASSISTANT_ID
   //   BOOKING_URL
+  //   DEMO_IP_SALT                salts the caller-IP hash the limits count
 }

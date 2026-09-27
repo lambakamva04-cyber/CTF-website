@@ -4,17 +4,30 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type Vapi from '@vapi-ai/web';
 
 import {
-  DEMO_MAX_SECONDS,
+  describeDuration,
   formatCountdown,
   joinServices,
+  spokenPracticeName,
   type DemoEventBody,
+  type GateRefusal,
+  type GateResponse,
   type PublicProspect,
 } from '@/lib/demo';
 
-type Phase = 'ready' | 'connecting' | 'live' | 'ended' | 'mic_denied' | 'failed' | 'expired';
+type Phase =
+  | 'ready'
+  | 'connecting'
+  | 'live'
+  | 'ended'
+  | 'mic_denied'
+  | 'failed'
+  | 'expired'
+  | 'limited';
 
 type Props = {
   prospect: PublicProspect;
+  /** The call length: three minutes on a personal link, `demo_limits` on the public line. */
+  maxSeconds: number;
   bookingUrl: string;
   vapiPublicKey: string;
   vapiAssistantId: string;
@@ -23,10 +36,22 @@ type Props = {
 /** If Vapi has not connected us by now, something is wrong. */
 const CONNECT_TIMEOUT_MS = 25_000;
 
-export default function DemoPanel({ prospect, bookingUrl, vapiPublicKey, vapiAssistantId }: Props) {
+export default function DemoPanel({
+  prospect,
+  maxSeconds,
+  bookingUrl,
+  vapiPublicKey,
+  vapiAssistantId,
+}: Props) {
   const [phase, setPhase] = useState<Phase>(prospect.expired ? 'expired' : 'ready');
-  const [remaining, setRemaining] = useState(DEMO_MAX_SECONDS);
+  // The cap for the call in progress. The public line's gate can hand back a
+  // different number than the page was rendered with, if the limit was changed
+  // in between; the gate's answer wins, because it is what Vapi is told.
+  const [cap, setCap] = useState(maxSeconds);
+  const capRef = useRef(maxSeconds);
+  const [remaining, setRemaining] = useState(maxSeconds);
   const [lastDuration, setLastDuration] = useState<number | null>(null);
+  const [limitReason, setLimitReason] = useState<GateRefusal>('daily_cap');
   // Read out by a screen reader. Kept to what a sighted person would notice
   // without being told: the connection starting and the time running short.
   const [announcement, setAnnouncement] = useState('');
@@ -117,7 +142,7 @@ export default function DemoPanel({ prospect, bookingUrl, vapiPublicKey, vapiAss
       startedAtRef.current = Date.now();
       callActiveRef.current = true;
       endLoggedRef.current = false;
-      setRemaining(DEMO_MAX_SECONDS);
+      setRemaining(capRef.current);
       setPhase('live');
       void sendEvent({ event_type: 'call_started' });
     };
@@ -170,13 +195,15 @@ export default function DemoPanel({ prospect, bookingUrl, vapiPublicKey, vapiAss
     };
   }, [finishCall, loadVapi, prospect.expired, sendEvent]);
 
-  // ---- the three-minute cap ------------------------------------------------
+  // ---- the time cap --------------------------------------------------------
   // Driven off wall-clock time rather than a tick count, so a backgrounded tab
   // that throttles its timers still stops on schedule. Vapi is also told the
   // same limit as `maxDurationSeconds`, so this timer is the courtesy and the
   // server-side cap is the guarantee.
   useEffect(() => {
     if (phase !== 'live') return;
+
+    const limit = capRef.current;
 
     const stopNow = () => {
       intentRef.current = 'demo-time-limit';
@@ -185,7 +212,7 @@ export default function DemoPanel({ prospect, bookingUrl, vapiPublicKey, vapiAss
 
     const tick = () => {
       const startedAt = startedAtRef.current ?? Date.now();
-      const left = DEMO_MAX_SECONDS - (Date.now() - startedAt) / 1000;
+      const left = limit - (Date.now() - startedAt) / 1000;
       setRemaining(Math.max(0, left));
       if (left <= 0) stopNow();
     };
@@ -195,7 +222,7 @@ export default function DemoPanel({ prospect, bookingUrl, vapiPublicKey, vapiAss
     const startedAt = startedAtRef.current ?? Date.now();
     const hardStop = window.setTimeout(
       stopNow,
-      Math.max(0, DEMO_MAX_SECONDS * 1000 - (Date.now() - startedAt)),
+      Math.max(0, limit * 1000 - (Date.now() - startedAt)),
     );
 
     return () => {
@@ -249,11 +276,21 @@ export default function DemoPanel({ prospect, bookingUrl, vapiPublicKey, vapiAss
 
   // ---- starting ------------------------------------------------------------
   const handleStart = useCallback(async () => {
-    if (phase === 'connecting' || phase === 'live' || phase === 'expired') return;
+    if (phase === 'connecting' || phase === 'live' || phase === 'expired' || phase === 'limited') {
+      return;
+    }
 
     setPhase('connecting');
     intentRef.current = null;
     reportedReasonRef.current = null;
+
+    // The public line asks whether it may take another call. Sent now, beside
+    // the microphone prompt rather than after it, so the answer is usually
+    // back by the time permission is. The catch only keeps an early return
+    // (a refused microphone) from leaving an unhandled rejection; the answer
+    // itself is awaited below.
+    const gate = prospect.public_line ? requestGate(slug) : null;
+    gate?.catch(() => undefined);
 
     // The microphone is requested here, directly, rather than left to the SDK.
     // It must happen inside the click for iOS Safari to grant it at all, and
@@ -279,19 +316,39 @@ export default function DemoPanel({ prospect, bookingUrl, vapiPublicKey, vapiAss
       return;
     }
 
+    if (gate) {
+      let verdict: GateResponse;
+      try {
+        verdict = await gate;
+      } catch {
+        // No answer is not a yes: an unreadable limit must not become an
+        // unlimited line.
+        setPhase('failed');
+        return;
+      }
+      if (!verdict.allowed) {
+        setLimitReason(verdict.reason);
+        setPhase('limited');
+        return;
+      }
+      capRef.current = verdict.max_seconds;
+      setCap(verdict.max_seconds);
+      setRemaining(verdict.max_seconds);
+    }
+
     const timeout = window.setTimeout(() => {
       setPhase((current) => (current === 'connecting' ? 'failed' : current));
     }, CONNECT_TIMEOUT_MS);
 
     try {
       const vapi = await loadVapi();
-      await vapi.start(vapiAssistantId, buildOverrides(prospect));
+      await vapi.start(vapiAssistantId, buildOverrides(prospect, capRef.current));
     } catch {
       setPhase((current) => (current === 'connecting' ? 'failed' : current));
     } finally {
       window.clearTimeout(timeout);
     }
-  }, [loadVapi, phase, prospect, sendEvent, vapiAssistantId]);
+  }, [loadVapi, phase, prospect, sendEvent, slug, vapiAssistantId]);
 
   const handleStop = useCallback(() => {
     intentRef.current = 'customer-ended-call';
@@ -299,7 +356,7 @@ export default function DemoPanel({ prospect, bookingUrl, vapiPublicKey, vapiAss
   }, []);
 
   // ---- rendering -----------------------------------------------------------
-  const progress = Math.max(0, Math.min(1, remaining / DEMO_MAX_SECONDS));
+  const progress = Math.max(0, Math.min(1, remaining / cap));
 
   return (
     <section className="mt-7">
@@ -328,7 +385,9 @@ export default function DemoPanel({ prospect, bookingUrl, vapiPublicKey, vapiAss
             )}
           </button>
           <p className="mt-3 text-center text-[13px] text-ink-faint">
-            Uses your phone&rsquo;s microphone. Three minutes, one conversation, nothing to install.
+            {prospect.public_line
+              ? `Uses your microphone. Up to ${describeDuration(cap)}, nothing to install.`
+              : `Uses your phone’s microphone. ${capitalise(describeDuration(cap))}, one conversation, nothing to install.`}
           </p>
           {/* Said before the tap, because the recording starts with it. */}
           <p className="mt-1 text-center text-[13px] text-ink-faint">
@@ -364,7 +423,7 @@ export default function DemoPanel({ prospect, bookingUrl, vapiPublicKey, vapiAss
             role="progressbar"
             aria-label="Time remaining in this demo"
             aria-valuemin={0}
-            aria-valuemax={DEMO_MAX_SECONDS}
+            aria-valuemax={cap}
             aria-valuenow={Math.ceil(remaining)}
             aria-valuetext={describeRemaining(remaining)}
           >
@@ -396,9 +455,9 @@ export default function DemoPanel({ prospect, bookingUrl, vapiPublicKey, vapiAss
           </h2>
           <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
             {lastDuration !== null ? `${formatCountdown(lastDuration)} on the line. ` : ''}
-            She was primed with nothing but your practice name, your services and your hours. Live,
-            she also holds your diary, and every call she takes reaches your team with a full
-            transcript — the ones they couldn&rsquo;t get to included.
+            {prospect.public_line
+              ? 'That was a sample practice. Set up for yours, she works from your own hours, services and diary, and every call she takes reaches your team with a full transcript — the ones they couldn’t get to included.'
+              : 'She was primed with nothing but your practice name, your services and your hours. Live, she also holds your diary, and every call she takes reaches your team with a full transcript — the ones they couldn’t get to included.'}
           </p>
           <BookingLink href={bookingUrl} />
           <p className="mt-3 text-center text-[13px] text-ink-faint">
@@ -416,6 +475,22 @@ export default function DemoPanel({ prospect, bookingUrl, vapiPublicKey, vapiAss
             This link runs one live conversation, and it has had its turn. The next step is a real
             one: fifteen minutes with us, with Hope connected to your actual diary and answering
             the calls your front desk can&rsquo;t get to.
+          </p>
+          <BookingLink href={bookingUrl} />
+        </div>
+      )}
+
+      {phase === 'limited' && (
+        <div className="rounded-xl border border-line bg-white p-5">
+          <h2 ref={headingRef} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
+            {limitReason === 'ip_cooldown'
+              ? 'You’ve had your turns for now.'
+              : 'Hope has taken today’s calls.'}
+          </h2>
+          <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+            {limitReason === 'ip_cooldown'
+              ? 'The public line takes a few calls per person each hour, so it stays free for the next person. Try again later, or book fifteen minutes with us and hear Hope answering for your own practice.'
+              : 'The public line has a daily limit, and today’s has been reached. Try again tomorrow, or book fifteen minutes with us and hear Hope answering for your own practice.'}
           </p>
           <BookingLink href={bookingUrl} />
         </div>
@@ -488,13 +563,14 @@ export default function DemoPanel({ prospect, bookingUrl, vapiPublicKey, vapiAss
  * practices arrives here, at call time, as overrides — never as a second
  * assistant, a second page or a second deployment.
  */
-function buildOverrides(prospect: PublicProspect) {
+function buildOverrides(prospect: PublicProspect, maxSeconds: number) {
+  const practiceName = spokenPracticeName(prospect.practice_name);
   return {
     // Substituted into the assistant's system prompt, which holds
     // {{practice_name}}, {{suburb}}, {{services}} and {{hours}}.
     // See vapi/assistant.md for the prompt this expects.
     variableValues: {
-      practice_name: prospect.practice_name,
+      practice_name: practiceName,
       suburb: prospect.suburb ?? '',
       services: prospect.services.length ? joinServices(prospect.services) : 'general dentistry',
       hours: prospect.hours ?? 'not listed',
@@ -502,11 +578,22 @@ function buildOverrides(prospect: PublicProspect) {
     // Interpolated here rather than templated, so the practice name is certain
     // to land in the first two seconds whatever the dashboard's first message
     // happens to say today.
-    firstMessage: `Good day, thank you for calling ${prospect.practice_name}, you're speaking to Hope. How can I help you today?`,
-    // The billing guarantee. The countdown on screen is the courtesy version;
-    // this one holds even if the browser is tampered with.
-    maxDurationSeconds: DEMO_MAX_SECONDS,
+    firstMessage: `Good day, thank you for calling ${practiceName}, you're speaking to Hope. How can I help you today?`,
+    // Vapi ends the call here even if this page is closed or its timer
+    // starved, so the countdown on screen is the courtesy version.
+    maxDurationSeconds: maxSeconds,
   };
+}
+
+/** Asks the public line's gate for a call. Throws on anything but an answer. */
+async function requestGate(slug: string): Promise<GateResponse> {
+  const response = await fetch(`/api/demo/${encodeURIComponent(slug)}/gate`, { method: 'POST' });
+  if (!response.ok) throw new Error(`gate answered ${response.status}`);
+  return (await response.json()) as GateResponse;
+}
+
+function capitalise(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 function BookingLink({ href }: { href: string }) {

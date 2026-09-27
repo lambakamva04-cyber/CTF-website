@@ -12,6 +12,12 @@
  */
 export const DEMO_MAX_SECONDS = 180;
 
+/**
+ * The public line's cap if `demo_limits` cannot be read. The live number is
+ * `demo_limits.max_seconds`, so it can be changed without a deploy.
+ */
+export const PUBLIC_LINE_FALLBACK_SECONDS = 60;
+
 export const DEMO_EVENT_TYPES = [
   'page_view',
   'call_started',
@@ -42,6 +48,11 @@ export type PublicProspect = {
   hours: string | null;
   /** True once a call has been started on this link. */
   expired: boolean;
+  /**
+   * The always-on line on the marketing site. Never spent, but rate limited,
+   * and every call is checked with POST /api/demo/[slug]/gate first.
+   */
+  public_line: boolean;
 };
 
 /** Body accepted by POST /api/demo/[slug]/event. */
@@ -50,6 +61,32 @@ export type DemoEventBody = {
   duration_seconds?: number | null;
   ended_reason?: string | null;
 };
+
+/** Why the public line turned a call away. */
+export type GateRefusal = 'ip_cooldown' | 'daily_cap';
+
+/** Returned by POST /api/demo/[slug]/gate. */
+export type GateResponse =
+  | { allowed: true; max_seconds: number }
+  | { allowed: false; reason: GateRefusal };
+
+/** "one minute", "three minutes", "90 seconds" — for copy, not countdowns. */
+export function describeDuration(totalSeconds: number): string {
+  const words = ['zero', 'one', 'two', 'three', 'four', 'five'];
+  if (totalSeconds % 60 !== 0) return `${totalSeconds} seconds`;
+  const minutes = totalSeconds / 60;
+  const count = words[minutes] ?? String(minutes);
+  return `${count} ${minutes === 1 ? 'minute' : 'minutes'}`;
+}
+
+/**
+ * The practice name as Hope should say it. A trailing note in brackets, such
+ * as "(demo practice)" on the public line's sample practice, is for the page,
+ * not to be read aloud.
+ */
+export function spokenPracticeName(practiceName: string): string {
+  return practiceName.replace(/\s*\([^)]*\)\s*$/, '').trim() || practiceName;
+}
 
 export function formatCountdown(secondsRemaining: number): string {
   const clamped = Math.max(0, Math.floor(secondsRemaining));

@@ -1,9 +1,15 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
-import { isValidSlug, joinServices } from '@/lib/demo';
+import {
+  DEMO_MAX_SECONDS,
+  describeDuration,
+  isValidSlug,
+  joinServices,
+  spokenPracticeName,
+} from '@/lib/demo';
 import { bookingUrl, vapiAssistantId, vapiPublicKey } from '@/lib/env';
-import { getProspectBySlug, toPublicProspect } from '@/lib/prospects';
+import { getProspectBySlug, getPublicLineSeconds, toPublicProspect } from '@/lib/prospects';
 
 import DemoPanel from './DemoPanel';
 
@@ -20,9 +26,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const prospect = await getProspectBySlug(slug);
   if (!prospect) return { title: 'Not found' };
 
+  if (prospect.is_public) {
+    const length = describeDuration(await getPublicLineSeconds());
+    return {
+      title: 'Talk to Hope, the CTF AI receptionist',
+      description: `A live conversation of up to ${length} with Hope, the AI receptionist that picks up when a front desk can't.`,
+      robots: { index: false, follow: false },
+    };
+  }
+
   return {
     title: `Hope, answering for ${prospect.practice_name}`,
-    description: `A live three-minute conversation with Hope, the AI receptionist that picks up when ${prospect.practice_name}'s front desk can't.`,
+    description: `A live conversation of up to ${describeDuration(DEMO_MAX_SECONDS)} with Hope, the AI receptionist that picks up when ${prospect.practice_name}'s front desk can't.`,
     robots: { index: false, follow: false },
   };
 }
@@ -39,6 +54,8 @@ export default async function DemoPage({ params }: PageProps) {
 
   const prospect = toPublicProspect(row);
   const services = joinServices(prospect.services);
+  // The public line's length lives in `demo_limits`; a personal link's is fixed.
+  const maxSeconds = prospect.public_line ? await getPublicLineSeconds() : DEMO_MAX_SECONDS;
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col px-5 pb-12 pt-8 sm:px-8 sm:pt-14">
@@ -46,16 +63,33 @@ export default async function DemoPage({ params }: PageProps) {
         Cut Through Faster
       </p>
 
-      <header className="mt-7">
-        <p className="text-sm font-medium text-signal">Prepared for {prospect.practice_name}</p>
-        <h1 className="mt-2 text-[1.875rem] font-bold leading-[1.12] sm:text-[2.375rem]">
-          Hope, answering for {prospect.practice_name}.
-        </h1>
-        <p className="mt-4 text-[17px] leading-relaxed text-ink-soft">
-          Hope is the overflow line for your front desk. She picks up when your team can&rsquo;t
-          &mdash; another call, a patient at the counter, after hours &mdash; and takes the booking.
-        </p>
-      </header>
+      {prospect.public_line ? (
+        <header className="mt-7">
+          <p className="text-sm font-medium text-signal">Our public line</p>
+          <h1 className="mt-2 text-[1.875rem] font-bold leading-[1.12] sm:text-[2.375rem]">
+            Talk to Hope, our AI receptionist.
+          </h1>
+          <p className="mt-4 text-[17px] leading-relaxed text-ink-soft">
+            Here she is answering for {spokenPracticeName(prospect.practice_name)}, a sample
+            practice, so you can hear
+            what your patients would. Set up for you, she picks up when your team can&rsquo;t
+            &mdash; another call, a patient at the counter, after hours &mdash; and takes the
+            booking.
+          </p>
+        </header>
+      ) : (
+        <header className="mt-7">
+          <p className="text-sm font-medium text-signal">Prepared for {prospect.practice_name}</p>
+          <h1 className="mt-2 text-[1.875rem] font-bold leading-[1.12] sm:text-[2.375rem]">
+            Hope, answering for {prospect.practice_name}.
+          </h1>
+          <p className="mt-4 text-[17px] leading-relaxed text-ink-soft">
+            Hope is the overflow line for your front desk. She picks up when your team can&rsquo;t
+            &mdash; another call, a patient at the counter, after hours &mdash; and takes the
+            booking.
+          </p>
+        </header>
+      )}
 
       {/* The button sits directly under the headline, on purpose: on a phone
           opened from an email it has to be reachable without a scroll. The
@@ -63,6 +97,7 @@ export default async function DemoPage({ params }: PageProps) {
           of the one thing this page is for. */}
       <DemoPanel
         prospect={prospect}
+        maxSeconds={maxSeconds}
         bookingUrl={bookingUrl()}
         vapiPublicKey={vapiPublicKey()}
         vapiAssistantId={vapiAssistantId()}
@@ -94,8 +129,9 @@ export default async function DemoPage({ params }: PageProps) {
           ) : null}
         </dl>
         <p className="mt-4 border-t border-line pt-4 text-sm leading-relaxed text-ink-soft">
-          Ask her for an appointment on Thursday morning, or what time you close on a Saturday. She
-          answers as though she is sitting behind your front desk.
+          {prospect.public_line
+            ? 'Ask her for an appointment on Thursday morning, or what time the practice closes on a Saturday. She answers as though she is sitting behind its front desk.'
+            : 'Ask her for an appointment on Thursday morning, or what time you close on a Saturday. She answers as though she is sitting behind your front desk.'}
         </p>
       </section>
 
