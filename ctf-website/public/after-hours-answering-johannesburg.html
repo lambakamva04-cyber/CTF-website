@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-ZA">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -87,6 +87,21 @@
     body { padding-bottom:78px; }
     .nav-links { font-size:13px; gap:16px; }
   }
+  /* ===== ACCESSIBILITY =====
+     Added on top of the rules above rather than by editing them, so the
+     design is untouched: these only show for keyboard users, screen readers,
+     people who ask for less motion, or where faint text failed WCAG AA. */
+  .skip-link { position:absolute; left:16px; top:-100px; z-index:200; background:var(--cream); color:var(--ink);
+               padding:10px 16px; border-radius:6px; font-weight:600; font-size:14px; text-decoration:none; }
+  .skip-link:focus { top:12px; }
+  .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
+             clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+  main:focus { outline:none; }
+  a:focus-visible, button:focus-visible, summary:focus-visible { outline:2px solid var(--ink); outline-offset:3px; border-radius:4px; }
+  nav a:focus-visible, .hero a:focus-visible, .dark a:focus-visible, footer a:focus-visible,
+  .stickybar a:focus-visible, .skip-link:focus-visible { outline-color:var(--cream); }
+  footer { color:rgba(247,246,243,0.62); }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior:auto; } }
 </style>
 <script type="application/ld+json">
 {
@@ -284,7 +299,9 @@
 </head>
 <body>
 
-<nav>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<nav aria-label="Main">
   <div class="container nav-inner">
     <a href="/" class="brandmark">CTF</a>
     <div class="nav-links">
@@ -297,6 +314,8 @@
   </div>
 </nav>
 
+<main id="main" tabindex="-1">
+
 <header class="hero">
   <div class="container">
     <span class="eyebrow">Johannesburg &middot; Gauteng</span>
@@ -304,7 +323,7 @@
     <p class="lede">Your phone rings at twenty to eight on a Tuesday evening. Nobody is at the front desk. CTF answers it in a South African voice, books the appointment, and the details are waiting for you in the morning.</p>
     <div class="actions">
       <a class="btn btn-primary" href="https://demo.cutthroughfaster.com/demo/try">Phone the demo line, free</a>
-      <a class="btn btn-secondary" href="https://wa.me/27764162531?text=Hi%20CTF%2C%20I%27d%20like%20a%20demo%20line%20for%20my%20practice." target="_blank" rel="noopener">WhatsApp us</a>
+      <a class="btn btn-secondary" href="https://wa.me/27764162531?text=Hi%20CTF%2C%20I%27d%20like%20a%20demo%20line%20for%20my%20practice." target="_blank" rel="noopener">WhatsApp us<span class="sr-only"> (opens in a new tab)</span></a>
     </div>
   </div>
 </header>
@@ -364,10 +383,10 @@
   <div class="container narrow">
     <h2>Against a traditional answering service</h2>
     <ul class="ticks">
-      <li><span class="tick">&bull;</span><span><strong>Queueing.</strong> A human answering service shares its operators across every client it has. At half past eight in the morning you are in a queue. CTF answers every call at the same time, because there is no operator to wait for.</span></li>
-      <li><span class="tick">&bull;</span><span><strong>Messages versus bookings.</strong> Most answering services take a message. CTF takes the booking, which is the part that actually earns you money.</span></li>
-      <li><span class="tick">&bull;</span><span><strong>Per message pricing.</strong> Where a service charges per message, a busy month arrives as a bigger invoice. We charge a monthly fee based on volume, agreed up front.</span></li>
-      <li><span class="tick">&bull;</span><span><strong>Consistency.</strong> It says the same thing on every call, at four in the morning, in December, on the two hundredth call of the week.</span></li>
+      <li><span class="tick" aria-hidden="true">&bull;</span><span><strong>Queueing.</strong> A human answering service shares its operators across every client it has. At half past eight in the morning you are in a queue. CTF answers every call at the same time, because there is no operator to wait for.</span></li>
+      <li><span class="tick" aria-hidden="true">&bull;</span><span><strong>Messages versus bookings.</strong> Most answering services take a message. CTF takes the booking, which is the part that actually earns you money.</span></li>
+      <li><span class="tick" aria-hidden="true">&bull;</span><span><strong>Per message pricing.</strong> Where a service charges per message, a busy month arrives as a bigger invoice. We charge a monthly fee based on volume, agreed up front.</span></li>
+      <li><span class="tick" aria-hidden="true">&bull;</span><span><strong>Consistency.</strong> It says the same thing on every call, at four in the morning, in December, on the two hundredth call of the week.</span></li>
     </ul>
   </div>
 </section>
@@ -413,9 +432,11 @@
   </div>
 </section>
 
+</main>
+
 <div class="stickybar" role="complementary" aria-label="Quick contact">
   <a class="sb-call" href="https://demo.cutthroughfaster.com/demo/try">Phone Hope</a>
-  <a class="sb-wa" href="https://wa.me/27764162531?text=Hi%20CTF%2C%20I%27d%20like%20a%20demo%20line%20for%20my%20practice." target="_blank" rel="noopener">WhatsApp</a>
+  <a class="sb-wa" href="https://wa.me/27764162531?text=Hi%20CTF%2C%20I%27d%20like%20a%20demo%20line%20for%20my%20practice." target="_blank" rel="noopener">WhatsApp<span class="sr-only"> (opens in a new tab)</span></a>
 </div>
 
 <footer>

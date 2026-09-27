@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-ZA">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -746,6 +746,101 @@
     /* keep the footer clear of the bar */
     body { padding-bottom: 78px; }
   }
+
+  /* ===== YOUR PLATFORM ===== */
+  .platform { background: var(--ink); color: var(--cream); border-top: 1px solid var(--border-dark); }
+  .platform .section-head p { color: rgba(247,246,243,0.6); }
+  .platform .section-head .eyebrow-light { color: var(--cream); }
+  .dfy-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border-dark);
+    border: 1px solid var(--border-dark);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 72px;
+  }
+  @media (max-width: 960px) { .dfy-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .dfy-grid { grid-template-columns: 1fr; } }
+  .platform-split {
+    display: grid;
+    grid-template-columns: 1fr 1.1fr;
+    gap: 56px;
+    align-items: center;
+  }
+  @media (max-width: 860px) { .platform-split { grid-template-columns: 1fr; gap: 36px; } }
+  .platform-split h3 { font-size: clamp(22px, 2.6vw, 28px); font-weight: 700; margin-bottom: 12px; }
+  .platform-split .split-lede { color: rgba(247,246,243,0.6); font-size: 16px; margin-bottom: 24px; }
+  .feature-list { list-style: none; }
+  .feature-list li {
+    padding: 14px 0;
+    border-top: 1px solid var(--border-dark);
+    font-size: 14px;
+    color: rgba(247,246,243,0.6);
+  }
+  .feature-list li:last-child { border-bottom: 1px solid var(--border-dark); }
+  .feature-list strong { display: block; color: var(--cream); font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+  .feature-list .tier-note {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: rgba(247,246,243,0.62);
+    margin-left: 6px;
+    font-weight: 400;
+  }
+  .dash-actions { display: flex; gap: 10px; flex-wrap: wrap; padding: 0 20px 20px; }
+  .dash-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid rgba(247,246,243,0.3);
+    color: var(--cream);
+  }
+  .dash-btn.primary { background: var(--cream); border-color: var(--cream); color: var(--ink); font-weight: 500; }
+  .dash-stats { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--border-dark); }
+  .dash-stat { padding: 14px 18px; }
+  .dash-stat + .dash-stat { border-left: 1px solid var(--border-dark); }
+  .dash-stat .n { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; color: var(--cream); display: block; }
+  .dash-stat .l { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: rgba(247,246,243,0.62); }
+
+  /* The hero's call log keeps its fainter timestamps; this one is raised to
+     4.5:1, as new text on the page. */
+  .platform .call-time { color: rgba(247,246,243,0.6); }
+
+  .form-privacy { font-size: 12px; color: rgba(247,246,243,0.62); margin-top: 8px; text-align: center; }
+
+  /* ===== ACCESSIBILITY =====
+     Added on top of the rules above rather than by editing them, so the
+     design is untouched: these only show for keyboard users, screen readers,
+     people who ask for less motion, or where faint text failed WCAG AA. */
+  .skip-link {
+    position: absolute; left: 16px; top: -100px; z-index: 200;
+    background: var(--cream); color: var(--ink);
+    padding: 10px 16px; border-radius: 6px; font-weight: 600; font-size: 14px;
+  }
+  .skip-link:focus { top: 12px; }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  }
+  main:focus { outline: none; }
+  /* The cream focus ring above disappears on the light sections. */
+  .whatis a:focus-visible, .problem a:focus-visible, .about a:focus-visible,
+  .pricing a:focus-visible, .faq a:focus-visible, .readnext a:focus-visible,
+  .whatis button:focus-visible, .pricing button:focus-visible { outline-color: var(--ink); }
+  .form-row select:focus { outline: 2px solid var(--cream); outline-offset: 1px; }
+  /* Small text on the dark background, raised to at least 4.5:1. */
+  .contact-label, .footer-inner { color: rgba(247,246,243,0.62); }
+  .form-hint { color: rgba(247,246,243,0.66); }
+  /* The menu's own link colour was overriding the button's, leaving
+     white text on the white "Book a callback" button. */
+  .mobile-menu a.nav-cta { color: var(--ink); }
+  .form-row input[aria-invalid="true"] { outline: 1px solid rgba(255,255,255,0.5); }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  }
 </style>
 <script type="application/ld+json">
 {
@@ -759,6 +854,8 @@
       "legalName": "Cut Through Faster",
       "sameAs": ["https://www.instagram.com/cutthroughfaster"],
       "url": "https://www.cutthroughfaster.com/",
+      "logo": { "@type": "ImageObject", "url": "https://www.cutthroughfaster.com/logo-512.png", "width": 512, "height": 512 },
+      "image": "https://www.cutthroughfaster.com/og.png",
       "email": "hello@cutthroughfaster.com",
       "description": "CTF (Cut Through Faster) is a South African company that builds AI receptionists for appointment-driven small businesses. Its AI receptionist, Hope, answers the business phone 24 hours a day in a South African accent using the practice\u2019s real hours and services, books appointments into the calendar, and escalates urgent calls to a person. It is an overflow line that works alongside the receptionist rather than replacing her.",
       "founder": { "@type": "Person", "name": "Kamva Tiwani", "jobTitle": "Co-founder", "sameAs": ["https://www.linkedin.com/in/kamva-tiwani-70586a407"] },
@@ -854,10 +951,13 @@
 </head>
 <body id="top">
 
-<nav>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<nav aria-label="Main">
   <div class="nav-inner">
     <div class="nav-links">
       <a href="#how">How it works</a>
+      <a href="#platform">Your platform</a>
       <a href="/after-hours-answering-johannesburg">After hours</a>
       <a href="/ai-receptionist-for-dentists">Dentists</a>
       <a href="#pricing">Pricing</a>
@@ -877,6 +977,7 @@
   </div>
   <div class="mobile-menu" id="mobileMenu">
     <a href="#how">How it works</a>
+    <a href="#platform">Your platform</a>
     <a href="/after-hours-answering-johannesburg">After hours answering</a>
     <a href="/ai-receptionist-for-dentists">For dental practices</a>
     <a href="#about">About Us</a>
@@ -888,6 +989,8 @@
   </div>
 </nav>
 
+<main id="main" tabindex="-1">
+
 <section class="hero">
   <div class="container hero-grid">
     <div>
@@ -896,10 +999,10 @@
       <p class="lede" style="margin-top:14px;font-size:0.95em;opacity:0.82;">Don&rsquo;t take our word for it. Phone the line above and talk to her yourself, then ask us for one built for your own practice.</p>
       <div class="hero-actions">
         <a href="https://demo.cutthroughfaster.com/demo/try" class="btn-primary">Phone Hope now, free</a>
-        <a href="https://wa.me/27764162531?text=Hi%20CTF%2C%20I%27d%20like%20a%20demo%20line%20for%20my%20practice." class="btn-secondary" target="_blank" rel="noopener">WhatsApp us</a>
+        <a href="https://wa.me/27764162531?text=Hi%20CTF%2C%20I%27d%20like%20a%20demo%20line%20for%20my%20practice." class="btn-secondary" target="_blank" rel="noopener">WhatsApp us<span class="sr-only"> (opens in a new tab)</span></a>
       </div>
     </div>
-    <div class="call-log">
+    <div class="call-log" role="img" aria-label="Example of an after-hours call: Hope answers at 21:47 with the front desk closed, the caller asks for the earliest cleaning appointment, and the slot is booked into the calendar.">
       <div class="call-log-header">
         <span>INCOMING: +27 71 ••• ••42</span>
         <span class="live"><span class="live-dot"></span>LIVE</span>
@@ -929,7 +1032,7 @@
 
 <section class="whatis" id="what">
   <div class="container whatis-inner">
-    <span class="eyebrow-light">// WHAT IS CTF</span>
+    <span class="eyebrow-light"><span aria-hidden="true">// </span>WHAT IS CTF</span>
     <h2>CTF is an AI receptionist for South African businesses.</h2>
     <p>CTF stands for Cut Through Faster. We build an AI receptionist called Hope, who answers your business phone 24 hours a day in a South African accent, using your real opening hours, your suburb and the services you actually offer. She books appointments straight into your calendar, takes messages, and puts anything urgent through to a person.</p>
     <p>Hope is not a replacement for your receptionist. She is the overflow line that picks up when your team physically cannot: when reception is already on another call, when there is a patient at the counter, over lunch, after closing, and on weekends. Every call she takes lands in your inbox with a summary, so nothing is lost.</p>
@@ -941,7 +1044,7 @@
 <section class="problem">
   <div class="container">
     <div class="section-head">
-      <span class="eyebrow-light">// THE COST OF SILENCE</span>
+      <span class="eyebrow-light"><span aria-hidden="true">// </span>THE COST OF SILENCE</span>
       <h2>Every unanswered call is a customer calling your competitor next.</h2>
       <p>Front desks can't answer the phone while they're with a patient, closing up, or off for the day. Callers rarely leave voicemails. They just call the next name on the list.</p>
     </div>
@@ -955,8 +1058,8 @@
         <p>is when people actually decide to book: evenings, weekends, and lunch breaks, not just 9-to-5.</p>
       </div>
       <div class="stat-card">
-        <div class="big">0</div>
-        <p>missed calls once CTF is answering. Every ring gets picked up and handled.</p>
+        <div class="big">Picked up.</div>
+        <p>The calls your front desk can&rsquo;t get to, after hours, mid-appointment or on another line, are answered instead of ringing out.</p>
       </div>
     </div>
   </div>
@@ -965,7 +1068,7 @@
 <section class="how" id="how">
   <div class="container">
     <div class="section-head">
-      <span class="eyebrow-light">// HOW IT WORKS</span>
+      <span class="eyebrow-light"><span aria-hidden="true">// </span>HOW IT WORKS</span>
       <h2>Three steps, from ringing phone to booked appointment.</h2>
       <p>No new hardware, no new number to give out, just call answering that never clocks out.</p>
     </div>
@@ -992,7 +1095,7 @@
 <section class="about" id="about">
   <div class="container">
     <div class="section-head">
-      <span class="eyebrow-light">// ABOUT US</span>
+      <span class="eyebrow-light"><span aria-hidden="true">// </span>ABOUT US</span>
       <h2>Built to answer, when your business can't.</h2>
       <p>CTF started with a simple observation: South African businesses rarely lose customers because their service is bad. They lose them because the phone rang and nobody was there to answer it. We built an AI receptionist to close that gap, for businesses that can't justify a full-time front desk but can't afford to miss another booking either.</p>
     </div>
@@ -1004,8 +1107,8 @@
       </div>
       <div class="about-card">
         <span class="tag mono">PILLAR 02</span>
-        <h3>Every call answered</h3>
-        <p>No voicemail, no "please hold," no missed calls after 5pm. If your phone rings, CTF picks up, every time, day or night.</p>
+        <h3>Picks up when you can&rsquo;t</h3>
+        <p>No voicemail and no "please hold." After 5pm, with a patient or on another line, CTF answers the call and takes the booking, day or night.</p>
       </div>
       <div class="about-card">
         <span class="tag mono">PILLAR 03</span>
@@ -1016,10 +1119,82 @@
   </div>
 </section>
 
+<section class="platform" id="platform">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow-light"><span aria-hidden="true">// </span>YOUR PLATFORM</span>
+      <h2>Your own AI receptionist, on a platform we run for you.</h2>
+      <p>Every CTF plan includes the platform your AI receptionist runs on, with your own private dashboard. We build it, set it up, host it and take care of its security, so there&rsquo;s no software to install and nothing technical for you to manage.</p>
+    </div>
+    <div class="dfy-grid">
+      <div class="step">
+        <span class="step-time mono">WE BUILD IT</span>
+        <h3>Made for your business</h3>
+        <p>Built around your services, hours and the questions your callers ask most, so it answers the way your front desk would.</p>
+      </div>
+      <div class="step">
+        <span class="step-time mono">WE SET IT UP</span>
+        <h3>Connected and tested</h3>
+        <p>We connect it to your phone line and your calendar, and test it before it goes live. You don&rsquo;t lift a finger.</p>
+      </div>
+      <div class="step">
+        <span class="step-time mono">WE HOST IT</span>
+        <h3>Always on, nothing to install</h3>
+        <p>It runs on our platform, not on your computers. No servers, no software, no updates to manage, and it&rsquo;s answering day and night.</p>
+      </div>
+      <div class="step">
+        <span class="step-time mono">WE HANDLE SECURITY</span>
+        <h3>Your team, your login</h3>
+        <p>Sign-in is limited to the people you add, with two-factor sign-in if you want it. Your calls are kept separate from every other business on the platform, and every sign-in is recorded.</p>
+      </div>
+    </div>
+    <div class="platform-split">
+      <div>
+        <h3>And you&rsquo;re never out of the loop.</h3>
+        <p class="split-lede">Sign in to your own dashboard from any browser and see exactly what your receptionist is doing.</p>
+        <ul class="feature-list">
+          <li><strong>Watch any call live</strong>Follow the conversation word for word as it happens.</li>
+          <li><strong>Take over a call<span class="tier-note">PROFESSIONAL &amp; ENTERPRISE</span></strong>Have the call put through to your own phone whenever you want to step in.</li>
+          <li><strong>Every call on record</strong>Transcripts, call history and booking numbers, all in one place.</li>
+        </ul>
+      </div>
+      <div class="call-log" role="img" aria-label="Example of the CTF client dashboard: a live call transcript, buttons to take over or end the call, and today&rsquo;s figures of 14 calls taken, 9 booked and a 64 percent booking rate.">
+        <div class="call-log-header">
+          <span>YOUR DASHBOARD</span>
+          <span class="live"><span class="live-dot"></span>CALL IN PROGRESS</span>
+        </div>
+        <div class="call-log-body">
+          <div class="call-line">
+            <span class="call-time mono">10:14:22</span>
+            <span class="call-text"><strong>Hope:</strong> "Good morning, thanks for calling. How can I help?"</span>
+          </div>
+          <div class="call-line">
+            <span class="call-time mono">10:14:31</span>
+            <span class="call-text"><strong>Caller:</strong> "I&rsquo;ve chipped a tooth. Can anyone see me today?"</span>
+          </div>
+          <div class="call-line">
+            <span class="call-time mono">10:14:38</span>
+            <span class="call-text">Hope checks today&rsquo;s calendar for the earliest opening</span>
+          </div>
+        </div>
+        <div class="dash-actions">
+          <span class="dash-btn primary">Take over call</span>
+          <span class="dash-btn">End call</span>
+        </div>
+        <div class="dash-stats">
+          <div class="dash-stat"><span class="n">14</span><span class="l">CALLS TAKEN</span></div>
+          <div class="dash-stat"><span class="n">9</span><span class="l">BOOKED</span></div>
+          <div class="dash-stat"><span class="n">64%</span><span class="l">BOOKING RATE</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="pricing" id="pricing">
   <div class="container">
     <div class="section-head">
-      <span class="eyebrow-light">// PRICING</span>
+      <span class="eyebrow-light"><span aria-hidden="true">// </span>PRICING</span>
       <h2>Simple tiers, built for SMBs.</h2>
       <p>Priced on your call volume and how many locations you run. We quote on a fifteen-minute call, once we know what your phone actually does.</p>
     </div>
@@ -1029,10 +1204,11 @@
         <h3>For solo practices</h3>
         <p class="price-note">Single location, one calendar</p>
         <ul>
-          <li><span class="check">✓</span> 24/7 call answering</li>
-          <li><span class="check">✓</span> Appointment booking</li>
-          <li><span class="check">✓</span> Daily summary digest</li>
-          <li><span class="check">✓</span> Email support</li>
+          <li><span class="check" aria-hidden="true">✓</span> 24/7 call answering</li>
+          <li><span class="check" aria-hidden="true">✓</span> Appointment booking</li>
+          <li><span class="check" aria-hidden="true">✓</span> Daily summary digest</li>
+          <li><span class="check" aria-hidden="true">✓</span> Email support</li>
+          <li><span class="check" aria-hidden="true">✓</span> Your own private dashboard</li>
         </ul>
         <a href="#contact" class="price-cta">Get a quote</a>
       </div>
@@ -1041,11 +1217,11 @@
         <h3>For growing teams</h3>
         <p class="price-note">Most chosen by multi-staff practices</p>
         <ul>
-          <li><span class="check">✓</span> Everything in Starter</li>
-          <li><span class="check">✓</span> Live call transfer</li>
-          <li><span class="check">✓</span> Reschedule &amp; cancellation handling</li>
-          <li><span class="check">✓</span> WhatsApp daily digest</li>
-          <li><span class="check">✓</span> Priority support</li>
+          <li><span class="check" aria-hidden="true">✓</span> Everything in Starter</li>
+          <li><span class="check" aria-hidden="true">✓</span> Live call transfer</li>
+          <li><span class="check" aria-hidden="true">✓</span> Reschedule &amp; cancellation handling</li>
+          <li><span class="check" aria-hidden="true">✓</span> WhatsApp daily digest</li>
+          <li><span class="check" aria-hidden="true">✓</span> Priority support</li>
         </ul>
         <a href="#contact" class="price-cta">Get a quote</a>
       </div>
@@ -1054,15 +1230,15 @@
         <h3>For multi-location groups</h3>
         <p class="price-note">Custom volume &amp; integration needs</p>
         <ul>
-          <li><span class="check">✓</span> Everything in Professional</li>
-          <li><span class="check">✓</span> Multiple locations/calendars</li>
-          <li><span class="check">✓</span> Custom call flows</li>
-          <li><span class="check">✓</span> Dedicated onboarding</li>
+          <li><span class="check" aria-hidden="true">✓</span> Everything in Professional</li>
+          <li><span class="check" aria-hidden="true">✓</span> Multiple locations/calendars</li>
+          <li><span class="check" aria-hidden="true">✓</span> Custom call flows</li>
+          <li><span class="check" aria-hidden="true">✓</span> Dedicated onboarding</li>
         </ul>
         <a href="#contact" class="price-cta">Talk to us</a>
       </div>
     </div>
-    <p class="price-note-foot">Pricing is shared on the call, based on your call volume and how many locations you run. When you decide to go ahead, a deposit covers building your receptionist: writing her script, loading your hours and services, and connecting her to your calendar.</p>
+    <p class="price-note-foot">Pricing is shared on the call, based on your call volume and how many locations you run. When you decide to go ahead, a deposit covers building your receptionist: writing her script, loading your hours and services, and connecting her to your calendar. Every plan includes the platform she runs on, hosted and looked after by us.</p>
     <p class="honesty">We can&rsquo;t guarantee that our AI receptionists will make you money, but we build them so they do.</p>
   </div>
 </section>
@@ -1070,7 +1246,7 @@
 
 <section class="trydemo" id="try">
   <div class="container trydemo-inner">
-    <span class="eyebrow-light">// HEAR IT YOURSELF</span>
+    <span class="eyebrow-light"><span aria-hidden="true">// </span>HEAR IT YOURSELF</span>
     <h2>Talk to her. Right now, from this page.</h2>
     <p>No form first, no sales call, nothing to install. You get a minute on our public line, which is enough to ask what time they close on a Saturday or to try booking a Thursday morning. Then decide whether it is worth fifteen minutes of your time.</p>
     <a href="https://demo.cutthroughfaster.com/demo/try" class="btn-primary trydemo-cta">Phone Hope now</a>
@@ -1089,17 +1265,17 @@
       </div>
       <div class="contact-item">
         <span class="contact-label">WHATSAPP</span>
-        <span class="contact-value"><a href="https://wa.me/27764162531?text=Hi%20CTF%2C%20I%27d%20like%20a%20demo%20line%20for%20my%20practice." class="contact-link" target="_blank" rel="noopener">Message us on WhatsApp</a></span>
+        <span class="contact-value"><a href="https://wa.me/27764162531?text=Hi%20CTF%2C%20I%27d%20like%20a%20demo%20line%20for%20my%20practice." class="contact-link" target="_blank" rel="noopener">Message us on WhatsApp<span class="sr-only"> (opens in a new tab)</span></a></span>
       </div>
       <div class="contact-item">
         <span class="contact-label">FOUNDER</span>
-        <span class="contact-value">Kamva Tiwani, co-founder, <a href="tel:+27764162531" class="contact-link">076&nbsp;416&nbsp;2531</a> &middot; <a href="https://www.linkedin.com/in/kamva-tiwani-70586a407" class="contact-link" target="_blank" rel="noopener">LinkedIn</a></span>
+        <span class="contact-value">Kamva Tiwani, co-founder, <a href="tel:+27764162531" class="contact-link">076&nbsp;416&nbsp;2531</a> &middot; <a href="https://www.linkedin.com/in/kamva-tiwani-70586a407" class="contact-link" target="_blank" rel="noopener">LinkedIn<span class="sr-only"> (opens in a new tab)</span></a></span>
       </div>
     </div>
     <div class="contact-form">
       <div class="form-row">
         <label for="name">Your name</label>
-        <input type="text" id="name" name="name" placeholder="Full name">
+        <input type="text" id="name" name="name" placeholder="Full name" autocomplete="name" aria-required="true">
       </div>
       <div class="form-row">
         <label for="business">Business type</label>
@@ -1115,7 +1291,7 @@
       </div>
       <div class="form-row">
         <label for="phone">Phone number</label>
-        <input type="tel" id="phone" name="phone" placeholder="+27 ...">
+        <input type="tel" id="phone" name="phone" placeholder="+27 ..." autocomplete="tel" aria-required="true">
       </div>
       <div class="form-row">
         <label for="msg">Anything we should know?</label>
@@ -1126,7 +1302,8 @@
         <input type="text" id="company_website" name="company_website" tabindex="-1" autocomplete="off">
       </div>
       <button class="form-submit" type="button" id="callbackSubmit">Request a callback</button>
-      <p class="form-hint" id="formStatus">We&rsquo;ll be in touch, usually the same day.</p>
+      <p class="form-hint" id="formStatus" role="status">We&rsquo;ll be in touch, usually the same day.</p>
+      <p class="form-privacy"><a class="contact-link" href="https://demo.cutthroughfaster.com/privacy" target="_blank" rel="noopener">How we handle your details<span class="sr-only"> (opens in a new tab)</span></a></p>
     </div>
   </div>
 </section>
@@ -1135,7 +1312,7 @@
 <section class="faq" id="faq">
   <div class="container">
     <div class="section-head">
-      <span class="eyebrow-light">// COMMON QUESTIONS</span>
+      <span class="eyebrow-light"><span aria-hidden="true">// </span>COMMON QUESTIONS</span>
       <h2>What practice owners ask us first.</h2>
     </div>
     <div class="faq-list">
@@ -1175,14 +1352,10 @@
   </div>
 </section>
 
-<div class="stickybar" role="complementary" aria-label="Quick contact">
-  <a class="sb-call" href="https://demo.cutthroughfaster.com/demo/try">Phone Hope</a>
-  <a class="sb-wa" href="https://wa.me/27764162531?text=Hi%20CTF%2C%20I%27d%20like%20a%20demo%20line%20for%20my%20practice." target="_blank" rel="noopener">WhatsApp</a>
-</div>
 
 <section class="readnext" id="pages" style="background:var(--cream-dim);padding:56px 0;">
   <div class="container">
-    <span class="eyebrow-light" style="display:block;margin-bottom:14px;">// MORE ON CTF</span>
+    <span class="eyebrow-light" style="display:block;margin-bottom:14px;"><span aria-hidden="true">// </span>MORE ON CTF</span>
     <h2 style="margin-bottom:22px;">Written for your situation.</h2>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;">
       <a href="/after-hours-answering-johannesburg" style="display:block;padding:22px;border:1px solid var(--border-light);border-radius:10px;background:var(--cream);">
@@ -1196,6 +1369,13 @@
     </div>
   </div>
 </section>
+
+</main>
+
+<div class="stickybar" role="complementary" aria-label="Quick contact">
+  <a class="sb-call" href="https://demo.cutthroughfaster.com/demo/try">Phone Hope</a>
+  <a class="sb-wa" href="https://wa.me/27764162531?text=Hi%20CTF%2C%20I%27d%20like%20a%20demo%20line%20for%20my%20practice." target="_blank" rel="noopener">WhatsApp<span class="sr-only"> (opens in a new tab)</span></a>
+</div>
 
 <footer>
   <div class="container footer-inner">
@@ -1229,6 +1409,13 @@
         toggle.setAttribute('aria-expanded', 'false');
       });
     }
+    // Escape closes the menu and puts focus back on the button that opened it.
+    document.addEventListener('keydown', function (event) {
+      if (event.key !== 'Escape' || !mobileMenu.classList.contains('open')) return;
+      mobileMenu.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.focus();
+    });
   }
 
   // Callback form -> /api/lead on the demo app, so leads land in one place.
@@ -1250,12 +1437,16 @@
 
       nameEl.classList.remove('field-error');
       phoneEl.classList.remove('field-error');
+      nameEl.removeAttribute('aria-invalid');
+      phoneEl.removeAttribute('aria-invalid');
 
       var missing = false;
-      if (!name) { nameEl.classList.add('field-error'); missing = true; }
-      if (!phone) { phoneEl.classList.add('field-error'); missing = true; }
+      if (!name) { nameEl.classList.add('field-error'); nameEl.setAttribute('aria-invalid', 'true'); missing = true; }
+      if (!phone) { phoneEl.classList.add('field-error'); phoneEl.setAttribute('aria-invalid', 'true'); missing = true; }
       if (missing) {
         statusEl.textContent = 'Please add your name and phone number so we can call you back.';
+        // Take the reader to the first field that needs filling in.
+        (!name ? nameEl : phoneEl).focus();
         return;
       }
 
