@@ -129,7 +129,7 @@ export const DEMO_PRIVACY: {
       heading: 'How long we keep it',
       body: [
         'We keep the practice profile, the page records, the conversation and any callback request only for as long as we need them to follow up with you about CTF, and we delete them when you ask us to.',
-        'The scrambled IP address kept with public line calls is deleted after 30 days, automatically.',
+        'The scrambled IP address kept with public line calls and callback requests is deleted after 30 days, automatically.',
       ],
     },
     {

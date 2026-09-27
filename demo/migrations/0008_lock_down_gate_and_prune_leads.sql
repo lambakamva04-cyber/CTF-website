@@ -1,5 +1,5 @@
--- Written 27 September 2026. Apply in the Supabase SQL editor, or as a
--- migration named lock_down_gate_and_prune_leads.
+-- Applied to the Hope project on 27 September 2026 as migration
+-- 20260927194527 (lock_down_gate_and_prune_leads).
 --
 -- Two follow-ups to 0005 and 0006.
 --
