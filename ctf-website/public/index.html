@@ -836,6 +836,12 @@
   /* The menu's own link colour was overriding the button's, leaving
      white text on the white "Book a callback" button. */
   .mobile-menu a.nav-cta { color: var(--ink); }
+  /* At the largest text size on a phone, the email address in Contact was
+     wider than the screen; long values wrap instead. No effect where they fit. */
+  .contact-grid > * { min-width: 0; }
+  .contact-value { overflow-wrap: anywhere; }
+  /* Same for the two "More on CTF" cards, whose 280px minimum is set inline. */
+  .readnext [style*="minmax(280px"] { grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)) !important; }
   .form-row input[aria-invalid="true"] { outline: 1px solid rgba(255,255,255,0.5); }
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
@@ -948,6 +954,7 @@
   ]
 }
 </script>
+<script src="/a11y.js" data-site="www" defer></script>
 </head>
 <body id="top">
 
