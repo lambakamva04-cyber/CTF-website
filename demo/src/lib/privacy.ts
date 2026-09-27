@@ -46,8 +46,8 @@ export const DEMO_SUB_PROCESSORS: SubProcessor[] = [
   },
   {
     name: 'Resend',
-    role: 'Emails us each callback request sent from our website, so we can call you back.',
-    location: 'United States',
+    role: 'Emails us each callback request sent from our website, so we can call you back. Resend is a United States company; our emails are sent from its Irish region.',
+    location: 'Ireland (European Union)',
   },
 ];
 
@@ -127,7 +127,7 @@ export const DEMO_PRIVACY: {
     {
       heading: 'Sending information outside South Africa',
       body: [
-        'The records are stored in Ireland, and the conversation and callback emails are handled in the United States, so this information leaves South Africa.',
+        'The records are stored and callback emails are sent in Ireland, and the conversation is handled in the United States, so this information leaves South Africa.',
         'Section 72 of POPIA allows this where the recipient is bound by protections substantially similar to those POPIA sets. We rely on each provider’s data processing terms for that.',
       ],
     },
