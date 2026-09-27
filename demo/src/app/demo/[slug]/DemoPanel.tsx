@@ -24,6 +24,9 @@ type Phase =
   | 'expired'
   | 'limited';
 
+type CaptionSpeaker = 'hope' | 'caller';
+type Caption = { id: number; speaker: CaptionSpeaker; text: string };
+
 type Props = {
   prospect: PublicProspect;
   /** The call length: three minutes on a personal link, `demo_limits` on the public line. */
@@ -52,6 +55,10 @@ export default function DemoPanel({
   const [remaining, setRemaining] = useState(maxSeconds);
   const [lastDuration, setLastDuration] = useState<number | null>(null);
   const [limitReason, setLimitReason] = useState<GateRefusal>('daily_cap');
+  // Live captions of the conversation, and what is being said right now.
+  const [captions, setCaptions] = useState<Caption[]>([]);
+  const [speaking, setSpeaking] = useState<{ speaker: CaptionSpeaker; text: string } | null>(null);
+  const captionsBoxRef = useRef<HTMLDivElement>(null);
   // Read out by a screen reader. Kept to what a sighted person would notice
   // without being told: the connection starting and the time running short.
   const [announcement, setAnnouncement] = useState('');
@@ -143,6 +150,8 @@ export default function DemoPanel({
       callActiveRef.current = true;
       endLoggedRef.current = false;
       setRemaining(capRef.current);
+      setCaptions([]);
+      setSpeaking(null);
       setPhase('live');
       void sendEvent({ event_type: 'call_started' });
     };
@@ -156,9 +165,37 @@ export default function DemoPanel({
     // The web SDK's `call-end` carries no payload, so the only place Vapi's own
     // ended reason surfaces is the status-update message.
     const onMessage = (message: unknown) => {
-      const m = message as { type?: string; status?: string; endedReason?: string };
+      const m = message as {
+        type?: string;
+        status?: string;
+        endedReason?: string;
+        role?: string;
+        transcriptType?: string;
+        transcript?: string;
+      };
       if (m?.type === 'status-update' && m.status === 'ended' && m.endedReason) {
         reportedReasonRef.current = m.endedReason;
+      }
+
+      // Captions. Vapi sends each utterance as it is recognised: `partial`
+      // while the words are still arriving, `final` once they settle.
+      if (m?.type === 'transcript' && typeof m.transcript === 'string' && m.transcript.trim()) {
+        if (cancelled) return;
+        const speaker: CaptionSpeaker = m.role === 'assistant' ? 'hope' : 'caller';
+        const text = m.transcript.trim();
+        if (m.transcriptType === 'final') {
+          setSpeaking((current) => (current?.speaker === speaker ? null : current));
+          setCaptions((current) => {
+            const last = current[current.length - 1];
+            // One speaker's sentences arrive one by one; keep them as one turn.
+            if (last?.speaker === speaker) {
+              return [...current.slice(0, -1), { ...last, text: `${last.text} ${text}` }];
+            }
+            return [...current, { id: current.length, speaker, text }];
+          });
+        } else {
+          setSpeaking({ speaker, text });
+        }
       }
     };
 
@@ -259,6 +296,13 @@ export default function DemoPanel({
     setAnnouncement('');
     headingRef.current?.focus();
   }, [phase]);
+
+  // Keep the newest caption in view. The box scrolls on its own; moving the
+  // page would pull the reader away from the End call button.
+  useEffect(() => {
+    const box = captionsBoxRef.current;
+    if (box) box.scrollTop = box.scrollHeight;
+  }, [captions, speaking]);
 
   // The countdown is not read out every second; these two marks are.
   useEffect(() => {
@@ -386,8 +430,8 @@ export default function DemoPanel({
           </button>
           <p className="mt-3 text-center text-[13px] text-ink-faint">
             {prospect.public_line
-              ? `Uses your microphone. Up to ${describeDuration(cap)}, nothing to install.`
-              : `Uses your phone’s microphone. ${capitalise(describeDuration(cap))}, one conversation, nothing to install.`}
+              ? `Uses your microphone. Up to ${describeDuration(cap)}, with live captions, nothing to install.`
+              : `Uses your phone’s microphone. ${capitalise(describeDuration(cap))}, one conversation, with live captions, nothing to install.`}
           </p>
           {/* Said before the tap, because the recording starts with it. */}
           <p className="mt-1 text-center text-[13px] text-ink-faint">
@@ -438,6 +482,34 @@ export default function DemoPanel({
             close on Saturday?&rdquo;
           </p>
 
+          {/* Captions, for anyone who cannot hear the call or would rather
+              read it. Not announced as they arrive: a screen reader user is
+              already hearing Hope, and a second voice reading her words over
+              her would drown both out. The box is focusable, so it can be
+              read at any point. */}
+          <h3
+            id="live-captions-heading"
+            className="mt-5 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint"
+          >
+            Live captions
+          </h3>
+          <div
+            ref={captionsBoxRef}
+            role="log"
+            aria-live="off"
+            aria-labelledby="live-captions-heading"
+            tabIndex={0}
+            className="mt-2 max-h-48 space-y-2 overflow-y-auto rounded-lg bg-paper-dim p-3 text-[14px] leading-relaxed"
+          >
+            {captions.length === 0 && !speaking && (
+              <p className="text-ink-faint">What you and Hope say appears here.</p>
+            )}
+            {captions.map((caption) => (
+              <CaptionLine key={caption.id} speaker={caption.speaker} text={caption.text} />
+            ))}
+            {speaking && <CaptionLine speaker={speaking.speaker} text={speaking.text} pending />}
+          </div>
+
           <button
             type="button"
             onClick={handleStop}
@@ -459,6 +531,18 @@ export default function DemoPanel({
               ? 'That was a sample practice. Set up for yours, she works from your own hours, services and diary, and every call she takes reaches your team with a full transcript — the ones they couldn’t get to included.'
               : 'She was primed with nothing but your practice name, your services and your hours. Live, she also holds your diary, and every call she takes reaches your team with a full transcript — the ones they couldn’t get to included.'}
           </p>
+          {captions.length > 0 && (
+            <details className="mt-4 rounded-lg border border-line p-3">
+              <summary className="cursor-pointer text-[15px] font-medium">
+                Read the transcript of your call
+              </summary>
+              <div className="mt-3 space-y-2 text-[14px] leading-relaxed">
+                {captions.map((caption) => (
+                  <CaptionLine key={caption.id} speaker={caption.speaker} text={caption.text} />
+                ))}
+              </div>
+            </details>
+          )}
           <BookingLink href={bookingUrl} />
           <p className="mt-3 text-center text-[13px] text-ink-faint">
             Fifteen minutes, and we&rsquo;ll show you the calls you&rsquo;re missing this week.
@@ -590,6 +674,24 @@ async function requestGate(slug: string): Promise<GateResponse> {
   const response = await fetch(`/api/demo/${encodeURIComponent(slug)}/gate`, { method: 'POST' });
   if (!response.ok) throw new Error(`gate answered ${response.status}`);
   return (await response.json()) as GateResponse;
+}
+
+/** One turn of the conversation, as a caption. `pending` is still being spoken. */
+function CaptionLine({
+  speaker,
+  text,
+  pending = false,
+}: {
+  speaker: CaptionSpeaker;
+  text: string;
+  pending?: boolean;
+}) {
+  return (
+    <p className={pending ? 'text-ink-soft' : 'text-ink'}>
+      <span className="font-semibold">{speaker === 'hope' ? 'Hope' : 'You'}:</span> {text}
+      {pending && <span className="sr-only"> (still speaking)</span>}
+    </p>
+  );
 }
 
 function capitalise(text: string): string {
