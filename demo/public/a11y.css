@@ -1,0 +1,265 @@
+/*
+ * CTF accessibility menu — styles for a11y.js. Three identical copies:
+ * ctf-website/public, demo/public and app/public. Change all three together.
+ *
+ * Everything is scoped under .ctf-a11y and uses its own colours and fonts, so
+ * the menu looks and reads the same on all three sites and stays legible in
+ * high contrast mode, where it is left alone.
+ */
+
+.ctf-a11y {
+  --ctf-a11y-ink: #14161a;
+  --ctf-a11y-paper: #ffffff;
+  --ctf-a11y-muted: #3f4248;
+  font: 15px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  color: var(--ctf-a11y-ink);
+  letter-spacing: normal;
+  text-align: left;
+}
+
+.ctf-a11y *,
+.ctf-a11y *::before,
+.ctf-a11y *::after {
+  box-sizing: border-box;
+}
+
+/* ---- the button ---- */
+.ctf-a11y-toggle {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 9000;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 16px 10px 12px;
+  border: 2px solid var(--ctf-a11y-paper);
+  border-radius: 999px;
+  background: var(--ctf-a11y-ink);
+  color: var(--ctf-a11y-paper);
+  font: 600 14px/1 system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+
+.ctf-a11y-toggle:hover {
+  background: #2a2d33;
+}
+
+/* On the marketing site's phone layout, sit above the WhatsApp / Phone Hope bar. */
+@media (max-width: 760px) {
+  body:has(.stickybar) .ctf-a11y-toggle {
+    bottom: 92px;
+  }
+}
+
+/* ---- the panel ---- */
+.ctf-a11y-panel {
+  position: fixed;
+  left: 16px;
+  bottom: 72px;
+  z-index: 9001;
+  width: min(360px, calc(100vw - 32px));
+  max-height: calc(100vh - 104px);
+  overflow-y: auto;
+  padding: 18px 18px 16px;
+  border: 2px solid var(--ctf-a11y-ink);
+  border-radius: 14px;
+  background: var(--ctf-a11y-paper);
+  color: var(--ctf-a11y-ink);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+.ctf-a11y-panel[hidden] {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  body:has(.stickybar) .ctf-a11y-panel {
+    bottom: 148px;
+    max-height: calc(100vh - 180px);
+  }
+}
+
+.ctf-a11y-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ctf-a11y-title {
+  margin: 0;
+  font: 700 18px/1.3 system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  color: var(--ctf-a11y-ink);
+}
+
+.ctf-a11y-title:focus {
+  outline: none;
+}
+
+.ctf-a11y-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--ctf-a11y-ink);
+  border-radius: 999px;
+  background: var(--ctf-a11y-paper);
+  color: var(--ctf-a11y-ink);
+  cursor: pointer;
+}
+
+.ctf-a11y-label {
+  margin: 16px 0 8px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ctf-a11y-ink);
+}
+
+.ctf-a11y-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.ctf-a11y-option,
+.ctf-a11y-switch,
+.ctf-a11y-reset {
+  font: 600 14px/1.2 system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  cursor: pointer;
+}
+
+.ctf-a11y-option {
+  min-height: 40px;
+  padding: 8px 6px;
+  border: 1px solid var(--ctf-a11y-ink);
+  border-radius: 8px;
+  background: var(--ctf-a11y-paper);
+  color: var(--ctf-a11y-ink);
+}
+
+.ctf-a11y-option[aria-pressed='true'] {
+  background: var(--ctf-a11y-ink);
+  color: var(--ctf-a11y-paper);
+}
+
+.ctf-a11y-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--ctf-a11y-ink);
+  border-radius: 8px;
+  background: var(--ctf-a11y-paper);
+  color: var(--ctf-a11y-ink);
+}
+
+.ctf-a11y-track {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border: 2px solid var(--ctf-a11y-ink);
+  border-radius: 999px;
+  background: var(--ctf-a11y-paper);
+  flex-shrink: 0;
+}
+
+.ctf-a11y-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--ctf-a11y-ink);
+  transition: left 0.15s ease;
+}
+
+.ctf-a11y-switch[aria-checked='true'] .ctf-a11y-track {
+  background: var(--ctf-a11y-ink);
+}
+
+.ctf-a11y-switch[aria-checked='true'] .ctf-a11y-thumb {
+  left: 22px;
+  background: var(--ctf-a11y-paper);
+}
+
+.ctf-a11y-subtitle {
+  margin: 18px 0 6px;
+  font: 700 14px/1.3 system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  color: var(--ctf-a11y-ink);
+}
+
+.ctf-a11y-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ctf-a11y-list li {
+  padding: 8px 0;
+  border-top: 1px solid #c9cbcf;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ctf-a11y-muted);
+}
+
+.ctf-a11y-list strong {
+  color: var(--ctf-a11y-ink);
+}
+
+.ctf-a11y-reset {
+  margin-top: 10px;
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: var(--ctf-a11y-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Keyboard focus: a thick ring that shows on both the dark button and the
+   white panel. */
+.ctf-a11y button:focus-visible {
+  outline: 3px solid #1a5fd6;
+  outline-offset: 2px;
+}
+
+.ctf-a11y-toggle:focus-visible {
+  outline-color: #ffbf47;
+}
+
+/* ---- high contrast mode, on the page itself ----
+   a11y.js sets each text element's colour; these finish the job for what an
+   inline colour cannot reach. */
+html.ctf-a11y-contrast a:not(.ctf-a11y *) {
+  text-decoration: underline !important;
+  text-underline-offset: 3px;
+}
+
+html.ctf-a11y-contrast ::placeholder {
+  color: inherit !important;
+  opacity: 0.8 !important;
+}
+
+html.ctf-a11y-contrast :not(.ctf-a11y *)::before,
+html.ctf-a11y-contrast :not(.ctf-a11y *)::after {
+  color: inherit !important;
+}
+
+html.ctf-a11y-contrast svg text {
+  fill: currentColor !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ctf-a11y-thumb {
+    transition: none;
+  }
+}

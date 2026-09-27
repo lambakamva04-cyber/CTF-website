@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, JetBrains_Mono, Space_Grotesk } from 'next/font/google';
+import Script from 'next/script';
 
 import './globals.css';
 
@@ -39,7 +40,13 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en-ZA" className={`${inter.variable} ${spaceGrotesk.variable} ${jetBrainsMono.variable}`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        {/* The accessibility menu (text size, high contrast, what is built in).
+            A plain script in public/, shared with the marketing site and the
+            dashboard. */}
+        <Script src="/a11y.js" data-site="demo" strategy="afterInteractive" />
+      </body>
     </html>
   );
 }
