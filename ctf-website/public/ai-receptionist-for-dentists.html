@@ -109,14 +109,23 @@
   "@graph": [
     {
       "@type": "Organization",
-      "@id": "https://www.cutthroughfaster.com/#org",
-      "name": "CTF: Cut Through Faster",
+      "@id": "https://www.cutthroughfaster.com/#organization",
+      "name": "CTF (Cut Through Faster)",
+      "legalName": "Cut Through Faster",
       "alternateName": [
         "Cut Through Faster",
         "CTF",
-        "cutthroughfaster"
+        "cutthroughfaster",
+        "Cut Through Faster (CTF)"
       ],
       "url": "https://www.cutthroughfaster.com/",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.cutthroughfaster.com/logo-512.png",
+        "width": 512,
+        "height": 512
+      },
+      "image": "https://www.cutthroughfaster.com/og.png",
       "email": "hello@cutthroughfaster.com",
       "telephone": "+27764162531",
       "sameAs": [
@@ -142,7 +151,7 @@
       "serviceType": "AI voice receptionist and appointment booking for dentists",
       "description": "A 24/7 AI receptionist built for South African dental practices. It answers every call, books and reschedules appointments, handles cancellations and escalates emergencies.",
       "provider": {
-        "@id": "https://www.cutthroughfaster.com/#org"
+        "@id": "https://www.cutthroughfaster.com/#organization"
       },
       "areaServed": {
         "@type": "Country",
@@ -183,6 +192,7 @@
     },
     {
       "@type": "FAQPage",
+      "@id": "https://www.cutthroughfaster.com/ai-receptionist-for-dentists#faq",
       "mainEntity": [
         {
           "@type": "Question",
@@ -252,6 +262,7 @@
     },
     {
       "@type": "BreadcrumbList",
+      "@id": "https://www.cutthroughfaster.com/ai-receptionist-for-dentists#breadcrumb",
       "itemListElement": [
         {
           "@type": "ListItem",
@@ -266,6 +277,42 @@
           "item": "https://www.cutthroughfaster.com/ai-receptionist-for-dentists"
         }
       ]
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://www.cutthroughfaster.com/#website",
+      "url": "https://www.cutthroughfaster.com/",
+      "name": "CTF: Cut Through Faster",
+      "publisher": {
+        "@id": "https://www.cutthroughfaster.com/#organization"
+      },
+      "inLanguage": "en-ZA"
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://www.cutthroughfaster.com/ai-receptionist-for-dentists#webpage",
+      "url": "https://www.cutthroughfaster.com/ai-receptionist-for-dentists",
+      "name": "AI Receptionist for Dental Practices in South Africa | CTF",
+      "description": "A 24/7 AI receptionist built for South African dental practices. It answers every call, books and reschedules appointments, escalates emergencies. Phone it free.",
+      "isPartOf": {
+        "@id": "https://www.cutthroughfaster.com/#website"
+      },
+      "about": {
+        "@id": "https://www.cutthroughfaster.com/#organization"
+      },
+      "mainEntity": {
+        "@id": "https://www.cutthroughfaster.com/ai-receptionist-for-dentists#service"
+      },
+      "breadcrumb": {
+        "@id": "https://www.cutthroughfaster.com/ai-receptionist-for-dentists#breadcrumb"
+      },
+      "primaryImageOfPage": {
+        "@type": "ImageObject",
+        "url": "https://www.cutthroughfaster.com/og.png",
+        "width": 1200,
+        "height": 630
+      },
+      "inLanguage": "en-ZA"
     }
   ]
 }

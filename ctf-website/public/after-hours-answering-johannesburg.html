@@ -109,14 +109,23 @@
   "@graph": [
     {
       "@type": "Organization",
-      "@id": "https://www.cutthroughfaster.com/#org",
-      "name": "CTF: Cut Through Faster",
+      "@id": "https://www.cutthroughfaster.com/#organization",
+      "name": "CTF (Cut Through Faster)",
+      "legalName": "Cut Through Faster",
       "alternateName": [
         "Cut Through Faster",
         "CTF",
-        "cutthroughfaster"
+        "cutthroughfaster",
+        "Cut Through Faster (CTF)"
       ],
       "url": "https://www.cutthroughfaster.com/",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.cutthroughfaster.com/logo-512.png",
+        "width": 512,
+        "height": 512
+      },
+      "image": "https://www.cutthroughfaster.com/og.png",
       "email": "hello@cutthroughfaster.com",
       "telephone": "+27764162531",
       "sameAs": [
@@ -142,7 +151,7 @@
       "serviceType": "After hours telephone answering and appointment booking",
       "description": "A 24/7 AI receptionist that answers calls to Johannesburg businesses after hours, over weekends and on public holidays, books appointments and passes the caller's details on.",
       "provider": {
-        "@id": "https://www.cutthroughfaster.com/#org"
+        "@id": "https://www.cutthroughfaster.com/#organization"
       },
       "areaServed": [
         {
@@ -201,6 +210,7 @@
     },
     {
       "@type": "FAQPage",
+      "@id": "https://www.cutthroughfaster.com/after-hours-answering-johannesburg#faq",
       "mainEntity": [
         {
           "@type": "Question",
@@ -278,6 +288,7 @@
     },
     {
       "@type": "BreadcrumbList",
+      "@id": "https://www.cutthroughfaster.com/after-hours-answering-johannesburg#breadcrumb",
       "itemListElement": [
         {
           "@type": "ListItem",
@@ -292,6 +303,42 @@
           "item": "https://www.cutthroughfaster.com/after-hours-answering-johannesburg"
         }
       ]
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://www.cutthroughfaster.com/#website",
+      "url": "https://www.cutthroughfaster.com/",
+      "name": "CTF: Cut Through Faster",
+      "publisher": {
+        "@id": "https://www.cutthroughfaster.com/#organization"
+      },
+      "inLanguage": "en-ZA"
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://www.cutthroughfaster.com/after-hours-answering-johannesburg#webpage",
+      "url": "https://www.cutthroughfaster.com/after-hours-answering-johannesburg",
+      "name": "After Hours Answering Service in Johannesburg | CTF",
+      "description": "A 24/7 AI receptionist for Johannesburg businesses. It answers after hours, at weekends and on public holidays, and books the appointment. Phone it free.",
+      "isPartOf": {
+        "@id": "https://www.cutthroughfaster.com/#website"
+      },
+      "about": {
+        "@id": "https://www.cutthroughfaster.com/#organization"
+      },
+      "mainEntity": {
+        "@id": "https://www.cutthroughfaster.com/after-hours-answering-johannesburg#service"
+      },
+      "breadcrumb": {
+        "@id": "https://www.cutthroughfaster.com/after-hours-answering-johannesburg#breadcrumb"
+      },
+      "primaryImageOfPage": {
+        "@type": "ImageObject",
+        "url": "https://www.cutthroughfaster.com/og.png",
+        "width": 1200,
+        "height": 630
+      },
+      "inLanguage": "en-ZA"
     }
   ]
 }
