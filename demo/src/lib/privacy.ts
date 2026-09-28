@@ -7,7 +7,7 @@
 // nothing it does not. Change it whenever those change. It is a working draft,
 // not a substitute for review by someone qualified in South African law.
 
-export const PRIVACY_VERSION = '2026-09-27';
+export const PRIVACY_VERSION = '2026-09-28';
 
 /** Same inbox as the control platform's Information Officer. */
 export const PRIVACY_CONTACT = 'privacy@cutthroughfaster.com';
@@ -60,7 +60,7 @@ export const DEMO_PRIVACY: {
 } = {
   title: 'Privacy Policy',
   version: PRIVACY_VERSION,
-  updated: '27 September 2026',
+  updated: '28 September 2026',
   intro:
     'This covers the Hope demo pages — the personal link we sent your practice, and the public line on our website — the conversation you can have on them with Hope, our AI receptionist, and the callback form on our website. It explains what we collect, why, who handles it, and what you can ask us to do about it.',
   sections: [
@@ -136,6 +136,7 @@ export const DEMO_PRIVACY: {
       body: [
         'We keep the practice profile, the page records, the conversation and any callback request only for as long as we need them to follow up with you about CTF, and we delete them when you ask us to.',
         'The scrambled IP address kept with public line calls and callback requests is deleted after 30 days, automatically.',
+        'We keep nightly backup copies of these records for seven days, so that a mistake cannot lose them. The copies do not include the scrambled IP address, and anything we delete is gone from them within seven days.',
       ],
     },
     {

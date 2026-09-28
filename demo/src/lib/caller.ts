@@ -16,7 +16,12 @@ import { demoIpSalt } from './env';
  * no Cloudflare header (the Next dev server) or no salt, the result is null.
  */
 export async function hashCallerIp(request: Request): Promise<string | null> {
-  const ip = request.headers.get('cf-connecting-ip')?.trim();
+  return hashCallerHeaders(request.headers);
+}
+
+/** The same hash, from a page's request headers rather than a route's request. */
+export async function hashCallerHeaders(headers: Headers): Promise<string | null> {
+  const ip = headers.get('cf-connecting-ip')?.trim();
   const salt = demoIpSalt();
   if (!ip || !salt) return null;
 

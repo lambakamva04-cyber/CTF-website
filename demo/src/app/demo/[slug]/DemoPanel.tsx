@@ -669,9 +669,18 @@ function buildOverrides(prospect: PublicProspect, maxSeconds: number) {
   };
 }
 
+/** How long the gate may take before the attempt counts as failed. */
+const GATE_TIMEOUT_MS = 15_000;
+
 /** Asks the public line's gate for a call. Throws on anything but an answer. */
 async function requestGate(slug: string): Promise<GateResponse> {
-  const response = await fetch(`/api/demo/${encodeURIComponent(slug)}/gate`, { method: 'POST' });
+  const response = await fetch(`/api/demo/${encodeURIComponent(slug)}/gate`, {
+    method: 'POST',
+    signal: AbortSignal.timeout(GATE_TIMEOUT_MS),
+  });
+  // The edge's per-visitor limit: the same answer as the gate's own, so the
+  // visitor is told to wait rather than that something broke.
+  if (response.status === 429) return { allowed: false, reason: 'ip_cooldown' };
   if (!response.ok) throw new Error(`gate answered ${response.status}`);
   return (await response.json()) as GateResponse;
 }

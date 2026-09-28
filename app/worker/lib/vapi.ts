@@ -301,10 +301,16 @@ export async function endCall(
     throw upstreamError('Unable to end the call: no Vapi API key is configured.');
   }
 
-  const response = await fetch(`${VAPI_API_BASE}/call/${encodeURIComponent(vapiCallId)}`, {
-    method: 'DELETE',
-    headers: { authorization: `Bearer ${env.VAPI_PRIVATE_KEY}` },
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${VAPI_API_BASE}/call/${encodeURIComponent(vapiCallId)}`, {
+      method: 'DELETE',
+      headers: { authorization: `Bearer ${env.VAPI_PRIVATE_KEY}` },
+      signal: AbortSignal.timeout(CONTROL_TIMEOUT_MS),
+    });
+  } catch {
+    throw upstreamError('Vapi did not answer in time, so the call may still be running.');
+  }
 
   // 404 means Vapi has already torn the call down — the desired end state.
   if (!response.ok && response.status !== 404) {

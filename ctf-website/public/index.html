@@ -1518,6 +1518,13 @@
       submitBtn.textContent = 'Sending...';
       statusEl.textContent = '';
 
+      // A server that never answers must not leave the button on "Sending..."
+      // for good: after 20 seconds the request is dropped and the fallback
+      // shown. Trying again is safe, because the server ignores a repeat of
+      // the same phone number within ten minutes.
+      var controller = typeof AbortController === 'function' ? new AbortController() : null;
+      var timer = controller ? setTimeout(function () { controller.abort(); }, 20000) : null;
+
       fetch(LEAD_ENDPOINT, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -1527,13 +1534,41 @@
           phone: phone,
           message: msgEl.value.trim(),
           company_website: potEl ? potEl.value : ''
-        })
+        }),
+        signal: controller ? controller.signal : undefined
       }).then(function (res) {
-        if (!res.ok) throw new Error('bad status');
-        submitBtn.textContent = 'Thanks, we\u2019ll call you';
-        statusEl.textContent = 'Got it. The CTF team will be in touch, usually the same day.';
-        nameEl.value = ''; phoneEl.value = ''; msgEl.value = '';
+        if (res.ok) return { ok: true };
+        return res.json().catch(function () { return {}; }).then(function (data) {
+          return { ok: false, status: res.status, fields: (data && data.fields) || [] };
+        });
+      }).then(function (result) {
+        if (timer) clearTimeout(timer);
+        if (result.ok) {
+          submitBtn.textContent = 'Thanks, we\u2019ll call you';
+          statusEl.textContent = 'Got it. The CTF team will be in touch, usually the same day.';
+          nameEl.value = ''; phoneEl.value = ''; msgEl.value = '';
+          return;
+        }
+        // The two refusals a person can fix say what to fix. Anything else
+        // falls through to the email and phone fallback below.
+        if (result.status === 400 && result.fields.indexOf('phone') !== -1) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = original;
+          phoneEl.classList.add('field-error');
+          phoneEl.setAttribute('aria-invalid', 'true');
+          statusEl.textContent = 'Please check your phone number. It should have 9 to 15 digits.';
+          phoneEl.focus();
+          return;
+        }
+        if (result.status === 429) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = original;
+          statusEl.textContent = 'We already have your earlier requests. Please wait a few minutes before sending another, or call us on 076 416 2531.';
+          return;
+        }
+        throw new Error('bad status');
       }).catch(function () {
+        if (timer) clearTimeout(timer);
         submitBtn.disabled = false;
         submitBtn.textContent = original;
         statusEl.innerHTML = 'That did not send. Please email <a href="mailto:hello@cutthroughfaster.com" style="color:inherit;text-decoration:underline;">hello@cutthroughfaster.com</a> or call <a href=\"tel:+27764162531\" style=\"color:inherit;text-decoration:underline;\">076 416 2531</a>.';

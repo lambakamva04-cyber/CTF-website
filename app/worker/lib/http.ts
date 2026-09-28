@@ -23,6 +23,8 @@ export const conflict = (message: string) => new HttpError(409, 'conflict', mess
 export const tooManyRequests = (message: string, retryAfter: number) =>
   new HttpError(429, 'rate_limited', message, retryAfter);
 export const upstreamError = (message: string) => new HttpError(502, 'upstream_error', message);
+export const payloadTooLarge = (message = 'That request is too large.') =>
+  new HttpError(413, 'payload_too_large', message);
 
 const API_HEADERS: Record<string, string> = {
   'content-type': 'application/json; charset=utf-8',
@@ -92,13 +94,49 @@ export function assertTrustedOrigin(request: Request, env: Env): void {
   throw forbidden('Request origin is not allowed.');
 }
 
+/**
+ * The largest JSON body a browser-facing endpoint accepts. The biggest real
+ * one is a form of a few short fields; this is room for that many times over.
+ */
+export const MAX_JSON_BODY_BYTES = 64 * 1024;
+
+/**
+ * Reads a request body as text, refusing anything over `maxBytes` with a 413.
+ *
+ * The declared length is checked first, and the stream is counted as it
+ * arrives, because a sender can leave the length out. Without a cap one
+ * request can make the Worker buffer up to Cloudflare's own 100 MB ceiling.
+ */
+export async function readBodyText(request: Request, maxBytes: number): Promise<string> {
+  const declared = Number(request.headers.get('content-length'));
+  if (Number.isFinite(declared) && declared > maxBytes) throw payloadTooLarge();
+  if (!request.body) return '';
+
+  const reader = request.body.getReader();
+  const decoder = new TextDecoder();
+  let received = 0;
+  let text = '';
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    received += value.byteLength;
+    if (received > maxBytes) {
+      await reader.cancel().catch(() => undefined);
+      throw payloadTooLarge();
+    }
+    text += decoder.decode(value, { stream: true });
+  }
+  return text + decoder.decode();
+}
+
 export async function readJson<T>(request: Request): Promise<T> {
   const contentType = request.headers.get('content-type') ?? '';
   if (!contentType.includes('application/json')) {
     throw badRequest('Expected a JSON request body.');
   }
+  const text = await readBodyText(request, MAX_JSON_BODY_BYTES);
   try {
-    return (await request.json()) as T;
+    return JSON.parse(text) as T;
   } catch {
     throw badRequest('Request body was not valid JSON.');
   }

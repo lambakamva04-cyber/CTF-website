@@ -52,6 +52,21 @@ interface RequestOptions {
   signal?: AbortSignal;
 }
 
+/**
+ * No request here should come near this. Past it the answer is treated as
+ * lost — a network error, which the pollers already retry — instead of a
+ * spinner that never stops on a connection that silently dropped.
+ */
+const REQUEST_TIMEOUT_MS = 30_000;
+
+/** The caller's signal, if any, combined with the timeout, where the browser allows. */
+function withTimeout(signal: AbortSignal | undefined): AbortSignal | null {
+  if (typeof AbortSignal.timeout !== 'function') return signal ?? null;
+  const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+  if (!signal) return timeout;
+  return typeof AbortSignal.any === 'function' ? AbortSignal.any([signal, timeout]) : signal;
+}
+
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, signal } = options;
 
@@ -63,7 +78,9 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
       credentials: 'same-origin',
       headers: body === undefined ? {} : { 'content-type': 'application/json' },
       body: body === undefined ? undefined : JSON.stringify(body),
-      signal: signal ?? null,
+      // A timeout rejects as TimeoutError, not AbortError, so it lands below
+      // as a network error rather than being mistaken for a cancelled request.
+      signal: withTimeout(signal),
     });
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') throw error;

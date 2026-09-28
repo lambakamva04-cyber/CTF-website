@@ -56,6 +56,8 @@ export interface EmailEnv {
 const DEFAULT_FROM = 'Cut Through Faster <security@mail.cutthroughfaster.com>';
 const DEFAULT_REPLY_TO = 'cutthroughfaster@gmail.com';
 const ENDPOINT = 'https://api.resend.com/emails';
+/** Long enough for a slow provider, short enough that a sign-in is not left hanging. */
+const SEND_TIMEOUT_MS = 10_000;
 
 export function emailConfigured(env: EmailEnv): boolean {
   return Boolean(env.EMAIL_API_KEY?.trim());
@@ -91,20 +93,28 @@ export async function sendEmail(env: EmailEnv, message: EmailMessage): Promise<v
 
   const { from, replyTo } = emailDiagnostics(env);
 
-  const response = await fetch(ENDPOINT, {
-    method: 'POST',
-    headers: {
-      authorization: `Bearer ${apiKey}`,
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      from,
-      to: [message.to],
-      reply_to: replyTo,
-      subject: message.subject,
-      text: message.text,
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(ENDPOINT, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${apiKey}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        from,
+        to: [message.to],
+        reply_to: replyTo,
+        subject: message.subject,
+        text: message.text,
+      }),
+      signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
+    });
+  } catch (error) {
+    // A provider that does not answer is reported like one that refused, so a
+    // sign-in waiting on a code fails the same understood way either time.
+    throw new EmailSendError(0, error instanceof Error ? error.message : 'request failed');
+  }
 
   if (!response.ok) {
     // Read the body for the log, but never return it to the caller: provider

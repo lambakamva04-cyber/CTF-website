@@ -44,6 +44,30 @@ export async function leadLimitReached(ipHash: string | null): Promise<boolean> 
   return (senderCount ?? 0) >= PER_SENDER_PER_HOUR;
 }
 
+/**
+ * How far back a repeat counts as the same request. Long enough to cover a
+ * double click and a retry after a slow answer, short enough that somebody
+ * asking again later in the day is heard again.
+ */
+const DUPLICATE_WINDOW_MS = 10 * 60 * 1000;
+
+/**
+ * True when this phone number already asked for a callback a moment ago. The
+ * form treats that as sent: saving it twice would email the team twice and
+ * leave two rows for one person.
+ */
+export async function isRepeatLead(phone: string): Promise<boolean> {
+  const since = new Date(Date.now() - DUPLICATE_WINDOW_MS).toISOString();
+  const { count, error } = await db()
+    .from('leads')
+    .select('id', { count: 'exact', head: true })
+    .eq('phone', phone)
+    .gt('created_at', since);
+
+  if (error) throw new Error(`lead lookup failed: ${error.message}`);
+  return (count ?? 0) > 0;
+}
+
 export async function saveLead(input: LeadInput): Promise<void> {
   const { error } = await db().from('leads').insert({
     name: input.name,
