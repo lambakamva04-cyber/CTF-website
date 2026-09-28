@@ -1,7 +1,7 @@
 import type { Env } from '../env';
 import { newId, sha256Hex } from '../lib/crypto';
 import type { CallRow, OrgRow } from '../lib/db';
-import { json } from '../lib/http';
+import { json, readBodyText } from '../lib/http';
 import {
   deriveOutcome,
   mapStatus,
@@ -12,12 +12,21 @@ import {
 import { appendTranscriptLine } from './calls';
 
 /**
+ * The largest webhook accepted. An end-of-call report carries the whole
+ * conversation several times over (transcript, messages, analysis), so this
+ * is set far above the longest call the ten-minute cap allows — a dropped
+ * webhook is a lost transcript — while still well short of Cloudflare's
+ * 100 MB ceiling.
+ */
+const MAX_WEBHOOK_BODY_BYTES = 8 * 1024 * 1024;
+
+/**
  * Vapi server webhook. Returns 200 for anything it cannot act on (unknown org,
  * uninteresting event type) so Vapi does not enter a retry loop over a message
  * that will never succeed; genuine failures throw and surface as 5xx.
  */
 export async function handleVapiWebhook(request: Request, env: Env): Promise<Response> {
-  const rawBody = await request.text();
+  const rawBody = await readBodyText(request, MAX_WEBHOOK_BODY_BYTES);
   await verifyWebhook(request, env, rawBody);
 
   let payload: unknown;

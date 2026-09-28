@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 
+import { readJsonBody } from '@/lib/body';
 import { hashCallerIp } from '@/lib/caller';
-import { leadLimitReached, saveLead, type LeadInput } from '@/lib/leads';
+import { isRepeatLead, leadLimitReached, saveLead, type LeadInput } from '@/lib/leads';
+import { withinLimit } from '@/lib/limits';
 import { emailNewLead } from '@/lib/notify';
 
 export const dynamic = 'force-dynamic';
@@ -14,6 +16,9 @@ const ALLOWED_ORIGINS = new Set([
   'https://www.cutthroughfaster.com',
   'https://cutthroughfaster.com',
 ]);
+
+/** The form sends five short fields; 16 KB is room for a long message and more. */
+const MAX_BODY_BYTES = 16 * 1024;
 
 const LIMITS = {
   name: 120,
@@ -78,7 +83,10 @@ export async function OPTIONS(request: Request) {
  * - A filled-in honeypot field is answered as a success and dropped, so a bot
  *   learns nothing from the response.
  * - One sender gets a few requests an hour, and everyone together a ceiling a
- *   day, counted on the hashed IP. The address itself is never stored.
+ *   day, counted on the hashed IP. The address itself is never stored. A
+ *   flood is refused earlier still, at Cloudflare's edge counter.
+ * - The body is capped at 16 KB, and a repeat of the same phone number within
+ *   ten minutes is answered as sent without being saved or emailed again.
  */
 export async function POST(request: Request) {
   const origin = request.headers.get('origin');
@@ -86,16 +94,21 @@ export async function POST(request: Request) {
     return reply(request, { error: 'forbidden' }, 403);
   }
 
-  if (!request.headers.get('content-type')?.toLowerCase().startsWith('application/json')) {
-    return reply(request, { error: 'invalid_body' }, 415);
+  // Before anything is read or looked up: a flood from one sender is refused
+  // at the edge counter without costing a database round trip.
+  const ipHash = await hashCallerIp(request);
+  if (!(await withinLimit('LEAD_FORM_LIMITER', ipHash))) {
+    return reply(request, { error: 'too_many_requests' }, 429);
   }
 
-  let body: Record<string, unknown>;
-  try {
-    body = ((await request.json()) ?? {}) as Record<string, unknown>;
-  } catch {
-    return reply(request, { error: 'invalid_body' }, 400);
+  const read = await readJsonBody(request, MAX_BODY_BYTES);
+  if (!read.ok) {
+    return reply(request, { error: 'invalid_body' }, read.status);
   }
+  const body = (read.value && typeof read.value === 'object' ? read.value : {}) as Record<
+    string,
+    unknown
+  >;
 
   if (text(body.company_website, 200)) {
     return reply(request, { ok: true });
@@ -112,9 +125,15 @@ export async function POST(request: Request) {
 
   let lead: LeadInput;
   try {
-    const ipHash = await hashCallerIp(request);
     if (await leadLimitReached(ipHash)) {
       return reply(request, { error: 'too_many_requests' }, 429);
+    }
+
+    // A double click, or a retry after a slow answer, is the same request.
+    // Answered as a success, because it was one: the first copy is saved and
+    // the team has been emailed about it.
+    if (await isRepeatLead(phone)) {
+      return reply(request, { ok: true });
     }
 
     lead = {

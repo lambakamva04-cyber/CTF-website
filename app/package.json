@@ -2,7 +2,7 @@
   "name": "ctf-app",
   "version": "1.0.0",
   "private": true,
-  "description": "Cut Through Faster \u2014 client control platform for AI receptionists",
+  "description": "Cut Through Faster — client control platform for AI receptionists",
   "type": "module",
   "engines": {
     "node": ">=22"
@@ -16,6 +16,7 @@
     "test:watch": "vitest",
     "db:migrate:local": "wrangler d1 migrations apply ctf-app --local",
     "db:migrate": "wrangler d1 migrations apply ctf-app --remote",
+    "db:backup-test": "node scripts/backup-restore-test.mjs",
     "seed": "node scripts/seed.mjs",
     "deploy": "npm run build && wrangler deploy",
     "assistant:sync": "node scripts/sync-assistant.mjs",
@@ -31,6 +32,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260730.1",
     "@tailwindcss/vite": "^4.0.0",
+    "@types/node": "^26.6.3",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
@@ -38,7 +40,7 @@
     "tailwindcss": "^4.0.0",
     "typescript": "^5.6.3",
     "vite": "^6.0.3",
-    "vitest": "^2.1.8",
+    "vitest": "^5.0.2",
     "wrangler": "^4.0.0"
   }
 }

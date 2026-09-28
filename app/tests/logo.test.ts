@@ -1,3 +1,7 @@
+/// <reference types="node" />
+// These tests run in Node, not a Worker, and use its modules. Declared here
+// rather than in tsconfig.worker.json so the Worker code stays checked
+// against the Workers runtime alone.
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';

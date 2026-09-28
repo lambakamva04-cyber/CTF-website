@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 
+import { readJsonBody } from '@/lib/body';
 import { hashCallerIp } from '@/lib/caller';
 import { DEMO_MAX_SECONDS, isDemoEventType, isValidSlug } from '@/lib/demo';
+import { withinLimit } from '@/lib/limits';
 import {
   checkPublicGate,
   claimDemo,
@@ -19,6 +21,8 @@ const NO_STORE = { 'Cache-Control': 'no-store' };
 const MAX_DURATION_SECONDS = DEMO_MAX_SECONDS * 2;
 const MAX_ENDED_REASON_CHARS = 120;
 const MAX_USER_AGENT_CHARS = 400;
+/** An event is three short fields. */
+const MAX_BODY_BYTES = 4 * 1024;
 
 function clampDuration(value: unknown): number | null {
   if (typeof value !== 'number' || !Number.isFinite(value)) return null;
@@ -51,14 +55,23 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     return NextResponse.json({ error: 'not_found' }, { status: 404, headers: NO_STORE });
   }
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: 'invalid_body' }, { status: 400, headers: NO_STORE });
+  // A real visit sends a handful of events. Anything like a flood — someone
+  // scripting fake views, or trying slugs to spend other people's links — is
+  // refused at the edge before it reaches the database.
+  const callerHash = await hashCallerIp(request);
+  if (!(await withinLimit('DEMO_EVENT_LIMITER', callerHash))) {
+    return NextResponse.json({ error: 'too_many_requests' }, { status: 429, headers: NO_STORE });
   }
 
-  const payload = (body ?? {}) as Record<string, unknown>;
+  const read = await readJsonBody(request, MAX_BODY_BYTES);
+  if (!read.ok) {
+    return NextResponse.json({ error: 'invalid_body' }, { status: read.status, headers: NO_STORE });
+  }
+
+  const payload = (read.value && typeof read.value === 'object' ? read.value : {}) as Record<
+    string,
+    unknown
+  >;
   const eventType = payload.event_type;
 
   if (!isDemoEventType(eventType)) {
@@ -83,7 +96,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
   // behind them, would close the line to everyone for the day.
   let ipHash: string | null = null;
   if (eventType === 'call_started' && prospect.is_public) {
-    ipHash = await hashCallerIp(request);
+    ipHash = callerHash;
     const verdict = await checkPublicGate(ipHash);
     if (!verdict.allowed) {
       return NextResponse.json(

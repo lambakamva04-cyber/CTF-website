@@ -5,3 +5,10 @@
   Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()
   Cross-Origin-Opener-Policy: same-origin
   Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; media-src 'self' https://storage.vapi.ai https://*.vapi.ai; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+
+# Vite names every built file after a hash of its contents, so a file at a
+# given /assets/ path never changes: a browser can keep it for a year and a new
+# deploy simply points at new names. index.html is not under /assets/, so it
+# is still fetched fresh and always names the current files.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

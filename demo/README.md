@@ -63,6 +63,22 @@ read the `prospects` table and walk away with our entire prospecting list. So:
 `server-only`, so an accidental import from a client component fails the build
 rather than shipping the service role key to a browser.
 
+Floods are refused at Cloudflare's edge, before any database work, by three
+rate limiting bindings declared in `wrangler.jsonc` and checked in
+`src/lib/limits.ts`, each counted per visitor on the hashed IP:
+
+| Limiter | Covers | Per minute |
+| --- | --- | --- |
+| `DEMO_READ_LIMITER` | demo page loads, `GET /api/demo/<slug>`, the public line's gate | 30 |
+| `DEMO_EVENT_LIMITER` | `POST /api/demo/<slug>/event` | 30 |
+| `LEAD_FORM_LIMITER` | `POST /api/lead` | 5 |
+
+A visitor over the page limit gets the ordinary not-found page. These sit in
+front of the database limits below, not instead of them. Request bodies are
+capped (`src/lib/body.ts`: 4 KB for an event, 16 KB for a callback request),
+and every Supabase request is abandoned after 8 seconds (`src/lib/supabase.ts`)
+rather than left to hang.
+
 ## Spend control
 
 Vapi bills per minute and this product has no revenue. Two caps, deliberately
@@ -104,13 +120,35 @@ The contact form on www.cutthroughfaster.com posts JSON to
 `https://demo.cutthroughfaster.com/api/lead`. The route accepts only JSON from
 the marketing site's origin, drops anything that fills in the hidden
 `company_website` field, limits each sender to five requests an hour and
-everyone to 200 a day, and saves the rest to `leads`.
+everyone to 200 a day, and saves the rest to `leads`. The same phone number
+again within ten minutes (a double click, a retry) is answered as sent without
+being saved or emailed twice.
 
 Each saved request is then emailed to `LEAD_NOTIFY_TO` through Resend
 (`EMAIL_API_KEY`), the provider the dashboard uses. A failed email does not
 fail the form — the request is already saved — so it is only logged. Every
 request is also in Supabase → Table Editor → `leads`, newest first; set
 `contacted_at` once you have called back.
+
+## Backups
+
+The project is on Supabase's free plan, which keeps no backups. Every night at
+01:41 UTC the pg_cron job `nightly-table-snapshots` copies each table into the
+`backups` schema as `<table>_<yyyymmdd>` and drops copies older than seven days
+(`backups.snapshot_tables()`, migrations 0009 and 0010). The copies leave out
+the hashed IPs and user agents, which only serve the flood limits, so the
+privacy policy's 30-day deletion holds for backups too. The schema is not
+exposed through the API and no client role can read it. It covers deleted or
+overwritten rows, not the loss of the project itself.
+
+To put a table back, in the SQL editor, e.g. for leads from 28 September:
+
+```sql
+begin;
+delete from public.leads;
+insert into public.leads select * from backups.leads_20260928;
+commit;
+```
 
 ## Setup
 

@@ -382,6 +382,11 @@ to all admins when `EMAIL_API_KEY` is set.
 - **Webhooks** fail closed. If `VAPI_WEBHOOK_SECRET` is unset the endpoint
   rejects everything rather than accepting anonymous writes, and deliveries are
   de-duplicated so Vapi's retries cannot double-count a call.
+- **Request limits**: every signed-in user has 600 reads and 60 changes a
+  minute, second-factor codes are limited per address and per challenge, and
+  signups per address. Request bodies are capped: 64 KB for anything a browser
+  sends, 8 MB for a Vapi webhook. Calls out to Vapi, Google and the email
+  provider give up after 10 seconds, and the dashboard's own requests after 30.
 - **Two-factor authentication**, TOTP or emailed codes, off by default and
   enrolled per account from the Security panel. See below.
 - **Audit log**: every sign-in, takeover, hang-up and password change is
@@ -576,6 +581,14 @@ sites as separate properties in Search Console.
 - **A client sees no calls**: check `organizations.vapi_assistant_id` matches the
   assistant, then `npx wrangler tail ctf-app` and look for
   `webhook_org_unresolved`.
+- **Backups.** D1 keeps its own point-in-time history (Time Travel): the
+  database can be rewound to any minute in the retention window with
+  `npx wrangler d1 time-travel restore ctf-app --timestamp=<when>`.
+  `npm run db:backup-test` proves a backup restores: it exports the live
+  database, restores the export into a throwaway local database and compares
+  every table's row count. It only reads the live data. Add `-- --keep` to keep
+  the export as an offline copy; it holds everything, password hashes
+  included, so store it privately.
 
 ## Known gaps
 

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { hashCallerIp } from '@/lib/caller';
 import { DEMO_MAX_SECONDS, isValidSlug, type GateResponse } from '@/lib/demo';
+import { withinLimit } from '@/lib/limits';
 import { checkPublicGate, getProspectBySlug } from '@/lib/prospects';
 
 export const dynamic = 'force-dynamic';
@@ -27,6 +28,11 @@ const NO_STORE = { 'Cache-Control': 'no-store' };
 export async function POST(request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
 
+  const callerHash = await hashCallerIp(request);
+  if (!(await withinLimit('DEMO_READ_LIMITER', callerHash))) {
+    return NextResponse.json({ error: 'too_many_requests' }, { status: 429, headers: NO_STORE });
+  }
+
   if (!isValidSlug(slug)) {
     return NextResponse.json({ error: 'not_found' }, { status: 404, headers: NO_STORE });
   }
@@ -41,6 +47,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     return NextResponse.json(body, { headers: NO_STORE });
   }
 
-  const verdict = await checkPublicGate(await hashCallerIp(request));
+  const verdict = await checkPublicGate(callerHash);
   return NextResponse.json(verdict, { headers: NO_STORE });
 }

@@ -41,6 +41,9 @@ async function touchDatabase(env: Env): Promise<{ ok: boolean; detail: string }>
         Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
         Accept: 'application/json',
       },
+      // A hung connection is logged as a failure, not left to run out the
+      // scheduled invocation's clock with nothing in the log.
+      signal: AbortSignal.timeout(10_000),
     });
 
     if (!response.ok) {

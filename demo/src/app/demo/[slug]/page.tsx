@@ -9,6 +9,7 @@ import {
   spokenPracticeName,
 } from '@/lib/demo';
 import { bookingUrl, vapiAssistantId, vapiPublicKey } from '@/lib/env';
+import { demoPageAllowed } from '@/lib/limits';
 import { getProspectBySlug, getPublicLineSeconds, toPublicProspect } from '@/lib/prospects';
 
 import DemoPanel from './DemoPanel';
@@ -21,7 +22,7 @@ type PageProps = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  if (!isValidSlug(slug)) return { title: 'Not found' };
+  if (!isValidSlug(slug) || !(await demoPageAllowed())) return { title: 'Not found' };
 
   const prospect = await getProspectBySlug(slug);
   if (!prospect) return { title: 'Not found' };
@@ -48,6 +49,11 @@ export default async function DemoPage({ params }: PageProps) {
   // A malformed slug and an unknown slug end in exactly the same place. The
   // page must never confirm that a link nearly exists.
   if (!isValidSlug(slug)) notFound();
+
+  // Someone loading page after page is walking through practice names looking
+  // for links. They get the same page as a wrong link, from the edge counter
+  // rather than a database lookup.
+  if (!(await demoPageAllowed())) notFound();
 
   const row = await getProspectBySlug(slug);
   if (!row) notFound();

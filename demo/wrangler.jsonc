@@ -32,7 +32,21 @@
     }
   ],
 
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+
+  // Per-visitor flood limits, per minute, keyed on the hashed IP (src/lib/
+  // limits.ts). Far above what a person does — one visit is a page load, a
+  // gate check and three or four events — and far below a script. Counted at
+  // the edge, so a flood costs no database work. The namespace ids only have
+  // to be unique within the Cloudflare account.
+  "ratelimits": [
+    // Demo page loads, the prospect lookup and the public line's gate.
+    { "name": "DEMO_READ_LIMITER", "namespace_id": "7101", "simple": { "limit": 30, "period": 60 } },
+    // Call tracking: page_view, call_started, call_ended.
+    { "name": "DEMO_EVENT_LIMITER", "namespace_id": "7102", "simple": { "limit": 30, "period": 60 } },
+    // The marketing site's callback form.
+    { "name": "LEAD_FORM_LIMITER", "namespace_id": "7103", "simple": { "limit": 5, "period": 60 } }
+  ]
 
   // Secrets — set with `wrangler secret put <NAME>`, never in this file:
   //   SUPABASE_URL
