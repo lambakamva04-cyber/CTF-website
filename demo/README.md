@@ -224,9 +224,20 @@ node scripts/seed.mjs \
 It prints the link to paste into the email. Re-running with the same slug
 updates the row, so a corrected practice name is one command, not a migration.
 
-Choose slugs that a human can read in a URL bar —
-`rosebank-family-dental`, not `a3f9c2`. The prospect should be able to tell at a
-glance the link was written for them.
+### Links for real prospects
+
+A link that can be worked out from a practice's name can be opened, or its one
+call spent, by anyone who tries. So for a real prospect, leave the slug to the
+database: add a row in Supabase → Table Editor → `prospects` with just
+`practice_name` (and `contact_email`), and the `prospects_autoslug` trigger
+(migration 0011) writes a slug like `rosebank-family-dental-3f9c2a1e` — the
+name, so it still reads as written for them, plus eight random characters.
+The link is `https://demo.cutthroughfaster.com/demo/<slug>`; **copy the slug
+from the new row**, do not type it from the name. Links made before that change
+keep their old, name-only slugs, so they are not broken.
+
+`--slug` (above) uses exactly the slug it is given, so keep it for CTF's own
+test rows and for re-arming a link, not for real prospects.
 
 For your own testing, `--reset` clears `demo_used_at` and makes a spent link
 live again:
