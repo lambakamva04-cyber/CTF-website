@@ -1,5 +1,6 @@
 /**
- * Keeps the Supabase project awake.
+ * Keeps the Supabase project awake. Its second cron has Hope return the
+ * website's callback requests; that is src/callbacks.ts.
  *
  * Supabase pauses a free project after seven idle days. A paused project does
  * not degrade the demo — it breaks it completely: every link already sitting in
@@ -15,10 +16,12 @@
  * heartbeat cannot take down the demo.
  */
 
-type Env = {
-  SUPABASE_URL: string;
-  SUPABASE_SERVICE_ROLE_KEY: string;
-};
+import { runCallbacks, type CallbackEnv } from './callbacks';
+
+type Env = CallbackEnv;
+
+/** The daily keep-alive. Every other cron in wrangler.toml is Hope's callback queue. */
+const HEARTBEAT_CRON = '23 5 * * *';
 
 /**
  * The cheapest request that genuinely reaches Postgres: one indexed row, one
@@ -58,7 +61,17 @@ async function touchDatabase(env: Env): Promise<{ ok: boolean; detail: string }>
 }
 
 export default {
-  async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+    if (event.cron !== HEARTBEAT_CRON) {
+      ctx.waitUntil(
+        runCallbacks(env).then(
+          (summary) => console.log(`callbacks: ${summary}`),
+          (error) => console.error(`callbacks: FAILED — ${error instanceof Error ? error.message : error}`),
+        ),
+      );
+      return;
+    }
+
     // Logged either way, and visible in `wrangler tail`. A failing heartbeat is
     // a seven-day fuse on every live demo link, so it must not fail quietly.
     ctx.waitUntil(

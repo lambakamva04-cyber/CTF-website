@@ -2,10 +2,10 @@
   "name": "ctf-demo-heartbeat",
   "version": "1.0.0",
   "private": true,
-  "description": "Daily keep-alive so the Supabase free project never pauses under a live campaign",
+  "description": "Keeps the Supabase free project awake, and has Hope return the website's callback requests",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
+    "dev": "wrangler dev --config wrangler.toml",
+    "deploy": "wrangler deploy --config wrangler.toml",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

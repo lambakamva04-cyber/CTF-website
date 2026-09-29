@@ -38,7 +38,7 @@ that will drift apart by March. Adding a practice is an `INSERT`.
 | `vapi/assistant.md` | **The system prompt.** The positioning lives here as much as in the page copy |
 | `scripts/seed.mjs` | Adds a prospect |
 | `wrangler.jsonc`, `open-next.config.ts` | Cloudflare Worker build and deploy |
-| `heartbeat/` | Daily keep-alive so the free Supabase project never pauses |
+| `heartbeat/` | Daily keep-alive so the free Supabase project never pauses, and Hope's callbacks to the website's leads |
 
 ## Security model
 
@@ -375,18 +375,69 @@ upgrade should not be able to take the keep-alive with it.
 ```bash
 cd demo/heartbeat
 npm install
-npx wrangler secret put SUPABASE_URL
-npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+npx wrangler secret put SUPABASE_URL --config wrangler.toml
+npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY --config wrangler.toml
 npm run deploy
 
 curl https://ctf-demo-heartbeat.<account>.workers.dev    # "ok: database reached"
 ```
+
+Every `wrangler` command here needs `--config wrangler.toml` (`npm run deploy`
+and `npm run dev` pass it). Without it wrangler finds the demo's
+`wrangler.jsonc` in the folder above first, and deploys, or sets the secret on,
+the demo instead.
 
 Deploy it **before** the first email goes out, and check that URL returns `ok`.
 It uses the service role key rather than the anon key on purpose: `anon` holds
 no grants on these tables by design, so a request made with it can be refused at
 the API layer without ever reaching Postgres — a heartbeat that reports success
 while the project drifts towards a pause is worse than no heartbeat.
+
+### Hope returns the website's callback requests
+
+The same Worker runs a second cron, every five minutes. When someone asks for a
+callback on cutthroughfaster.com, Hope phones them back through Vapi, inside
+South African calling hours: weekdays 08:00 to 18:00 and Saturdays 09:00 to
+13:00, never on a Sunday or public holiday. She says she is an AI and that the
+call is recorded, finds out what they need, explains what CTF does, offers the
+free demo, and sets up a call with Kamva. She never quotes a price. The script
+is in [`heartbeat/src/callbackAssistant.ts`](heartbeat/src/callbackAssistant.ts);
+the Vapi dashboard only supplies her voice.
+
+Kamva is emailed after every call: her notes and the transcript when she spoke
+to them; a request to call them when nobody answered twice (she tries once more
+an hour after a missed call), when the call failed, or when the number is not
+a South African one she can dial. Each lead's progress is in the `callback_*`
+columns of `leads` ([migration 0012](migrations/0012_hope_callbacks_and_reply_watch.sql)).
+
+- Setting `contacted_at` on a lead before Hope gets to it stops her calling.
+- Requests from before 29 September 2026 are never called.
+- Somebody she spoke to in the last seven days is not called again.
+- At most 20 people are called in any 24 hours, three per run.
+
+It stays off until all three Vapi secrets are set:
+
+```bash
+cd demo/heartbeat
+npx wrangler secret put VAPI_PRIVATE_KEY --config wrangler.toml       # Vapi → API Keys → private key
+npx wrangler secret put VAPI_PHONE_NUMBER_ID --config wrangler.toml   # Vapi → Phone Numbers → the number's id
+npx wrangler secret put VAPI_ASSISTANT_ID --config wrangler.toml      # the demo's assistant, for its voice
+npx wrangler secret put EMAIL_API_KEY --config wrangler.toml          # the same Resend key as the demo
+npm run deploy
+```
+
+`LEAD_NOTIFY_TO` and `EMAIL_FROM` can be set the same way; they default to
+hello@cutthroughfaster.com and website@mail.cutthroughfaster.com.
+
+The number needs to be able to call South African numbers. A free number bought
+inside Vapi cannot: Vapi refuses international calls from its own numbers. Use a
+Twilio number or a SIP trunk imported into Vapi (see
+[`app/docs/giving-hope-a-phone-number.md`](../app/docs/giving-hope-a-phone-number.md)),
+ideally a South African one, since people are more likely to answer a local
+number. Allow calls to South Africa in the provider's geographic permissions.
+
+Watch it with `npx wrangler tail --config wrangler.toml`; each run logs one line,
+naming leads only by id.
 
 ## Positioning, which is not a copy question
 

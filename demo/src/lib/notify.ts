@@ -43,9 +43,9 @@ export async function emailNewLead(lead: LeadInput, receivedAt: Date): Promise<b
     '',
     `Sent ${when} (South African time).`,
     '',
-    'The site told them to expect a call, usually the same day. The request is',
-    'also saved in Supabase → Table Editor → leads; set contacted_at once you',
-    'have called back.',
+    'The site told them to expect a call, usually the same day, and that it may',
+    'come from Hope. The request is also saved in Supabase → Table Editor →',
+    'leads; set contacted_at once you have called back, and Hope will not call.',
   ].join('\n');
 
   const response = await fetch(ENDPOINT, {
