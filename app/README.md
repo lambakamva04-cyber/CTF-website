@@ -572,6 +572,18 @@ sites as separate properties in Search Console.
   transcript every 2 s, using a cursor so only new lines are fetched. Polling
   pauses while the tab is hidden and backs off exponentially on errors, with the
   last good data left on screen.
+- **The call statistics are cached for a minute** (`worker/lib/statsCache.ts`),
+  per client, in Cloudflare's cache. Every open dashboard asks for them once a
+  minute, and each answer is up to ten database queries; within a minute most
+  answers are the same, so the rest are served from the cache. A new or
+  finished call bumps `organizations.stats_version` (migration 0007), which is
+  part of the cache key, so the numbers still move the moment a call does. Live
+  calls, the call list and transcripts are never cached, and the browser is
+  still told not to store anything. The response header `x-stats-cache` says
+  `hit` or `miss`. Before migration 0007 is applied, nothing is cached and
+  everything works as before, so the order of `npm run db:migrate` and
+  `npm run deploy` does not matter. On the workers.dev address the cache stores
+  nothing, so every request is a miss.
 - **Nightly cron** (`17 3 * * *`) prunes expired sessions, old rate-limit rows
   and webhook dedupe ids.
 - **Recovering a locked-out client**: generate a new hash with

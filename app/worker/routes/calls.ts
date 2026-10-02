@@ -18,6 +18,7 @@ import {
   readJson,
 } from '../lib/http';
 import { requirePermission } from '../lib/permissions';
+import { bumpStatsVersion } from '../lib/statsCache';
 import { endCall, toE164, transferCall } from '../lib/vapi';
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -282,6 +283,8 @@ export async function handleEndCall(
   )
     .bind(now, call.id, auth.org.id)
     .run();
+  // Ending it here records an outcome and a length, which the statistics count.
+  await bumpStatsVersion(env, auth.org.id);
 
   await appendTranscriptLine(env, call, 'system', `Call ended by ${auth.user.name}`, now);
 

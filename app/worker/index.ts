@@ -380,7 +380,7 @@ async function handleApi(
     if (method !== 'POST') return methodNotAllowed('POST');
     return handleChangePassword(request, env, auth);
   }
-  if (path === '/api/metrics' && method === 'GET') return handleMetrics(request, env, auth);
+  if (path === '/api/metrics' && method === 'GET') return handleMetrics(request, env, auth, ctx);
   if (path === '/api/calls' && method === 'GET') return handleListCalls(request, env, auth);
   if (path === '/api/calls/live' && method === 'GET') return handleLiveCall(env, auth);
 

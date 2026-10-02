@@ -3,6 +3,7 @@ import type { Env } from '../env';
 import type { AuthContext } from '../lib/auth';
 import { billableMinutes, summariseBilling } from '../lib/billing';
 import { badRequest, json } from '../lib/http';
+import { cachedStats, readStatsVersion, statsCacheKey } from '../lib/statsCache';
 import {
   isValidTimeZone,
   localWeekdayLabel,
@@ -27,11 +28,47 @@ export async function handleMetrics(
   request: Request,
   env: Env,
   auth: AuthContext,
+  ctx?: ExecutionContext,
 ): Promise<Response> {
-  const period = parsePeriod(new URL(request.url).searchParams.get('period') ?? 'today');
+  const url = new URL(request.url);
+  const period = parsePeriod(url.searchParams.get('period') ?? 'today');
   const timeZone = isValidTimeZone(auth.org.timezone) ? auth.org.timezone : 'Africa/Johannesburg';
   const now = new Date();
 
+  // Everything the answer depends on is in the key: whose numbers, which
+  // period, the local day the periods are counted from, and the plan's terms.
+  // stats_version moves on every new or finished call (see statsCache.ts), so
+  // a cached answer is never older than the latest change.
+  const version = await readStatsVersion(env, auth.org.id);
+  const key =
+    version === null
+      ? null
+      : statsCacheKey(url.origin, [
+          'metrics',
+          auth.org.id,
+          period,
+          timeZone,
+          startOfLocalDay(now, timeZone),
+          version,
+          auth.org.plan_minutes,
+          auth.org.subscription_zar,
+          auth.org.overage_rate_zar,
+        ]);
+
+  const { value, hit } = await cachedStats(key, () => buildMetrics(env, auth, period, timeZone, now), {
+    waitUntil: ctx ? (promise) => ctx.waitUntil(promise) : undefined,
+  });
+
+  return json(value, { headers: { 'x-stats-cache': hit ? 'hit' : 'miss' } });
+}
+
+async function buildMetrics(
+  env: Env,
+  auth: AuthContext,
+  period: Period,
+  timeZone: string,
+  now: Date,
+): Promise<MetricsResponse> {
   const from =
     period === 'today'
       ? startOfLocalDay(now, timeZone)
@@ -56,7 +93,7 @@ export async function handleMetrics(
   const total = counts?.total ?? 0;
   const booked = counts?.booked ?? 0;
 
-  const payload: MetricsResponse = {
+  return {
     period,
     total,
     booked,
@@ -66,8 +103,6 @@ export async function handleMetrics(
     trend: await buildTrend(env, auth.org.id, period, timeZone, now),
     billing: await buildBilling(env, auth, timeZone, now),
   };
-
-  return json(payload);
 }
 
 /**
