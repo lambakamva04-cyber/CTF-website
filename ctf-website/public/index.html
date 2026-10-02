@@ -1365,7 +1365,7 @@
         <input type="text" id="company_website" name="company_website" tabindex="-1" autocomplete="off">
       </div>
       <button class="form-submit" type="button" id="callbackSubmit">Request a callback</button>
-      <p class="form-hint" id="formStatus" role="status">We&rsquo;ll be in touch, usually the same day.</p>
+      <p class="form-hint" id="formStatus" role="status">We&rsquo;ll call you back, usually the same day. The first call may come from Hope, our AI receptionist.</p>
       <p class="form-privacy"><a class="contact-link" href="https://demo.cutthroughfaster.com/privacy" target="_blank" rel="noopener">How we handle your details<span class="sr-only"> (opens in a new tab)</span></a></p>
     </div>
   </div>
@@ -1545,7 +1545,7 @@
         if (timer) clearTimeout(timer);
         if (result.ok) {
           submitBtn.textContent = 'Thanks, we\u2019ll call you';
-          statusEl.textContent = 'Got it. The CTF team will be in touch, usually the same day.';
+          statusEl.textContent = 'Got it. We\u2019ll call you back, usually the same day. The first call may come from Hope, our AI receptionist.';
           nameEl.value = ''; phoneEl.value = ''; msgEl.value = '';
           return;
         }

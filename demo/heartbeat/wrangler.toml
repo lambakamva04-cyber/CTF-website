@@ -1,3 +1,8 @@
+# Every wrangler command for this Worker needs `--config wrangler.toml` (the npm
+# scripts pass it). Without it, wrangler looks for a wrangler.jsonc in the
+# folders above before it looks for this file, finds the demo's, and acts on
+# the demo instead: a `wrangler deploy` would redeploy the demo, and a
+# `wrangler secret put` would set the secret there.
 name = "ctf-demo-heartbeat"
 main = "src/index.ts"
 compatibility_date = "2026-09-01"
@@ -9,12 +14,28 @@ workers_dev = true
 [observability]
 enabled = true
 
-# Daily. Supabase pauses a free project after seven idle days, so a day between
-# beats leaves six days of margin for a missed run. The odd minute keeps it off
-# the top of the hour, where Cloudflare's cron queue is busiest.
+# "23 5 * * *" is the heartbeat, daily. Supabase pauses a free project after
+# seven idle days, so a day between beats leaves six days of margin for a missed
+# run. The odd minute keeps it off the top of the hour, where Cloudflare's cron
+# queue is busiest. src/index.ts tells the two apart by this exact string.
+#
+# "*/5 * * * *" is Hope's callback queue (src/callbacks.ts). It does nothing
+# until the Vapi secrets below are set, and outside South African calling hours
+# it only follows up calls already made.
 [triggers]
-crons = ["23 5 * * *"]
+crons = ["23 5 * * *", "*/5 * * * *"]
 
-# Secrets — set with `wrangler secret put <NAME>`, never in this file:
+# Secrets — set with `wrangler secret put <NAME> --config wrangler.toml`, never
+# in this file:
 #   SUPABASE_URL
 #   SUPABASE_SERVICE_ROLE_KEY
+#
+# For Hope's callbacks (all three, or callbacks stay off):
+#   VAPI_PRIVATE_KEY        Vapi dashboard → API Keys → private key
+#   VAPI_PHONE_NUMBER_ID    the id of the number Hope calls from, in Vapi → Phone Numbers
+#   VAPI_ASSISTANT_ID       the demo's assistant; its voice is reused
+#
+# For the emails about each callback, the same values as the demo Worker:
+#   EMAIL_API_KEY           Resend; without it calls still happen, but nobody is emailed
+#   LEAD_NOTIFY_TO          optional, defaults to hello@cutthroughfaster.com
+#   EMAIL_FROM              optional, defaults to website@mail.cutthroughfaster.com

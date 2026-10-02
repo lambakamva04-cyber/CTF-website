@@ -7,7 +7,7 @@
 // nothing it does not. Change it whenever those change. It is a working draft,
 // not a substitute for review by someone qualified in South African law.
 
-export const PRIVACY_VERSION = '2026-09-28';
+export const PRIVACY_VERSION = '2026-09-29';
 
 /** Same inbox as the control platform's Information Officer. */
 export const PRIVACY_CONTACT = 'privacy@cutthroughfaster.com';
@@ -41,12 +41,12 @@ export const DEMO_SUB_PROCESSORS: SubProcessor[] = [
   },
   {
     name: 'Vapi',
-    role: 'Runs the conversation with Hope and keeps its recording and transcript, using speech-recognition, AI language-model and voice providers to understand and answer you.',
+    role: 'Runs the conversation with Hope, on these pages and when she phones you back, and keeps its recording and transcript, using speech-recognition, AI language-model, voice and telephone providers to understand and answer you.',
     location: 'United States',
   },
   {
     name: 'Resend',
-    role: 'Emails us each callback request sent from our website, so we can call you back. Resend is a United States company; our emails are sent from its Irish region.',
+    role: 'Emails us each callback request sent from our website, and Hope’s notes and transcript of her call back, so we can follow up. Resend is a United States company; our emails are sent from its Irish region.',
     location: 'Ireland (European Union)',
   },
 ];
@@ -60,9 +60,9 @@ export const DEMO_PRIVACY: {
 } = {
   title: 'Privacy Policy',
   version: PRIVACY_VERSION,
-  updated: '28 September 2026',
+  updated: '29 September 2026',
   intro:
-    'This covers the Hope demo pages — the personal link we sent your practice, and the public line on our website — the conversation you can have on them with Hope, our AI receptionist, and the callback form on our website. It explains what we collect, why, who handles it, and what you can ask us to do about it.',
+    'This covers the Hope demo pages — the personal link we sent your practice, and the public line on our website — the conversation you can have on them with Hope, our AI receptionist, and the callback form on our website, including the call Hope makes when you use it. It explains what we collect, why, who handles it, and what you can ask us to do about it.',
   sections: [
     {
       heading: 'Who we are',
@@ -102,6 +102,8 @@ export const DEMO_PRIVACY: {
       body: [
         'If you ask us to call you back using the form on cutthroughfaster.com, we keep what you enter — your name, type of business, phone number and message — with the time you sent it, the kind of browser you used, and a scrambled version of your IP address made the same way as above, which we use to stop the form being flooded.',
         'What you enter is also emailed to us, so we see it straight away. The scrambled IP address and browser type are not.',
+        'The first call back usually comes from Hope, on a weekday between 08:00 and 18:00 or a Saturday between 09:00 and 13:00. She tells you at the start that she is an AI and that the call is recorded, asks what you need, and arranges a call with one of our team. If you would rather speak to a person straight away, tell her, or call us yourself.',
+        'Her call runs through Vapi, as described above. Vapi keeps a recording and a transcript, and we are emailed her notes and the transcript so we can follow up. If you do not answer, she tries once more about an hour later and may leave a short voicemail.',
       ],
     },
     {
