@@ -28,6 +28,12 @@ export interface OrgRow {
   is_platform: number;
   /** Set by a permanent block. A blocked organization stays 'suspended'. */
   blocked_at: number | null;
+  /**
+   * Moves on every new or finished call; part of the statistics cache key
+   * (migration 0007). Optional because the session's org row does not load it:
+   * statsCache.ts reads it on its own, so the sign-in path never depends on it.
+   */
+  stats_version?: number;
   status_reason: string | null;
   created_at: number;
   updated_at: number;

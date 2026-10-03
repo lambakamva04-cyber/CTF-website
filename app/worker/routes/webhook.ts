@@ -2,6 +2,7 @@ import type { Env } from '../env';
 import { newId, sha256Hex } from '../lib/crypto';
 import type { CallRow, OrgRow } from '../lib/db';
 import { json, readBodyText } from '../lib/http';
+import { bumpStatsVersion } from '../lib/statsCache';
 import {
   deriveOutcome,
   mapStatus,
@@ -115,6 +116,9 @@ async function resolveOrg(env: Env, event: NormalizedEvent): Promise<OrgRow | nu
 async function upsertCall(env: Env, org: OrgRow, event: NormalizedEvent): Promise<CallRow> {
   const now = Date.now();
   const status = mapStatus(event.status) ?? 'in-progress';
+  // An existing row keeps its own id on conflict, so finding this id afterwards
+  // means the row was just created.
+  const id = newId('call');
 
   await env.DB.prepare(
     `INSERT INTO calls (
@@ -137,7 +141,7 @@ async function upsertCall(env: Env, org: OrgRow, event: NormalizedEvent): Promis
        updated_at = excluded.updated_at`,
   )
     .bind(
-      newId('call'),
+      id,
       org.id,
       event.vapiCallId,
       event.controlUrl,
@@ -155,6 +159,9 @@ async function upsertCall(env: Env, org: OrgRow, event: NormalizedEvent): Promis
     .first<CallRow>();
 
   if (!row) throw new Error(`call row missing after upsert: ${event.vapiCallId}`);
+  // A new call adds to the dashboard's totals. Later events on the same call
+  // only change its live status, which the statistics do not count.
+  if (row.id === id) await bumpStatsVersion(env, org.id);
   return row;
 }
 
@@ -250,4 +257,8 @@ async function finalizeCall(
       orgId,
     )
     .run();
+
+  // The outcome and length just recorded change the booking rate and the
+  // minutes used.
+  await bumpStatsVersion(env, orgId);
 }
