@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type Ref } from 'react';
 import type Vapi from '@vapi-ai/web';
 
 import {
@@ -18,6 +18,7 @@ import {
   type Industry,
   type PublicProspect,
 } from '@/lib/demo';
+import { hopePrompt } from '@/lib/hope';
 
 type Phase =
   | 'ready'
@@ -39,8 +40,11 @@ type Props = {
   bookingUrl: string;
   vapiPublicKey: string;
   vapiAssistantId: string;
-  /** The public line on Hope: the visitor picks the kind of business she answers for. */
-  industryPicker: boolean;
+  /**
+   * The public line only: the business picked from `?industry=` on the link,
+   * if any. With none, the visitor picks before the call button works.
+   */
+  initialIndustry: Industry | null;
 };
 
 /** If Vapi has not connected us by now, something is wrong. */
@@ -52,13 +56,31 @@ export default function DemoPanel({
   bookingUrl,
   vapiPublicKey,
   vapiAssistantId,
-  industryPicker,
+  initialIndustry,
 }: Props) {
   const [phase, setPhase] = useState<Phase>(prospect.expired ? 'expired' : 'ready');
-  // On Hope, the public line lets the visitor pick their kind of business; a
-  // personal link was prepared for one business and keeps its row's industry.
-  const [industry, setIndustry] = useState<Industry>(prospect.industry);
-  const business = useMemo(() => businessFor(prospect, industry), [prospect, industry]);
+  // The public line asks the visitor what kind of business they run, so a law
+  // firm hears Hope answer for a law firm, not a dental practice. A personal
+  // link was prepared for one business and keeps its row's industry.
+  const [industry, setIndustry] = useState<Industry | null>(
+    prospect.public_line ? initialIndustry : prospect.industry,
+  );
+  const business = useMemo(
+    () => (industry ? businessFor(prospect, industry) : null),
+    [prospect, industry],
+  );
+  const pickerRef = useRef<HTMLFieldSetElement>(null);
+
+  // Keep the pick in the address, so the reload the microphone instructions
+  // ask for, or a shared link, comes back with it.
+  useEffect(() => {
+    if (!prospect.public_line || !industry) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('industry') === industry) return;
+    url.searchParams.set('industry', industry);
+    // `null`, so Next.js's router takes the new address as its own too.
+    window.history.replaceState(null, '', url);
+  }, [industry, prospect.public_line]);
   // The cap for the call in progress. The public line's gate can hand back a
   // different number than the page was rendered with, if the limit was changed
   // in between; the gate's answer wins, because it is what Vapi is told.
@@ -213,6 +235,14 @@ export default function DemoPanel({
 
     const onError = () => {
       if (cancelled) return;
+      // Vapi already said the call ended (a silence timeout, the time limit):
+      // the error that follows is the line closing, not a failure, and the
+      // reason Vapi gave is the one to log.
+      if (reportedReasonRef.current) {
+        if (callActiveRef.current) finishCall();
+        setPhase((current) => (current === 'live' || current === 'ended' ? 'ended' : current));
+        return;
+      }
       if (callActiveRef.current) {
         intentRef.current = intentRef.current ?? 'connection-error';
         finishCall();
@@ -335,6 +365,11 @@ export default function DemoPanel({
     if (phase === 'connecting' || phase === 'live' || phase === 'expired' || phase === 'limited') {
       return;
     }
+    // The public line's button waits for a pick: send them to the picker.
+    if (!business) {
+      pickerRef.current?.querySelector('input')?.focus();
+      return;
+    }
 
     setPhase('connecting');
     intentRef.current = null;
@@ -423,8 +458,9 @@ export default function DemoPanel({
 
         {(phase === 'ready' || phase === 'connecting') && (
           <>
-            {industryPicker && (
+            {prospect.public_line && (
               <IndustryPicker
+                ref={pickerRef}
                 value={industry}
                 onChange={setIndustry}
                 disabled={phase === 'connecting'}
@@ -434,7 +470,13 @@ export default function DemoPanel({
               type="button"
               onClick={handleStart}
               disabled={phase === 'connecting'}
-              className="flex w-full items-center justify-center gap-3 rounded-xl bg-ink px-6 py-5 text-[17px] font-semibold text-paper transition-opacity hover:opacity-90 disabled:opacity-70"
+              // Not `disabled` while waiting for a pick: it stays in the Tab
+              // order, so keyboard and screen reader users reach it and hear why.
+              aria-disabled={business ? undefined : true}
+              aria-describedby={business ? undefined : 'pick-industry-hint'}
+              className={`flex w-full items-center justify-center gap-3 rounded-xl bg-ink px-6 py-5 text-[17px] font-semibold text-paper transition-opacity disabled:opacity-70 ${
+                business ? 'hover:opacity-90' : 'cursor-not-allowed opacity-50'
+              }`}
             >
               {phase === 'connecting' ? (
                 <>
@@ -448,6 +490,11 @@ export default function DemoPanel({
                 </>
               )}
             </button>
+            {!business && (
+              <p id="pick-industry-hint" className="mt-3 text-center text-[14px] font-medium text-ink-soft">
+                Pick your kind of business above first.
+              </p>
+            )}
             <p className="mt-3 text-center text-[13px] text-ink-faint">
               {prospect.public_line
                 ? `Uses your microphone. Up to ${describeDuration(cap)}, with live captions, nothing to install.`
@@ -660,7 +707,7 @@ export default function DemoPanel({
         )}
       </section>
 
-      <WhatHopeKnows business={business} />
+      {business && <WhatHopeKnows business={business} />}
     </>
   );
 }
@@ -677,19 +724,19 @@ function businessFor(prospect: PublicProspect, industry: Industry): PublicProspe
 
 /** The public line's choice of business, above the call button. */
 function IndustryPicker({
+  ref,
   value,
   onChange,
   disabled,
 }: {
-  value: Industry;
+  ref: Ref<HTMLFieldSetElement>;
+  value: Industry | null;
   onChange: (industry: Industry) => void;
   disabled: boolean;
 }) {
   return (
-    <fieldset className="mb-4" disabled={disabled}>
-      <legend className="mb-2 text-[14px] font-medium text-ink-soft">
-        Hear her answer for a
-      </legend>
+    <fieldset ref={ref} className="mb-4" disabled={disabled}>
+      <legend className="mb-2 text-[15px] font-semibold">What kind of business do you run?</legend>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {INDUSTRIES.map((option) => (
           <label
@@ -756,6 +803,16 @@ function WhatHopeKnows({ business }: { business: PublicProspect }) {
 }
 
 /**
+ * A dental prospect's own link keeps the dental assistant's script from the
+ * Vapi dashboard, exactly as every link already in an inbox has it. Every other
+ * call (the public line, a law firm's link) gets Hope's script for its
+ * industry from src/lib/hope.ts.
+ */
+function usesHopeScript(prospect: PublicProspect): boolean {
+  return prospect.public_line || prospect.industry !== 'dental';
+}
+
+/**
  * One assistant serves every prospect of every industry. Everything that
  * differs between businesses arrives here, at call time, as overrides —
  * never as another assistant per prospect, a second page or a second deployment.
@@ -763,11 +820,9 @@ function WhatHopeKnows({ business }: { business: PublicProspect }) {
 function buildOverrides(prospect: PublicProspect, maxSeconds: number) {
   const practiceName = spokenPracticeName(prospect.practice_name);
   return {
-    // Substituted into Hope's system prompt (vapi/hope-prompt.md). `industry`
-    // picks the section of the prompt she follows on this call.
+    // Substituted into the dental assistant's dashboard prompt
+    // (vapi/assistant.md), which a dental prospect's link still uses.
     variableValues: {
-      industry: prospect.industry,
-      business_type: INDUSTRY_COPY[prospect.industry].businessType,
       practice_name: practiceName,
       suburb: prospect.suburb ?? '',
       services: prospect.services.length
@@ -782,8 +837,24 @@ function buildOverrides(prospect: PublicProspect, maxSeconds: number) {
     // Vapi ends the call here even if this page is closed or its timer
     // starved, so the countdown on screen is the courtesy version.
     maxDurationSeconds: maxSeconds,
-    // On the call record in Vapi, so calls can be told apart by industry.
-    metadata: { industry: prospect.industry, slug: prospect.slug },
+    // Hope's script for this industry, in place of the dashboard's. The voice
+    // and transcriber stay the assistant's own. Same model as the heartbeat's
+    // callbacks, which replace the script the same way. No endCall tool: the
+    // caller, the countdown and maxDurationSeconds end a demo, never Hope, so
+    // a one-call link is not cut short and her hang-up is never misread as a
+    // dropped line.
+    ...(usesHopeScript(prospect)
+      ? {
+          // On the call record in Vapi, so calls can be told apart by industry.
+          metadata: { industry: prospect.industry, slug: prospect.slug },
+          model: {
+            provider: 'openai' as const,
+            model: 'gpt-4o' as const,
+            temperature: 0.4,
+            messages: [{ role: 'system' as const, content: hopePrompt(prospect) }],
+          },
+        }
+      : {}),
   };
 }
 

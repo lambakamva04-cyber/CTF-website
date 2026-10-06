@@ -77,7 +77,7 @@ export const DEMO_PRIVACY: {
         'To prepare your demo we put together a short profile of your practice from publicly available business information, such as its website and online business listings: its name, its suburb, the services it offers (for a law firm, the areas of law it practises) and its opening hours.',
         'We also hold the name and work email address of the person we wrote to, taken from the business’s own website or from a business-contact directory.',
         'That profile is what the page shows under "What Hope already knows", and it is all Hope is told about your practice.',
-        'The public line on our website does not use your practice at all: Hope answers for a sample practice we made up.',
+        'The public line on our website does not use your practice at all: Hope answers for a sample business we made up.',
       ],
     },
     {

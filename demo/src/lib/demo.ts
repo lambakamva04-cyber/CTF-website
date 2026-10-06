@@ -41,9 +41,8 @@ export function isValidSlug(value: unknown): value is string {
 
 /**
  * The kinds of business a demo can be prepared for. Every one of them talks to
- * the same Vapi assistant: Hope's prompt has a short section per industry, and
- * the page tells her which one to follow on each call (`industry` in the
- * call's variables). See vapi/hope-prompt.md.
+ * the same Vapi assistant, with Hope's script for its industry sent per call
+ * (src/lib/hope.ts, vapi/hope-prompt.md).
  */
 export const INDUSTRIES = ['dental', 'legal', 'mechanic', 'salon'] as const;
 
@@ -184,7 +183,7 @@ export type PublicProspect = {
   slug: string;
   /**
    * The row's industry: which words the page uses and which section of Hope's
-   * prompt she follows. The public line lets the visitor change it.
+   * script she follows. On the public line, the visitor picks instead.
    */
   industry: Industry;
   practice_name: string;

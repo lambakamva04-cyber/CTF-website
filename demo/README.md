@@ -15,8 +15,9 @@ cold email ──▶ /demo/<slug> ──▶ [Talk to Hope] ──▶ Vapi assist
 ## The rule that governs everything here
 
 **One route, one page component, one Vapi assistant.** Per-prospect variation
-comes from a row in `prospects` and from `assistantOverrides.variableValues` at
-call time. There is no per-client page, no per-client assistant and no
+comes from a row in `prospects` and from `assistantOverrides` at call time:
+`variableValues`, and Hope's script for the industry (`src/lib/hope.ts`) on
+every call but a dental prospect's own link. There is no per-client page, no per-client assistant and no
 per-client deployment, and adding one is not a shortcut — it is forty prompts
 that will drift apart by March. Adding a practice is an `INSERT`.
 
@@ -35,7 +36,9 @@ that will drift apart by March. Adding a practice is an `INSERT`.
 | `src/lib/caller.ts` | The salted hash of a caller's IP — all the limits ever store |
 | `src/lib/demo.ts` | The bits both sides share: the 180-second cap, event names, slug rule |
 | `migrations/` | Every change to the database, in order. 0002–0007 were made directly in Supabase and recorded here afterwards |
-| `vapi/assistant.md` | **The system prompt.** The positioning lives here as much as in the page copy |
+| `src/lib/hope.ts` | **Hope's script** for each industry, sent with every call except a dental prospect's own link. The positioning lives here as much as in the page copy |
+| `vapi/assistant.md` | The dashboard script, used only by a dental prospect's own link |
+| `vapi/hope-prompt.md` | Which calls use which script, and how to test and extend them |
 | `scripts/seed.mjs` | Adds a prospect |
 | `wrangler.jsonc`, `open-next.config.ts` | Cloudflare Worker build and deploy |
 | `heartbeat/` | Daily keep-alive so the free Supabase project never pauses, and Hope's callbacks to the website's leads |
@@ -96,7 +99,8 @@ redundant:
 ### The public line
 
 `/demo/try` is the "Phone Hope now" button on the marketing site: a prospect
-row with `is_public = true`, answering for a made-up sample practice. It is
+row with `is_public = true`, answering for a made-up sample business of the
+kind the visitor picks. It is
 never spent. Instead, before every call the page asks
 `POST /api/demo/try/gate`, which runs `public_demo_gate()` in the database
 against two limits held in the one-row `demo_limits` table:
@@ -197,8 +201,7 @@ npm run preview           # builds with OpenNext, serves under wrangler
 | `SUPABASE_URL` | Server | Settings → Data API |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server | Bypasses RLS. Never expose, never prefix with `NEXT_PUBLIC_` |
 | `VAPI_PUBLIC_KEY` | Rendered to the browser | Vapi's public key is designed for this |
-| `VAPI_ASSISTANT_ID` | Rendered to the browser | The shared demo assistant for dental practices ([`vapi/assistant.md`](vapi/assistant.md)) |
-| `VAPI_HOPE_ASSISTANT_ID` | Rendered to the browser | Optional. Hope, the one assistant for every industry ([`vapi/hope-prompt.md`](vapi/hope-prompt.md)). Until it is set, a law firm's link is a 404 and the public line has no industry picker |
+| `VAPI_ASSISTANT_ID` | Rendered to the browser | The one demo assistant. Its voice and transcriber serve every call; its dashboard script ([`vapi/assistant.md`](vapi/assistant.md)) serves only dental prospects' own links |
 | `BOOKING_URL` | Rendered to the browser | Where "Book a 15-minute call" points |
 | `DEMO_IP_SALT` | Server | Any long random string. Salts the IP hash; without it the per-person limits are skipped and only the daily caps apply |
 | `EMAIL_API_KEY` | Server | Resend API key. Without it callback requests are saved but not emailed |
@@ -244,14 +247,14 @@ test rows and for re-arming a link, not for real prospects.
 
 Set `industry` to `legal` on the row (migration 0013; it defaults to `dental`).
 The page then talks about clients and practice areas instead of patients and
-services, and the call goes to Hope (`VAPI_HOPE_ASSISTANT_ID`,
-[`vapi/hope-prompt.md`](vapi/hope-prompt.md)), told it is a law firm, never to
-the dental assistant. Put the firm's practice areas in `services`. Until Hope is
-set, a law firm's link is a 404.
+services, and Hope gets the law-firm script ([`vapi/hope-prompt.md`](vapi/hope-prompt.md)),
+never the dental one. Put the firm's practice areas in `services`.
 
-On the public line, `/demo/try`, Hope also lets the visitor pick dental, law
-firm, mechanic or salon, and answers for a sample business of that kind
-(`SAMPLE_BUSINESSES` in `src/lib/demo.ts`). Personal links have no picker.
+On the public line, `/demo/try`, the visitor picks dental practice, law firm,
+mechanic or salon before the call button works, and Hope answers for a sample
+business of that kind (`SAMPLE_BUSINESSES` in `src/lib/demo.ts`). A marketing
+page for one industry can skip the pick with `/demo/try?industry=legal` (or
+`dental`, `mechanic`, `salon`). Personal links have no picker.
 
 For your own testing, `--reset` clears `demo_used_at` and makes a spent link
 live again:
@@ -463,5 +466,6 @@ available so you don't need someone".
 This is commercial, not sentimental. The person who opens this link is very
 often the receptionist herself, forwarding it to the practice owner. If the
 page reads as a threat to her job, it never reaches him. Both the page copy and
-the system prompt in [`vapi/assistant.md`](vapi/assistant.md) are written to
-that constraint — check any change to either against it.
+the two scripts, [`src/lib/hope.ts`](src/lib/hope.ts) and
+[`vapi/assistant.md`](vapi/assistant.md), are written to that constraint —
+check any change to any of them against it.

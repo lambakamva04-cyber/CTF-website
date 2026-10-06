@@ -4,19 +4,14 @@ import { notFound } from 'next/navigation';
 import {
   DEMO_MAX_SECONDS,
   describeDuration,
+  INDUSTRIES,
   INDUSTRY_COPY,
+  isIndustry,
   isValidSlug,
-  spokenPracticeName,
 } from '@/lib/demo';
-import { bookingUrl, vapiAssistantId, vapiHopeAssistantId, vapiPublicKey } from '@/lib/env';
+import { bookingUrl, vapiAssistantId, vapiPublicKey } from '@/lib/env';
 import { demoPageAllowed } from '@/lib/limits';
-import {
-  getProspectBySlug,
-  getPublicLineSeconds,
-  industryOf,
-  toPublicProspect,
-  type ProspectRow,
-} from '@/lib/prospects';
+import { getProspectBySlug, getPublicLineSeconds, toPublicProspect } from '@/lib/prospects';
 
 import DemoPanel from './DemoPanel';
 
@@ -24,22 +19,18 @@ import DemoPanel from './DemoPanel';
 // prerendered — a stale render would offer a second call on a spent link.
 export const dynamic = 'force-dynamic';
 
-type PageProps = { params: Promise<{ slug: string }> };
+type PageProps = {
+  params: Promise<{ slug: string }>;
+  /** `?industry=legal` on the public line picks the business up front. */
+  searchParams: Promise<{ industry?: string | string[] }>;
+};
 
-/**
- * The Vapi assistant for this link, or null when it is not set up yet.
- *
- * - A dental link keeps the dental assistant (VAPI_ASSISTANT_ID), so every link
- *   already in an inbox plays exactly as it did.
- * - A law firm's link needs Hope (VAPI_HOPE_ASSISTANT_ID). Until she is set it
- *   is a 404, like a wrong link, so the outreach link check never passes it.
- * - The public line uses Hope once she is set, with the industry picker;
- *   before that it stays the dental sample on the dental assistant.
- */
-function assistantFor(row: ProspectRow): string | null {
-  const hope = vapiHopeAssistantId();
-  if (row.is_public) return hope ?? (industryOf(row) === 'dental' ? vapiAssistantId() : null);
-  return industryOf(row) === 'dental' ? vapiAssistantId() : hope;
+/** "Dental practice, law firm, mechanic or salon", from the picker's own labels. */
+function pickerChoices(): string {
+  const labels = INDUSTRIES.map((industry, i) =>
+    i === 0 ? INDUSTRY_COPY[industry].pickerLabel : INDUSTRY_COPY[industry].pickerLabel.toLowerCase(),
+  );
+  return `${labels.slice(0, -1).join(', ')} or ${labels[labels.length - 1]}`;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -47,7 +38,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!isValidSlug(slug) || !(await demoPageAllowed())) return { title: 'Not found' };
 
   const prospect = await getProspectBySlug(slug);
-  if (!prospect || !assistantFor(prospect)) return { title: 'Not found' };
+  if (!prospect) return { title: 'Not found' };
 
   if (prospect.is_public) {
     const length = describeDuration(await getPublicLineSeconds());
@@ -65,8 +56,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function DemoPage({ params }: PageProps) {
+export default async function DemoPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
+  const { industry: industryParam } = await searchParams;
 
   // A malformed slug and an unknown slug end in exactly the same place. The
   // page must never confirm that a link nearly exists.
@@ -80,13 +72,11 @@ export default async function DemoPage({ params }: PageProps) {
   const row = await getProspectBySlug(slug);
   if (!row) notFound();
 
-  const assistantId = assistantFor(row);
-  if (!assistantId) notFound();
-
   const prospect = toPublicProspect(row);
   const copy = INDUSTRY_COPY[prospect.industry];
-  // Only Hope knows every industry, so only she gets the picker.
-  const industryPicker = prospect.public_line && assistantId === vapiHopeAssistantId();
+  // A marketing page for one industry can link straight to it. Anything else
+  // in the parameter is ignored, and the visitor picks.
+  const initialIndustry = isIndustry(industryParam) ? industryParam : null;
   // The public line's length lives in `demo_limits`; a personal link's is fixed.
   const maxSeconds = prospect.public_line ? await getPublicLineSeconds() : DEMO_MAX_SECONDS;
 
@@ -103,18 +93,10 @@ export default async function DemoPage({ params }: PageProps) {
             Talk to Hope, our AI receptionist.
           </h1>
           <p className="mt-4 text-[17px] leading-relaxed text-ink-soft">
-            {industryPicker ? (
-              <>Pick the kind of business you run and she answers for a sample one, so you can hear</>
-            ) : (
-              <>
-                Here she is answering for {spokenPracticeName(prospect.practice_name)}, a sample
-                practice, so you can hear
-              </>
-            )}{' '}
-            what your {industryPicker ? 'callers' : 'patients'} would. Set up for you, she picks
-            up when your team can&rsquo;t &mdash; another call,{' '}
-            {industryPicker ? 'someone' : 'a patient'} at the counter, after
-            hours &mdash; and takes the booking.
+            {pickerChoices()}: pick yours and she answers for a sample one, so you can hear what
+            your callers would. Set up for you, she picks up when your
+            team can&rsquo;t &mdash; another call, someone at the counter, after hours &mdash; and
+            takes the booking.
           </p>
         </header>
       ) : (
@@ -140,8 +122,8 @@ export default async function DemoPage({ params }: PageProps) {
         maxSeconds={maxSeconds}
         bookingUrl={bookingUrl()}
         vapiPublicKey={vapiPublicKey()}
-        vapiAssistantId={assistantId}
-        industryPicker={industryPicker}
+        vapiAssistantId={vapiAssistantId()}
+        initialIndustry={initialIndustry}
       />
 
       <footer className="mt-auto pt-10">
