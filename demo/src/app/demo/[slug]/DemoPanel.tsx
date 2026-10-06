@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type Ref } from 'react';
 import type Vapi from '@vapi-ai/web';
 
 import {
@@ -69,6 +69,17 @@ export default function DemoPanel({
     () => (industry ? businessFor(prospect, industry) : null),
     [prospect, industry],
   );
+  const pickerRef = useRef<HTMLFieldSetElement>(null);
+
+  // Keep the pick in the address, so the reload the microphone instructions
+  // ask for, or a shared link, comes back with it.
+  useEffect(() => {
+    if (!prospect.public_line || !industry) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('industry') === industry) return;
+    url.searchParams.set('industry', industry);
+    window.history.replaceState(window.history.state, '', url);
+  }, [industry, prospect.public_line]);
   // The cap for the call in progress. The public line's gate can hand back a
   // different number than the page was rendered with, if the limit was changed
   // in between; the gate's answer wins, because it is what Vapi is told.
@@ -345,8 +356,11 @@ export default function DemoPanel({
     if (phase === 'connecting' || phase === 'live' || phase === 'expired' || phase === 'limited') {
       return;
     }
-    // The public line's button waits for a pick; this only guards the type.
-    if (!business) return;
+    // The public line's button waits for a pick: send them to the picker.
+    if (!business) {
+      pickerRef.current?.querySelector('input')?.focus();
+      return;
+    }
 
     setPhase('connecting');
     intentRef.current = null;
@@ -437,6 +451,7 @@ export default function DemoPanel({
           <>
             {prospect.public_line && (
               <IndustryPicker
+                ref={pickerRef}
                 value={industry}
                 onChange={setIndustry}
                 disabled={phase === 'connecting'}
@@ -445,9 +460,14 @@ export default function DemoPanel({
             <button
               type="button"
               onClick={handleStart}
-              disabled={phase === 'connecting' || !business}
+              disabled={phase === 'connecting'}
+              // Not `disabled` while waiting for a pick: it stays in the Tab
+              // order, so keyboard and screen reader users reach it and hear why.
+              aria-disabled={business ? undefined : true}
               aria-describedby={business ? undefined : 'pick-industry-hint'}
-              className="flex w-full items-center justify-center gap-3 rounded-xl bg-ink px-6 py-5 text-[17px] font-semibold text-paper transition-opacity hover:opacity-90 disabled:opacity-70"
+              className={`flex w-full items-center justify-center gap-3 rounded-xl bg-ink px-6 py-5 text-[17px] font-semibold text-paper transition-opacity hover:opacity-90 disabled:opacity-70 ${
+                business ? '' : 'opacity-50 hover:opacity-50'
+              }`}
             >
               {phase === 'connecting' ? (
                 <>
@@ -695,16 +715,18 @@ function businessFor(prospect: PublicProspect, industry: Industry): PublicProspe
 
 /** The public line's choice of business, above the call button. */
 function IndustryPicker({
+  ref,
   value,
   onChange,
   disabled,
 }: {
+  ref: Ref<HTMLFieldSetElement>;
   value: Industry | null;
   onChange: (industry: Industry) => void;
   disabled: boolean;
 }) {
   return (
-    <fieldset className="mb-4" disabled={disabled}>
+    <fieldset ref={ref} className="mb-4" disabled={disabled}>
       <legend className="mb-2 text-[15px] font-semibold">What kind of business do you run?</legend>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {INDUSTRIES.map((option) => (
@@ -812,7 +834,10 @@ function buildOverrides(prospect: PublicProspect, maxSeconds: number) {
     metadata: { industry: prospect.industry, slug: prospect.slug },
     // Hope's script for this industry, in place of the dashboard's. The voice
     // and transcriber stay the assistant's own. Same model as the heartbeat's
-    // callbacks, which replace the script the same way.
+    // callbacks, which replace the script the same way. No endCall tool: the
+    // caller, the countdown and maxDurationSeconds end a demo, never Hope, so
+    // a one-call link is not cut short and her hang-up is never misread as a
+    // dropped line.
     ...(usesHopeScript(prospect)
       ? {
           model: {
@@ -820,7 +845,6 @@ function buildOverrides(prospect: PublicProspect, maxSeconds: number) {
             model: 'gpt-4o' as const,
             temperature: 0.4,
             messages: [{ role: 'system' as const, content: hopePrompt(prospect) }],
-            tools: [{ type: 'endCall' as const }],
           },
         }
       : {}),

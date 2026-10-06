@@ -1,7 +1,14 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
-import { DEMO_MAX_SECONDS, describeDuration, INDUSTRY_COPY, isIndustry, isValidSlug } from '@/lib/demo';
+import {
+  DEMO_MAX_SECONDS,
+  describeDuration,
+  INDUSTRIES,
+  INDUSTRY_COPY,
+  isIndustry,
+  isValidSlug,
+} from '@/lib/demo';
 import { bookingUrl, vapiAssistantId, vapiPublicKey } from '@/lib/env';
 import { demoPageAllowed } from '@/lib/limits';
 import { getProspectBySlug, getPublicLineSeconds, toPublicProspect } from '@/lib/prospects';
@@ -17,6 +24,14 @@ type PageProps = {
   /** `?industry=legal` on the public line picks the business up front. */
   searchParams: Promise<{ industry?: string | string[] }>;
 };
+
+/** "Dental practice, law firm, mechanic or salon", from the picker's own labels. */
+function pickerChoices(): string {
+  const labels = INDUSTRIES.map((industry, i) =>
+    i === 0 ? INDUSTRY_COPY[industry].pickerLabel : INDUSTRY_COPY[industry].pickerLabel.toLowerCase(),
+  );
+  return `${labels.slice(0, -1).join(', ')} or ${labels[labels.length - 1]}`;
+}
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
@@ -78,8 +93,8 @@ export default async function DemoPage({ params, searchParams }: PageProps) {
             Talk to Hope, our AI receptionist.
           </h1>
           <p className="mt-4 text-[17px] leading-relaxed text-ink-soft">
-            Dental practice, law firm, workshop or salon: pick yours and she answers for a sample
-            one, so you can hear what your callers would. Set up for you, she picks up when your
+            {pickerChoices()}: pick yours and she answers for a sample one, so you can hear what
+            your callers would. Set up for you, she picks up when your
             team can&rsquo;t &mdash; another call, someone at the counter, after hours &mdash; and
             takes the booking.
           </p>

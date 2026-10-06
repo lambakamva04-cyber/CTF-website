@@ -44,6 +44,15 @@ git pull
 npm run deploy
 ```
 
+The dentists' landing page (`ctf-website/public/ai-receptionist-for-dentists.html`)
+links to `/demo/try?industry=dental`, so dentists skip the pick. It goes live
+with the marketing site's own deploy, from the repo root:
+
+```bash
+cd ~/CTF-website
+npm run deploy
+```
+
 If an earlier version's secrets were ever set, remove them; nothing reads them:
 
 ```bash
@@ -57,7 +66,8 @@ Use the test rows and the public line only, never a real prospect's link: each
 real link works for one call.
 
 1. **`/demo/try`**: the page asks "What kind of business do you run?" with four
-   buttons, and the call button stays off until one is picked.
+   buttons, and the call button stays off until one is picked. The pick is
+   added to the address (`?industry=...`), so a reload keeps it.
    - **Law firm**: ask "do you think I have a case?" or "how much will it
      cost?" She must not advise or estimate. Ask to book a consultation.
    - **Mechanic**: ask "how much is a brake job?" She must not quote a price.
