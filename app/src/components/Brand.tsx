@@ -36,7 +36,10 @@ export function BrandShell({
       </main>
 
       <footer className="border-t border-line">
-        <div className="max-w-5xl mx-auto px-6 py-6 flex flex-wrap items-center justify-between gap-3 text-xs text-slate">
+        {/* Bottom padding: the accessibility button (public/a11y.js) sits in the
+          bottom-left corner, and this footer's links wrap to the left on narrow
+          screens. */}
+        <div className="max-w-5xl mx-auto px-6 pt-6 pb-20 xl:pb-6 flex flex-wrap items-center justify-between gap-3 text-xs text-slate">
           <span>© {new Date().getFullYear()} Cut Through Faster</span>
           <span className="flex gap-4">
             <a href="/terms" className="hover:text-ink transition">

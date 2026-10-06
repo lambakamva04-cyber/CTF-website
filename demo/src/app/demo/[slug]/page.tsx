@@ -80,8 +80,10 @@ export default async function DemoPage({ params, searchParams }: PageProps) {
   // The public line's length lives in `demo_limits`; a personal link's is fixed.
   const maxSeconds = prospect.public_line ? await getPublicLineSeconds() : DEMO_MAX_SECONDS;
 
+  // pb-20 on phones keeps the footer's privacy link clear of the accessibility
+  // button in the bottom-left corner (public/a11y.js).
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col px-5 pb-12 pt-8 sm:px-8 sm:pt-14">
+    <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col px-5 pb-20 pt-8 sm:px-8 sm:pb-12 sm:pt-14">
       <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
         Cut Through Faster
       </p>

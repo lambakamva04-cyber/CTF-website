@@ -171,7 +171,9 @@ export function Dashboard({ session, onSignOut, onSessionExpired }: Props) {
 
   return (
     <div className="min-h-screen bg-white text-black">
-      <div className="font-body max-w-2xl mx-auto px-6 py-10 sm:py-14 space-y-10">
+      {/* pb-20 below md: keeps the footer clear of the accessibility button in
+          the bottom-left corner (public/a11y.js). */}
+      <div className="font-body max-w-2xl mx-auto px-6 pt-10 pb-20 sm:pt-14 md:pb-14 space-y-10">
         <header className="space-y-3">
           <div className="flex items-center gap-2 text-slate">
             <LogoMark size={20} />

@@ -678,6 +678,9 @@
     color: rgba(247,246,243,0.4);
     font-size: 13px;
   }
+  /* The accessibility button (a11y.js) sits in the bottom-left corner. Wherever
+     the footer starts near the left edge, leave its last line room above it. */
+  @media (max-width: 1200px) { footer { padding-bottom: 76px; } }
 
   .faq { padding: 96px 0; background: var(--cream); }
   .faq-list { display: grid; gap: 4px; margin-top: 44px; max-width: 760px; }
