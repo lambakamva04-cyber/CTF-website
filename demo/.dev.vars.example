@@ -8,8 +8,8 @@ SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
 VAPI_PUBLIC_KEY=
 VAPI_ASSISTANT_ID=
-# Optional: the law-firm assistant (vapi/assistant-legal.md).
-VAPI_LAW_ASSISTANT_ID=
+# Optional: Hope, for every industry (vapi/hope-prompt.md).
+VAPI_HOPE_ASSISTANT_ID=
 BOOKING_URL=
 DEMO_IP_SALT=
 EMAIL_API_KEY=

@@ -11,7 +11,7 @@ import {
   type PublicProspect,
 } from './demo';
 
-type ProspectRow = {
+export type ProspectRow = {
   id: string;
   slug: string;
   /** 'dental' or 'legal' (migration 0013). Anything else is treated as dental. */

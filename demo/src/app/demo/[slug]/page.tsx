@@ -6,17 +6,16 @@ import {
   describeDuration,
   INDUSTRY_COPY,
   isValidSlug,
-  joinServices,
   spokenPracticeName,
-  type Industry,
 } from '@/lib/demo';
-import { bookingUrl, vapiAssistantId, vapiLawAssistantId, vapiPublicKey } from '@/lib/env';
+import { bookingUrl, vapiAssistantId, vapiHopeAssistantId, vapiPublicKey } from '@/lib/env';
 import { demoPageAllowed } from '@/lib/limits';
 import {
   getProspectBySlug,
   getPublicLineSeconds,
   industryOf,
   toPublicProspect,
+  type ProspectRow,
 } from '@/lib/prospects';
 
 import DemoPanel from './DemoPanel';
@@ -28,12 +27,19 @@ export const dynamic = 'force-dynamic';
 type PageProps = { params: Promise<{ slug: string }> };
 
 /**
- * The Vapi assistant for this kind of business, or null when it is not set up.
- * Each industry has its own: the dental assistant introduces itself as a dental
- * practice's receptionist, so a law firm's page must never fall back to it.
+ * The Vapi assistant for this link, or null when it is not set up yet.
+ *
+ * - A dental link keeps the dental assistant (VAPI_ASSISTANT_ID), so every link
+ *   already in an inbox plays exactly as it did.
+ * - A law firm's link needs Hope (VAPI_HOPE_ASSISTANT_ID). Until she is set it
+ *   is a 404, like a wrong link, so the outreach link check never passes it.
+ * - The public line uses Hope once she is set, with the industry picker;
+ *   before that it stays the dental sample on the dental assistant.
  */
-function assistantFor(industry: Industry): string | null {
-  return industry === 'legal' ? vapiLawAssistantId() : vapiAssistantId();
+function assistantFor(row: ProspectRow): string | null {
+  const hope = vapiHopeAssistantId();
+  if (row.is_public) return hope ?? (industryOf(row) === 'dental' ? vapiAssistantId() : null);
+  return industryOf(row) === 'dental' ? vapiAssistantId() : hope;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -41,7 +47,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!isValidSlug(slug) || !(await demoPageAllowed())) return { title: 'Not found' };
 
   const prospect = await getProspectBySlug(slug);
-  if (!prospect || !assistantFor(industryOf(prospect))) return { title: 'Not found' };
+  if (!prospect || !assistantFor(prospect)) return { title: 'Not found' };
 
   if (prospect.is_public) {
     const length = describeDuration(await getPublicLineSeconds());
@@ -74,15 +80,13 @@ export default async function DemoPage({ params }: PageProps) {
   const row = await getProspectBySlug(slug);
   if (!row) notFound();
 
-  // A law firm's link stays a 404 until its assistant is set up, exactly like
-  // a wrong link. That also fails the outreach routine's link check, so it is
-  // never emailed before it works.
-  const assistantId = assistantFor(industryOf(row));
+  const assistantId = assistantFor(row);
   if (!assistantId) notFound();
 
   const prospect = toPublicProspect(row);
   const copy = INDUSTRY_COPY[prospect.industry];
-  const services = joinServices(prospect.services);
+  // Only Hope knows every industry, so only she gets the picker.
+  const industryPicker = prospect.public_line && assistantId === vapiHopeAssistantId();
   // The public line's length lives in `demo_limits`; a personal link's is fixed.
   const maxSeconds = prospect.public_line ? await getPublicLineSeconds() : DEMO_MAX_SECONDS;
 
@@ -99,11 +103,18 @@ export default async function DemoPage({ params }: PageProps) {
             Talk to Hope, our AI receptionist.
           </h1>
           <p className="mt-4 text-[17px] leading-relaxed text-ink-soft">
-            Here she is answering for {spokenPracticeName(prospect.practice_name)}, a sample
-            practice, so you can hear
-            what your patients would. Set up for you, she picks up when your team can&rsquo;t
-            &mdash; another call, a patient at the counter, after hours &mdash; and takes the
-            booking.
+            {industryPicker ? (
+              <>Pick the kind of business you run and she answers for a sample one, so you can hear</>
+            ) : (
+              <>
+                Here she is answering for {spokenPracticeName(prospect.practice_name)}, a sample
+                practice, so you can hear
+              </>
+            )}{' '}
+            what your {industryPicker ? 'callers' : 'patients'} would. Set up for you, she picks
+            up when your team can&rsquo;t &mdash; another call,{' '}
+            {industryPicker ? 'someone' : 'a patient'} at the counter, after
+            hours &mdash; and takes the booking.
           </p>
         </header>
       ) : (
@@ -121,47 +132,17 @@ export default async function DemoPage({ params }: PageProps) {
 
       {/* The button sits directly under the headline, on purpose: on a phone
           opened from an email it has to be reachable without a scroll. The
-          detail below is for the prospect who wants it, not a gate in front
-          of the one thing this page is for. */}
+          detail below it is for the prospect who wants it, not a gate in front
+          of the one thing this page is for. The panel also renders what Hope
+          knows, because on the public line that follows the industry picked. */}
       <DemoPanel
         prospect={prospect}
         maxSeconds={maxSeconds}
         bookingUrl={bookingUrl()}
         vapiPublicKey={vapiPublicKey()}
         vapiAssistantId={assistantId}
+        industryPicker={industryPicker}
       />
-
-      <section className="mt-8 rounded-xl border border-line bg-white/60 p-5">
-        <h2 className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
-          What Hope already knows
-        </h2>
-        <dl className="mt-4 space-y-3 text-[15px]">
-          <div className="flex gap-3">
-            <dt className="w-20 shrink-0 text-ink-faint">{copy.businessLabel}</dt>
-            <dd className="font-medium">
-              {prospect.practice_name}
-              {prospect.suburb ? `, ${prospect.suburb}` : ''}
-            </dd>
-          </div>
-          {services ? (
-            <div className="flex gap-3">
-              <dt className="w-20 shrink-0 text-ink-faint">{copy.servicesLabel}</dt>
-              <dd className="font-medium">{services}</dd>
-            </div>
-          ) : null}
-          {prospect.hours ? (
-            <div className="flex gap-3">
-              <dt className="w-20 shrink-0 text-ink-faint">Hours</dt>
-              <dd className="font-medium">{prospect.hours}</dd>
-            </div>
-          ) : null}
-        </dl>
-        <p className="mt-4 border-t border-line pt-4 text-sm leading-relaxed text-ink-soft">
-          {prospect.public_line
-            ? 'Ask her for an appointment on Thursday morning, or what time the practice closes on a Saturday. She answers as though she is sitting behind its front desk.'
-            : copy.tryAsking}
-        </p>
-      </section>
 
       <footer className="mt-auto pt-10">
         <p className="border-t border-line pt-5 text-[13px] leading-relaxed text-ink-faint">

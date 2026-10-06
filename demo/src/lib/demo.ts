@@ -40,11 +40,12 @@ export function isValidSlug(value: unknown): value is string {
 }
 
 /**
- * The kinds of business a demo can be prepared for. Each has its own words on
- * the page and its own Vapi assistant: the dental one introduces itself as a
- * dental practice's receptionist, so a law firm must never reach it.
+ * The kinds of business a demo can be prepared for. Every one of them talks to
+ * the same Vapi assistant: Hope's prompt has a short section per industry, and
+ * the page tells her which one to follow on each call (`industry` in the
+ * call's variables). See vapi/hope-prompt.md.
  */
-export const INDUSTRIES = ['dental', 'legal'] as const;
+export const INDUSTRIES = ['dental', 'legal', 'mechanic', 'salon'] as const;
 
 export type Industry = (typeof INDUSTRIES)[number];
 
@@ -52,8 +53,12 @@ export function isIndustry(value: unknown): value is Industry {
   return typeof value === 'string' && (INDUSTRIES as readonly string[]).includes(value);
 }
 
-/** The words that differ between a dental practice's page and a law firm's. */
+/** The words that differ between one kind of business's page and another's. */
 export type IndustryCopy = {
+  /** On the industry picker: "Dental practice". */
+  pickerLabel: string;
+  /** Said by Hope after the name: "a dental practice". */
+  businessType: string;
   /** "Practice" or "Firm", as a label. */
   businessLabel: string;
   /** "your practice name" / "your firm's name". */
@@ -74,6 +79,8 @@ export type IndustryCopy = {
 
 export const INDUSTRY_COPY: Record<Industry, IndustryCopy> = {
   dental: {
+    pickerLabel: 'Dental practice',
+    businessType: 'a dental practice',
     businessLabel: 'Practice',
     yourName: 'your practice name',
     servicesLabel: 'Services',
@@ -85,6 +92,8 @@ export const INDUSTRY_COPY: Record<Industry, IndustryCopy> = {
       'Ask her for an appointment on Thursday morning, or what time you close on a Saturday. She answers as though she is sitting behind your front desk.',
   },
   legal: {
+    pickerLabel: 'Law firm',
+    businessType: 'a law firm',
     businessLabel: 'Firm',
     yourName: 'your firm’s name',
     servicesLabel: 'Practice areas',
@@ -94,6 +103,67 @@ export const INDUSTRY_COPY: Record<Industry, IndustryCopy> = {
     fallbackServices: 'general legal services',
     tryAsking:
       'Call as a new client: ask to book a consultation for Thursday morning, or what time you close on a Friday. She answers as though she is sitting at your reception.',
+  },
+  mechanic: {
+    pickerLabel: 'Mechanic',
+    businessType: 'a motor workshop',
+    businessLabel: 'Workshop',
+    yourName: 'your workshop’s name',
+    servicesLabel: 'Services',
+    yourServices: 'your services',
+    personAtCounter: 'a customer at the counter',
+    takes: 'books the car in',
+    fallbackServices: 'services, repairs and diagnostics',
+    tryAsking:
+      'Ask her to book your car in for a service on Thursday morning, or what time you close on a Saturday. She answers as though she is sitting behind your counter.',
+  },
+  salon: {
+    pickerLabel: 'Salon',
+    businessType: 'a hair and beauty salon',
+    businessLabel: 'Salon',
+    yourName: 'your salon’s name',
+    servicesLabel: 'Treatments',
+    yourServices: 'your treatments',
+    personAtCounter: 'a client in the chair',
+    takes: 'books the treatment',
+    fallbackServices: 'hair and beauty treatments',
+    tryAsking:
+      'Ask her for a cut and colour on Thursday morning, or what time you close on a Saturday. She answers as though she is sitting behind your front desk.',
+  },
+};
+
+/**
+ * The sample business the public line answers for, per industry, when the
+ * visitor picks one other than the public row's own. The public row in
+ * Supabase still decides its own industry's sample.
+ */
+export const SAMPLE_BUSINESSES: Record<
+  Industry,
+  { practice_name: string; suburb: string; services: string[]; hours: string }
+> = {
+  dental: {
+    practice_name: 'Parkview Family Dental (demo practice)',
+    suburb: 'Parkview',
+    services: ['check-ups and cleaning', 'fillings', 'whitening', 'emergency appointments'],
+    hours: 'Monday to Friday 8am to 5pm, Saturday 8am to 12pm',
+  },
+  legal: {
+    practice_name: 'Rosebank Attorneys (demo firm)',
+    suburb: 'Rosebank',
+    services: ['property transfers', 'family law', 'wills and estates', 'labour disputes'],
+    hours: 'Monday to Friday 8am to 5pm',
+  },
+  mechanic: {
+    practice_name: 'Randburg Auto Care (demo workshop)',
+    suburb: 'Randburg',
+    services: ['major and minor services', 'brakes and clutches', 'diagnostics', 'roadworthy tests'],
+    hours: 'Monday to Friday 7:30am to 5pm, Saturday 8am to 12pm',
+  },
+  salon: {
+    practice_name: 'Melville Hair & Beauty (demo salon)',
+    suburb: 'Melville',
+    services: ['cuts and blow-dries', 'colour and highlights', 'manicures and pedicures', 'brows and lashes'],
+    hours: 'Tuesday to Saturday 9am to 6pm',
   },
 };
 
@@ -112,7 +182,10 @@ export function describePrimedWith(industry: Industry, hasHours: boolean): strin
 /** The only prospect fields the browser is ever given. */
 export type PublicProspect = {
   slug: string;
-  /** Which words and which assistant this page uses. */
+  /**
+   * The row's industry: which words the page uses and which section of Hope's
+   * prompt she follows. The public line lets the visitor change it.
+   */
   industry: Industry;
   practice_name: string;
   suburb: string | null;
