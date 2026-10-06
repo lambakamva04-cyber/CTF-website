@@ -1,11 +1,11 @@
-# The dental demo assistant
+# The demo assistant
 
-> Being replaced by Hope, one assistant for every industry
-> ([`hope-prompt.md`](hope-prompt.md)). Dental links keep using this one until
-> `VAPI_ASSISTANT_ID` is pointed at Hope; see "Moving dental links to Hope"
-> there.
+> Its voice and transcriber serve every demo call. Its **dashboard script**
+> below is used only by dental prospects' own links. Every other call (the
+> public line, law firms) replaces the script with Hope's for its industry; see
+> [`hope-prompt.md`](hope-prompt.md).
 
-There is exactly **one** Vapi assistant behind every dental demo link. Nothing about a
+There is exactly **one** Vapi assistant behind every demo link. Nothing about a
 prospect is configured in Vapi — the practice name, suburb, services and hours
 arrive at call time as `assistantOverrides.variableValues`, sent by
 `src/app/demo/[slug]/DemoPanel.tsx`.

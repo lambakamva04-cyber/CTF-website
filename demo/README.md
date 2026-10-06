@@ -198,7 +198,6 @@ npm run preview           # builds with OpenNext, serves under wrangler
 | `SUPABASE_SERVICE_ROLE_KEY` | Server | Bypasses RLS. Never expose, never prefix with `NEXT_PUBLIC_` |
 | `VAPI_PUBLIC_KEY` | Rendered to the browser | Vapi's public key is designed for this |
 | `VAPI_ASSISTANT_ID` | Rendered to the browser | The shared demo assistant for dental practices ([`vapi/assistant.md`](vapi/assistant.md)) |
-| `VAPI_HOPE_ASSISTANT_ID` | Rendered to the browser | Optional. Hope, the one assistant for every industry ([`vapi/hope-prompt.md`](vapi/hope-prompt.md)). Until it is set, a law firm's link is a 404 and the public line has no industry picker |
 | `BOOKING_URL` | Rendered to the browser | Where "Book a 15-minute call" points |
 | `DEMO_IP_SALT` | Server | Any long random string. Salts the IP hash; without it the per-person limits are skipped and only the daily caps apply |
 | `EMAIL_API_KEY` | Server | Resend API key. Without it callback requests are saved but not emailed |
@@ -244,14 +243,14 @@ test rows and for re-arming a link, not for real prospects.
 
 Set `industry` to `legal` on the row (migration 0013; it defaults to `dental`).
 The page then talks about clients and practice areas instead of patients and
-services, and the call goes to Hope (`VAPI_HOPE_ASSISTANT_ID`,
-[`vapi/hope-prompt.md`](vapi/hope-prompt.md)), told it is a law firm, never to
-the dental assistant. Put the firm's practice areas in `services`. Until Hope is
-set, a law firm's link is a 404.
+services, and Hope gets the law-firm script ([`vapi/hope-prompt.md`](vapi/hope-prompt.md)),
+never the dental one. Put the firm's practice areas in `services`.
 
-On the public line, `/demo/try`, Hope also lets the visitor pick dental, law
-firm, mechanic or salon, and answers for a sample business of that kind
-(`SAMPLE_BUSINESSES` in `src/lib/demo.ts`). Personal links have no picker.
+On the public line, `/demo/try`, the visitor picks dental practice, law firm,
+mechanic or salon before the call button works, and Hope answers for a sample
+business of that kind (`SAMPLE_BUSINESSES` in `src/lib/demo.ts`). A marketing
+page for one industry can skip the pick with `/demo/try?industry=legal` (or
+`dental`, `mechanic`, `salon`). Personal links have no picker.
 
 For your own testing, `--reset` clears `demo_used_at` and makes a spent link
 live again:

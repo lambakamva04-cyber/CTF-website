@@ -32,22 +32,12 @@ export function vapiPublicKey(): string {
 }
 
 /**
- * The dental assistant (vapi/assistant.md) that every dental link already in an
- * inbox uses. To move dental links to Hope, set this to Hope's ID too: the page
- * already sends her the industry on every call.
+ * The one demo assistant. A dental prospect's link uses its dashboard script
+ * (vapi/assistant.md); every other call keeps its voice and replaces the script
+ * with Hope's for the industry (src/lib/hope.ts).
  */
 export function vapiAssistantId(): string {
   return required('VAPI_ASSISTANT_ID');
-}
-
-/**
- * Hope, the one assistant for every industry (vapi/hope-prompt.md). The page
- * tells her on each call which industry's section of her prompt to follow.
- * Optional: until it is set, a law firm's link is a 404 and the public line
- * stays the dental sample on the dental assistant, with no industry picker.
- */
-export function vapiHopeAssistantId(): string | null {
-  return process.env.VAPI_HOPE_ASSISTANT_ID?.trim() || null;
 }
 
 /** Where "Book a 15-minute call" points. Calendly, SavvyCal, Cal.com — any URL. */
