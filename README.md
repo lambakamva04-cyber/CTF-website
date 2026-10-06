@@ -4,7 +4,7 @@ Four deployables live in this repository.
 
 | Directory | What it is | Deploys to |
 | --- | --- | --- |
-| `ctf-website/public/` | Marketing site — the public `cutthroughfaster.com` page | Cloudflare Pages (`npm run deploy` from the repo root) |
+| `ctf-website/public/` | Marketing site — the public `cutthroughfaster.com` page | Cloudflare Workers, the `throbbing-disk-fd8d` Worker (`npm run deploy` from the repo root) |
 | `app/` | Client control platform — where clients watch their AI receptionist, take calls over, and read transcripts | Cloudflare Workers (`npm run deploy` from `app/`) |
 | `demo/` | Personalised demo pages — one link per cold-email prospect, who talks to Hope live in the browser | Cloudflare Workers (`npm run deploy` from `demo/`) |
 | `infra/n8n/` | Self-hosted n8n for back-office automation, published through a Cloudflare Tunnel with no inbound ports open | Your own Ubuntu VPS ([runbook](infra/n8n/README.md)) |
