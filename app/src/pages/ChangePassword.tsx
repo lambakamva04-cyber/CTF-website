@@ -37,7 +37,7 @@ export function ChangePassword({ onDone }: { onDone: () => void }) {
   };
 
   return (
-    <div className="min-h-screen bg-white text-black font-body flex items-center justify-center px-6 py-12">
+    <div className="min-h-screen bg-white text-black font-body flex items-center justify-center px-6 pt-12 pb-20 sm:pb-12">
       <main className="w-full max-w-sm space-y-8">
         <div className="space-y-2">
           <h1 className="font-display text-2xl font-semibold tracking-tight">

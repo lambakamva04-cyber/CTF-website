@@ -36,7 +36,11 @@ export function BrandShell({
       </main>
 
       <footer className="border-t border-line">
-        <div className="max-w-5xl mx-auto px-6 py-6 flex flex-wrap items-center justify-between gap-3 text-xs text-slate">
+        {/* Bottom padding: the footer's first item sits at the container's left
+          edge, under the accessibility button in the bottom-left corner
+          (public/a11y.js), until the container is centred clear of it: about
+          1100px wide, nearly 1400px with the menu's Largest text size. */}
+        <div className="max-w-5xl mx-auto px-6 pt-6 pb-20 min-[1400px]:pb-6 flex flex-wrap items-center justify-between gap-3 text-xs text-slate">
           <span>© {new Date().getFullYear()} Cut Through Faster</span>
           <span className="flex gap-4">
             <a href="/terms" className="hover:text-ink transition">

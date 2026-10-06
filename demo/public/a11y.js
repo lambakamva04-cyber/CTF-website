@@ -6,7 +6,9 @@
  * ctf-website/public, demo/public and app/public — because each site deploys
  * on its own. Change all three together.
  *
- * A small "Accessibility" button in the bottom-left corner opens a panel with:
+ * A small round button in the bottom-left corner, showing only the
+ * accessibility icon so it covers as little of the page as possible, opens a
+ * panel with:
  *   - Text size: normal, larger, largest.
  *   - High contrast: every piece of text becomes pure black on a light
  *     background or pure white on a dark one, without changing the layout.
@@ -213,7 +215,7 @@
   }
 
   var ICON =
-    '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+    '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
     'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' +
     '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="7.2" r="1.4" fill="currentColor" stroke="none"/>' +
     '<path d="M7.2 9.9 12 11l4.8-1.1"/><path d="M12 11v3.3l-2.3 4.4M12 14.3l2.3 4.4"/></svg>';
@@ -230,8 +232,10 @@
     }
 
     wrapper.innerHTML =
-      '<button type="button" class="ctf-a11y-toggle" aria-expanded="false" aria-controls="ctf-a11y-panel">' +
-        ICON + '<span>Accessibility</span></button>' +
+      // Icon only: the name screen readers announce, and the tooltip on hover,
+      // both come from aria-label and title.
+      '<button type="button" class="ctf-a11y-toggle" aria-label="Accessibility" title="Accessibility" ' +
+        'aria-expanded="false" aria-controls="ctf-a11y-panel">' + ICON + '</button>' +
       '<div class="ctf-a11y-panel" id="ctf-a11y-panel" role="dialog" aria-labelledby="ctf-a11y-title" hidden>' +
         '<div class="ctf-a11y-head">' +
           '<h2 class="ctf-a11y-title" id="ctf-a11y-title" tabindex="-1">Accessibility</h2>' +

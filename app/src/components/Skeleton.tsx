@@ -193,7 +193,7 @@ export function TableSkeleton({
 export function DashboardSkeleton() {
   return (
     <div className="min-h-screen bg-white text-black">
-      <div className="font-body max-w-2xl mx-auto px-6 py-10 sm:py-14 space-y-10">
+      <div className="font-body max-w-2xl mx-auto px-6 pt-10 pb-20 sm:pt-14 md:pb-14 space-y-10">
         <SkeletonRegion label="Loading your dashboard" className="space-y-3">
           <Skeleton className="h-3 w-48" />
           <div className="flex items-center justify-between gap-4">

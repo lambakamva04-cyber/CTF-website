@@ -11,7 +11,7 @@ export default function PrivacyPage() {
   const doc = DEMO_PRIVACY;
 
   return (
-    <main className="mx-auto w-full max-w-xl px-5 pb-16 pt-8 sm:px-8 sm:pt-14">
+    <main className="mx-auto w-full max-w-xl px-5 pb-20 pt-8 sm:px-8 sm:pb-16 sm:pt-14">
       <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
         Cut Through Faster · Hope demo
       </p>
