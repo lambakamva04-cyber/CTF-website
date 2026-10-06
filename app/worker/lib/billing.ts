@@ -6,6 +6,20 @@
 // the rule is.
 
 /**
+ * The list price a new client signs up on. Each organization keeps its own
+ * copy of these terms (migration 0003), so changing them here touches nobody
+ * who has already signed; it only changes what the next signup is put on.
+ * Migration 0003's column defaults are the older R1,499 list price and are
+ * deliberately not relied on for new rows.
+ */
+export const LIST_PRICE = {
+  planMinutes: 150,
+  subscriptionZar: 2000,
+  overageRateZar: 7.99,
+  setupFeeZar: 1999,
+} as const;
+
+/**
  * Billable minutes for a single call.
  *
  * Telephony bills per started minute, so every call rounds UP: a 5-second call
