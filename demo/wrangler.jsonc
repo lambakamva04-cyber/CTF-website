@@ -53,6 +53,7 @@
   //   SUPABASE_SERVICE_ROLE_KEY   bypasses RLS; server-side only
   //   VAPI_PUBLIC_KEY
   //   VAPI_ASSISTANT_ID
+  //   VAPI_LAW_ASSISTANT_ID       optional; law firms' links are a 404 until it is set
   //   BOOKING_URL
   //   DEMO_IP_SALT                salts the caller-IP hash the limits count
   //   EMAIL_API_KEY               Resend key; emails each callback request

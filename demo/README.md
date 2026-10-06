@@ -197,7 +197,8 @@ npm run preview           # builds with OpenNext, serves under wrangler
 | `SUPABASE_URL` | Server | Settings → Data API |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server | Bypasses RLS. Never expose, never prefix with `NEXT_PUBLIC_` |
 | `VAPI_PUBLIC_KEY` | Rendered to the browser | Vapi's public key is designed for this |
-| `VAPI_ASSISTANT_ID` | Rendered to the browser | The single shared demo assistant |
+| `VAPI_ASSISTANT_ID` | Rendered to the browser | The shared demo assistant for dental practices ([`vapi/assistant.md`](vapi/assistant.md)) |
+| `VAPI_LAW_ASSISTANT_ID` | Rendered to the browser | Optional. The shared demo assistant for law firms ([`vapi/assistant-legal.md`](vapi/assistant-legal.md)). Until it is set, a law firm's link is a 404 |
 | `BOOKING_URL` | Rendered to the browser | Where "Book a 15-minute call" points |
 | `DEMO_IP_SALT` | Server | Any long random string. Salts the IP hash; without it the per-person limits are skipped and only the daily caps apply |
 | `EMAIL_API_KEY` | Server | Resend API key. Without it callback requests are saved but not emailed |
@@ -238,6 +239,15 @@ keep their old, name-only slugs, so they are not broken.
 
 `--slug` (above) uses exactly the slug it is given, so keep it for CTF's own
 test rows and for re-arming a link, not for real prospects.
+
+### Law firms
+
+Set `industry` to `legal` on the row (migration 0013; it defaults to `dental`).
+The page then talks about clients and practice areas instead of patients and
+services, and the call goes to the law-firm assistant (`VAPI_LAW_ASSISTANT_ID`,
+[`vapi/assistant-legal.md`](vapi/assistant-legal.md)), never the dental one.
+Put the firm's practice areas in `services`. Until that assistant is set, a law
+firm's link is a 404.
 
 For your own testing, `--reset` clears `demo_used_at` and makes a spent link
 live again:

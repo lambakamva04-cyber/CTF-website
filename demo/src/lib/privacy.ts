@@ -7,7 +7,7 @@
 // nothing it does not. Change it whenever those change. It is a working draft,
 // not a substitute for review by someone qualified in South African law.
 
-export const PRIVACY_VERSION = '2026-09-29';
+export const PRIVACY_VERSION = '2026-10-06';
 
 /** Same inbox as the control platform's Information Officer. */
 export const PRIVACY_CONTACT = 'privacy@cutthroughfaster.com';
@@ -60,7 +60,7 @@ export const DEMO_PRIVACY: {
 } = {
   title: 'Privacy Policy',
   version: PRIVACY_VERSION,
-  updated: '29 September 2026',
+  updated: '6 October 2026',
   intro:
     'This covers the Hope demo pages — the personal link we sent your practice, and the public line on our website — the conversation you can have on them with Hope, our AI receptionist, and the callback form on our website, including the call Hope makes when you use it. It explains what we collect, why, who handles it, and what you can ask us to do about it.',
   sections: [
@@ -74,7 +74,8 @@ export const DEMO_PRIVACY: {
     {
       heading: 'What we held before you opened the link',
       body: [
-        'To prepare your demo we put together a short profile of your practice from publicly available business information, such as its website and online business listings: its name, its suburb, the services it offers and its opening hours.',
+        'To prepare your demo we put together a short profile of your practice from publicly available business information, such as its website and online business listings: its name, its suburb, the services it offers (for a law firm, the areas of law it practises) and its opening hours.',
+        'We also hold the name and work email address of the person we wrote to, taken from the business’s own website or from a business-contact directory.',
         'That profile is what the page shows under "What Hope already knows", and it is all Hope is told about your practice.',
         'The public line on our website does not use your practice at all: Hope answers for a sample practice we made up.',
       ],
@@ -94,7 +95,7 @@ export const DEMO_PRIVACY: {
         'When you tap "Talk to Hope", your browser asks to use your microphone and sends what you say to Vapi, the voice platform that runs the conversation. Vapi passes the audio and text to the speech-recognition, AI language-model and voice providers it uses, so that Hope can understand you and answer.',
         'Vapi keeps a recording and a transcript of the conversation. We can listen to and read them.',
         'The microphone is used only during the call. A personal link allows one conversation of up to three minutes; the public line allows calls of up to a minute, a few per person each hour.',
-        'Hope is a demonstration. Please do not give her real patient details or anyone else’s personal information: whatever is said is recorded.',
+        'Hope is a demonstration. Please do not give her real patient or client details, or anyone else’s personal information: whatever is said is recorded.',
       ],
     },
     {
