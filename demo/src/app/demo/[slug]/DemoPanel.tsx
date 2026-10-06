@@ -1,18 +1,21 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type Vapi from '@vapi-ai/web';
 
 import {
   describeDuration,
   describePrimedWith,
   formatCountdown,
+  INDUSTRIES,
   INDUSTRY_COPY,
   joinServices,
+  SAMPLE_BUSINESSES,
   spokenPracticeName,
   type DemoEventBody,
   type GateRefusal,
   type GateResponse,
+  type Industry,
   type PublicProspect,
 } from '@/lib/demo';
 
@@ -36,6 +39,8 @@ type Props = {
   bookingUrl: string;
   vapiPublicKey: string;
   vapiAssistantId: string;
+  /** The public line on Hope: the visitor picks the kind of business she answers for. */
+  industryPicker: boolean;
 };
 
 /** If Vapi has not connected us by now, something is wrong. */
@@ -47,8 +52,13 @@ export default function DemoPanel({
   bookingUrl,
   vapiPublicKey,
   vapiAssistantId,
+  industryPicker,
 }: Props) {
   const [phase, setPhase] = useState<Phase>(prospect.expired ? 'expired' : 'ready');
+  // On Hope, the public line lets the visitor pick their kind of business; a
+  // personal link was prepared for one business and keeps its row's industry.
+  const [industry, setIndustry] = useState<Industry>(prospect.industry);
+  const business = useMemo(() => businessFor(prospect, industry), [prospect, industry]);
   // The cap for the call in progress. The public line's gate can hand back a
   // different number than the page was rendered with, if the limit was changed
   // in between; the gate's answer wins, because it is what Vapi is told.
@@ -388,13 +398,13 @@ export default function DemoPanel({
 
     try {
       const vapi = await loadVapi();
-      await vapi.start(vapiAssistantId, buildOverrides(prospect, capRef.current));
+      await vapi.start(vapiAssistantId, buildOverrides(business, capRef.current));
     } catch {
       setPhase((current) => (current === 'connecting' ? 'failed' : current));
     } finally {
       window.clearTimeout(timeout);
     }
-  }, [loadVapi, phase, prospect, sendEvent, slug, vapiAssistantId]);
+  }, [business, loadVapi, phase, prospect.public_line, sendEvent, slug, vapiAssistantId]);
 
   const handleStop = useCallback(() => {
     intentRef.current = 'customer-ended-call';
@@ -405,258 +415,359 @@ export default function DemoPanel({
   const progress = Math.max(0, Math.min(1, remaining / cap));
 
   return (
-    <section className="mt-7">
-      <p role="status" className="sr-only">
-        {announcement}
-      </p>
+    <>
+      <section className="mt-7">
+        <p role="status" className="sr-only">
+          {announcement}
+        </p>
 
-      {(phase === 'ready' || phase === 'connecting') && (
-        <>
-          <button
-            type="button"
-            onClick={handleStart}
-            disabled={phase === 'connecting'}
-            className="flex w-full items-center justify-center gap-3 rounded-xl bg-ink px-6 py-5 text-[17px] font-semibold text-paper transition-opacity hover:opacity-90 disabled:opacity-70"
-          >
-            {phase === 'connecting' ? (
-              <>
-                <Spinner />
-                Connecting to Hope&hellip;
-              </>
-            ) : (
-              <>
-                <MicIcon />
-                Talk to Hope
-              </>
-            )}
-          </button>
-          <p className="mt-3 text-center text-[13px] text-ink-faint">
-            {prospect.public_line
-              ? `Uses your microphone. Up to ${describeDuration(cap)}, with live captions, nothing to install.`
-              : `Uses your phone’s microphone. ${capitalise(describeDuration(cap))}, one conversation, with live captions, nothing to install.`}
-          </p>
-          {/* Said before the tap, because the recording starts with it. */}
-          <p className="mt-1 text-center text-[13px] text-ink-faint">
-            Hope is an AI, and the conversation is recorded and transcribed.{' '}
-            <a href="/privacy" className="font-medium underline underline-offset-2">
-              How we handle it
-            </a>
-          </p>
-        </>
-      )}
-
-      {phase === 'live' && (
-        <div className="rounded-xl border border-ink bg-white p-5">
-          <div className="flex items-center justify-between">
-            <h2
-              ref={headingRef}
-              tabIndex={-1}
-              className="flex items-center gap-2.5 font-sans text-[15px] font-semibold tracking-normal focus:outline-none"
-            >
-              <span
-                className="ctf-pulse inline-block h-2.5 w-2.5 rounded-full bg-signal"
-                aria-hidden="true"
+        {(phase === 'ready' || phase === 'connecting') && (
+          <>
+            {industryPicker && (
+              <IndustryPicker
+                value={industry}
+                onChange={setIndustry}
+                disabled={phase === 'connecting'}
               />
-              Hope is on the line
+            )}
+            <button
+              type="button"
+              onClick={handleStart}
+              disabled={phase === 'connecting'}
+              className="flex w-full items-center justify-center gap-3 rounded-xl bg-ink px-6 py-5 text-[17px] font-semibold text-paper transition-opacity hover:opacity-90 disabled:opacity-70"
+            >
+              {phase === 'connecting' ? (
+                <>
+                  <Spinner />
+                  Connecting to Hope&hellip;
+                </>
+              ) : (
+                <>
+                  <MicIcon />
+                  Talk to Hope
+                </>
+              )}
+            </button>
+            <p className="mt-3 text-center text-[13px] text-ink-faint">
+              {prospect.public_line
+                ? `Uses your microphone. Up to ${describeDuration(cap)}, with live captions, nothing to install.`
+                : `Uses your phone’s microphone. ${capitalise(describeDuration(cap))}, one conversation, with live captions, nothing to install.`}
+            </p>
+            {/* Said before the tap, because the recording starts with it. */}
+            <p className="mt-1 text-center text-[13px] text-ink-faint">
+              Hope is an AI, and the conversation is recorded and transcribed.{' '}
+              <a href="/privacy" className="font-medium underline underline-offset-2">
+                How we handle it
+              </a>
+            </p>
+          </>
+        )}
+
+        {phase === 'live' && (
+          <div className="rounded-xl border border-ink bg-white p-5">
+            <div className="flex items-center justify-between">
+              <h2
+                ref={headingRef}
+                tabIndex={-1}
+                className="flex items-center gap-2.5 font-sans text-[15px] font-semibold tracking-normal focus:outline-none"
+              >
+                <span
+                  className="ctf-pulse inline-block h-2.5 w-2.5 rounded-full bg-signal"
+                  aria-hidden="true"
+                />
+                Hope is on the line
+              </h2>
+              <p className="font-mono text-[15px] tabular-nums text-ink-soft">
+                {formatCountdown(remaining)}
+              </p>
+            </div>
+
+            <div
+              className="mt-4 h-1 w-full overflow-hidden rounded-full bg-paper-dim"
+              role="progressbar"
+              aria-label="Time remaining in this demo"
+              aria-valuemin={0}
+              aria-valuemax={cap}
+              aria-valuenow={Math.ceil(remaining)}
+              aria-valuetext={describeRemaining(remaining)}
+            >
+              <div
+                className="h-full rounded-full bg-signal transition-[width] duration-200 ease-linear"
+                style={{ width: `${progress * 100}%` }}
+              />
+            </div>
+
+            <p className="mt-4 text-[14px] leading-relaxed text-ink-soft">
+              Try: &ldquo;Do you have anything Thursday morning?&rdquo; or &ldquo;What time do you
+              close on Saturday?&rdquo;
+            </p>
+
+            {/* Captions, for anyone who cannot hear the call or would rather
+                read it. Not announced as they arrive: a screen reader user is
+                already hearing Hope, and a second voice reading her words over
+                her would drown both out. The box is focusable, so it can be
+                read at any point. */}
+            <h3
+              id="live-captions-heading"
+              className="mt-5 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint"
+            >
+              Live captions
+            </h3>
+            <div
+              ref={captionsBoxRef}
+              role="log"
+              aria-live="off"
+              aria-labelledby="live-captions-heading"
+              tabIndex={0}
+              className="mt-2 max-h-48 space-y-2 overflow-y-auto rounded-lg bg-paper-dim p-3 text-[14px] leading-relaxed"
+            >
+              {captions.length === 0 && !speaking && (
+                <p className="text-ink-faint">What you and Hope say appears here.</p>
+              )}
+              {captions.map((caption) => (
+                <CaptionLine key={caption.id} speaker={caption.speaker} text={caption.text} />
+              ))}
+              {speaking && <CaptionLine speaker={speaking.speaker} text={speaking.text} pending />}
+            </div>
+
+            <button
+              type="button"
+              onClick={handleStop}
+              className="mt-5 w-full rounded-lg border border-line-strong px-5 py-3 text-[15px] font-medium transition-colors hover:bg-paper-dim"
+            >
+              End call
+            </button>
+          </div>
+        )}
+
+        {phase === 'ended' && (
+          <div className="rounded-xl border border-line bg-white p-5">
+            <h2 ref={headingRef} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
+              That was Hope.
             </h2>
-            <p className="font-mono text-[15px] tabular-nums text-ink-soft">
-              {formatCountdown(remaining)}
+            <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+              {lastDuration !== null ? `${formatCountdown(lastDuration)} on the line. ` : ''}
+              {prospect.public_line
+                ? 'That was a sample business. Set up for yours, she works from your own hours, services and diary, and every call she takes reaches your team with a full transcript — the ones they couldn’t get to included.'
+                : `She was primed with nothing but ${describePrimedWith(prospect.industry, prospect.hours !== null)}. Live, she also holds your diary, and every call she takes reaches your team with a full transcript — the ones they couldn’t get to included.`}
+            </p>
+            {captions.length > 0 && (
+              <details className="mt-4 rounded-lg border border-line p-3">
+                <summary className="cursor-pointer text-[15px] font-medium">
+                  Read the transcript of your call
+                </summary>
+                <div className="mt-3 space-y-2 text-[14px] leading-relaxed">
+                  {captions.map((caption) => (
+                    <CaptionLine key={caption.id} speaker={caption.speaker} text={caption.text} />
+                  ))}
+                </div>
+              </details>
+            )}
+            <BookingLink href={bookingUrl} />
+            <p className="mt-3 text-center text-[13px] text-ink-faint">
+              Fifteen minutes, and we&rsquo;ll show you the calls you&rsquo;re missing this week.
             </p>
           </div>
+        )}
 
-          <div
-            className="mt-4 h-1 w-full overflow-hidden rounded-full bg-paper-dim"
-            role="progressbar"
-            aria-label="Time remaining in this demo"
-            aria-valuemin={0}
-            aria-valuemax={cap}
-            aria-valuenow={Math.ceil(remaining)}
-            aria-valuetext={describeRemaining(remaining)}
+        {phase === 'expired' && (
+          <div className="rounded-xl border border-line bg-white p-5">
+            <h2 ref={headingRef} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
+              You&rsquo;ve already spoken to Hope.
+            </h2>
+            <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+              This link runs one live conversation, and it has had its turn. The next step is a real
+              one: fifteen minutes with us, with Hope connected to your actual diary and answering
+              the calls your front desk can&rsquo;t get to.
+            </p>
+            <BookingLink href={bookingUrl} />
+          </div>
+        )}
+
+        {phase === 'limited' && (
+          <div className="rounded-xl border border-line bg-white p-5">
+            <h2 ref={headingRef} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
+              {limitReason === 'ip_cooldown'
+                ? 'You’ve had your turns for now.'
+                : 'Hope has taken today’s calls.'}
+            </h2>
+            <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+              {limitReason === 'ip_cooldown'
+                ? 'The public line takes a few calls per person each hour, so it stays free for the next person. Try again later, or book fifteen minutes with us and hear Hope answering for your own business.'
+                : 'The public line has a daily limit, and today’s has been reached. Try again tomorrow, or book fifteen minutes with us and hear Hope answering for your own business.'}
+            </p>
+            <BookingLink href={bookingUrl} />
+          </div>
+        )}
+
+        {phase === 'mic_denied' && (
+          <div className="rounded-xl border border-line bg-white p-5">
+            <h2 ref={headingRef} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
+              Your browser is blocking the microphone.
+            </h2>
+            <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+              Hope has to hear you to answer. The microphone is used only during the call, and
+              switches off the moment it ends.
+            </p>
+            <ul className="mt-4 space-y-2 text-[14px] leading-relaxed text-ink-soft">
+              <li>
+                <strong className="font-semibold text-ink">iPhone or iPad:</strong> tap{' '}
+                <span className="font-mono">aA</span> on the left of the address bar &rarr; Website
+                Settings &rarr; Microphone &rarr; Allow, then reload this page.
+              </li>
+              <li>
+                <strong className="font-semibold text-ink">Android:</strong> tap the lock icon beside
+                the address &rarr; Permissions &rarr; Microphone &rarr; Allow, then reload.
+              </li>
+              <li>
+                <strong className="font-semibold text-ink">Laptop:</strong> click the lock or camera
+                icon in the address bar and allow the microphone, then reload.
+              </li>
+            </ul>
+            <button
+              type="button"
+              onClick={handleStart}
+              className="mt-5 w-full rounded-xl bg-ink px-6 py-4 text-[16px] font-semibold text-paper transition-opacity hover:opacity-90"
+            >
+              Try again
+            </button>
+            <p className="mt-3 text-center text-[13px] text-ink-faint">
+              Rather not? <BookingTextLink href={bookingUrl} />
+            </p>
+          </div>
+        )}
+
+        {phase === 'failed' && (
+          <div className="rounded-xl border border-line bg-white p-5">
+            <h2 ref={headingRef} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
+              Hope couldn&rsquo;t connect.
+            </h2>
+            <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+              That one is on us, not on you — a weak connection or a dropped line on our side. Your
+              demo has not been used up.
+            </p>
+            <button
+              type="button"
+              onClick={handleStart}
+              className="mt-5 w-full rounded-xl bg-ink px-6 py-4 text-[16px] font-semibold text-paper transition-opacity hover:opacity-90"
+            >
+              Try again
+            </button>
+            <p className="mt-3 text-center text-[13px] text-ink-faint">
+              Still nothing? <BookingTextLink href={bookingUrl} />
+            </p>
+          </div>
+        )}
+      </section>
+
+      <WhatHopeKnows business={business} />
+    </>
+  );
+}
+
+/**
+ * The business Hope answers for on this call. On the public line, picking an
+ * industry other than the public row's own swaps in that industry's sample
+ * business, so a salon owner never hears her answer for a dental practice.
+ */
+function businessFor(prospect: PublicProspect, industry: Industry): PublicProspect {
+  if (!prospect.public_line || industry === prospect.industry) return prospect;
+  return { ...prospect, industry, ...SAMPLE_BUSINESSES[industry] };
+}
+
+/** The public line's choice of business, above the call button. */
+function IndustryPicker({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: Industry;
+  onChange: (industry: Industry) => void;
+  disabled: boolean;
+}) {
+  return (
+    <fieldset className="mb-4" disabled={disabled}>
+      <legend className="mb-2 text-[14px] font-medium text-ink-soft">
+        Hear her answer for a
+      </legend>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {INDUSTRIES.map((option) => (
+          <label
+            key={option}
+            className={`flex cursor-pointer items-center justify-center rounded-lg border px-3 py-2.5 text-center text-[14px] font-medium transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-signal ${
+              value === option
+                ? 'border-ink bg-ink text-paper'
+                : 'border-line-strong bg-white hover:bg-paper-dim'
+            }`}
           >
-            <div
-              className="h-full rounded-full bg-signal transition-[width] duration-200 ease-linear"
-              style={{ width: `${progress * 100}%` }}
+            <input
+              type="radio"
+              name="industry"
+              value={option}
+              checked={value === option}
+              onChange={() => onChange(option)}
+              className="sr-only"
             />
+            {INDUSTRY_COPY[option].pickerLabel}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
+/** What Hope is told about the business, under the call panel. */
+function WhatHopeKnows({ business }: { business: PublicProspect }) {
+  const copy = INDUSTRY_COPY[business.industry];
+  const services = joinServices(business.services);
+  return (
+    <section className="mt-8 rounded-xl border border-line bg-white/60 p-5">
+      <h2 className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
+        What Hope already knows
+      </h2>
+      <dl className="mt-4 space-y-3 text-[15px]">
+        <div className="flex gap-3">
+          <dt className="w-20 shrink-0 text-ink-faint">{copy.businessLabel}</dt>
+          <dd className="font-medium">
+            {business.practice_name}
+            {business.suburb ? `, ${business.suburb}` : ''}
+          </dd>
+        </div>
+        {services ? (
+          <div className="flex gap-3">
+            <dt className="w-20 shrink-0 text-ink-faint">{copy.servicesLabel}</dt>
+            <dd className="font-medium">{services}</dd>
           </div>
-
-          <p className="mt-4 text-[14px] leading-relaxed text-ink-soft">
-            Try: &ldquo;Do you have anything Thursday morning?&rdquo; or &ldquo;What time do you
-            close on Saturday?&rdquo;
-          </p>
-
-          {/* Captions, for anyone who cannot hear the call or would rather
-              read it. Not announced as they arrive: a screen reader user is
-              already hearing Hope, and a second voice reading her words over
-              her would drown both out. The box is focusable, so it can be
-              read at any point. */}
-          <h3
-            id="live-captions-heading"
-            className="mt-5 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint"
-          >
-            Live captions
-          </h3>
-          <div
-            ref={captionsBoxRef}
-            role="log"
-            aria-live="off"
-            aria-labelledby="live-captions-heading"
-            tabIndex={0}
-            className="mt-2 max-h-48 space-y-2 overflow-y-auto rounded-lg bg-paper-dim p-3 text-[14px] leading-relaxed"
-          >
-            {captions.length === 0 && !speaking && (
-              <p className="text-ink-faint">What you and Hope say appears here.</p>
-            )}
-            {captions.map((caption) => (
-              <CaptionLine key={caption.id} speaker={caption.speaker} text={caption.text} />
-            ))}
-            {speaking && <CaptionLine speaker={speaking.speaker} text={speaking.text} pending />}
+        ) : null}
+        {business.hours ? (
+          <div className="flex gap-3">
+            <dt className="w-20 shrink-0 text-ink-faint">Hours</dt>
+            <dd className="font-medium">{business.hours}</dd>
           </div>
-
-          <button
-            type="button"
-            onClick={handleStop}
-            className="mt-5 w-full rounded-lg border border-line-strong px-5 py-3 text-[15px] font-medium transition-colors hover:bg-paper-dim"
-          >
-            End call
-          </button>
-        </div>
-      )}
-
-      {phase === 'ended' && (
-        <div className="rounded-xl border border-line bg-white p-5">
-          <h2 ref={headingRef} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
-            That was Hope.
-          </h2>
-          <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
-            {lastDuration !== null ? `${formatCountdown(lastDuration)} on the line. ` : ''}
-            {prospect.public_line
-              ? 'That was a sample practice. Set up for yours, she works from your own hours, services and diary, and every call she takes reaches your team with a full transcript — the ones they couldn’t get to included.'
-              : `She was primed with nothing but ${describePrimedWith(prospect.industry, prospect.hours !== null)}. Live, she also holds your diary, and every call she takes reaches your team with a full transcript — the ones they couldn’t get to included.`}
-          </p>
-          {captions.length > 0 && (
-            <details className="mt-4 rounded-lg border border-line p-3">
-              <summary className="cursor-pointer text-[15px] font-medium">
-                Read the transcript of your call
-              </summary>
-              <div className="mt-3 space-y-2 text-[14px] leading-relaxed">
-                {captions.map((caption) => (
-                  <CaptionLine key={caption.id} speaker={caption.speaker} text={caption.text} />
-                ))}
-              </div>
-            </details>
-          )}
-          <BookingLink href={bookingUrl} />
-          <p className="mt-3 text-center text-[13px] text-ink-faint">
-            Fifteen minutes, and we&rsquo;ll show you the calls you&rsquo;re missing this week.
-          </p>
-        </div>
-      )}
-
-      {phase === 'expired' && (
-        <div className="rounded-xl border border-line bg-white p-5">
-          <h2 ref={headingRef} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
-            You&rsquo;ve already spoken to Hope.
-          </h2>
-          <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
-            This link runs one live conversation, and it has had its turn. The next step is a real
-            one: fifteen minutes with us, with Hope connected to your actual diary and answering
-            the calls your front desk can&rsquo;t get to.
-          </p>
-          <BookingLink href={bookingUrl} />
-        </div>
-      )}
-
-      {phase === 'limited' && (
-        <div className="rounded-xl border border-line bg-white p-5">
-          <h2 ref={headingRef} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
-            {limitReason === 'ip_cooldown'
-              ? 'You’ve had your turns for now.'
-              : 'Hope has taken today’s calls.'}
-          </h2>
-          <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
-            {limitReason === 'ip_cooldown'
-              ? 'The public line takes a few calls per person each hour, so it stays free for the next person. Try again later, or book fifteen minutes with us and hear Hope answering for your own practice.'
-              : 'The public line has a daily limit, and today’s has been reached. Try again tomorrow, or book fifteen minutes with us and hear Hope answering for your own practice.'}
-          </p>
-          <BookingLink href={bookingUrl} />
-        </div>
-      )}
-
-      {phase === 'mic_denied' && (
-        <div className="rounded-xl border border-line bg-white p-5">
-          <h2 ref={headingRef} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
-            Your browser is blocking the microphone.
-          </h2>
-          <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
-            Hope has to hear you to answer. The microphone is used only during the call, and
-            switches off the moment it ends.
-          </p>
-          <ul className="mt-4 space-y-2 text-[14px] leading-relaxed text-ink-soft">
-            <li>
-              <strong className="font-semibold text-ink">iPhone or iPad:</strong> tap{' '}
-              <span className="font-mono">aA</span> on the left of the address bar &rarr; Website
-              Settings &rarr; Microphone &rarr; Allow, then reload this page.
-            </li>
-            <li>
-              <strong className="font-semibold text-ink">Android:</strong> tap the lock icon beside
-              the address &rarr; Permissions &rarr; Microphone &rarr; Allow, then reload.
-            </li>
-            <li>
-              <strong className="font-semibold text-ink">Laptop:</strong> click the lock or camera
-              icon in the address bar and allow the microphone, then reload.
-            </li>
-          </ul>
-          <button
-            type="button"
-            onClick={handleStart}
-            className="mt-5 w-full rounded-xl bg-ink px-6 py-4 text-[16px] font-semibold text-paper transition-opacity hover:opacity-90"
-          >
-            Try again
-          </button>
-          <p className="mt-3 text-center text-[13px] text-ink-faint">
-            Rather not? <BookingTextLink href={bookingUrl} />
-          </p>
-        </div>
-      )}
-
-      {phase === 'failed' && (
-        <div className="rounded-xl border border-line bg-white p-5">
-          <h2 ref={headingRef} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
-            Hope couldn&rsquo;t connect.
-          </h2>
-          <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
-            That one is on us, not on you — a weak connection or a dropped line on our side. Your
-            demo has not been used up.
-          </p>
-          <button
-            type="button"
-            onClick={handleStart}
-            className="mt-5 w-full rounded-xl bg-ink px-6 py-4 text-[16px] font-semibold text-paper transition-opacity hover:opacity-90"
-          >
-            Try again
-          </button>
-          <p className="mt-3 text-center text-[13px] text-ink-faint">
-            Still nothing? <BookingTextLink href={bookingUrl} />
-          </p>
-        </div>
-      )}
+        ) : null}
+      </dl>
+      <p className="mt-4 border-t border-line pt-4 text-sm leading-relaxed text-ink-soft">
+        {business.public_line
+          ? `Ask her to book you in on Thursday morning, or what time the ${copy.businessLabel.toLowerCase()} closes on a Saturday. She answers as though she is sitting behind its front desk.`
+          : copy.tryAsking}
+      </p>
     </section>
   );
 }
 
 /**
- * One assistant serves every prospect of the same industry. Everything that
- * differs between practices or firms arrives here, at call time, as overrides —
+ * One assistant serves every prospect of every industry. Everything that
+ * differs between businesses arrives here, at call time, as overrides —
  * never as another assistant per prospect, a second page or a second deployment.
  */
 function buildOverrides(prospect: PublicProspect, maxSeconds: number) {
   const practiceName = spokenPracticeName(prospect.practice_name);
   return {
-    // Substituted into the assistant's system prompt, which holds
-    // {{practice_name}}, {{suburb}}, {{services}} and {{hours}}.
-    // See vapi/assistant.md and vapi/assistant-legal.md for the prompts this
-    // expects.
+    // Substituted into Hope's system prompt (vapi/hope-prompt.md). `industry`
+    // picks the section of the prompt she follows on this call.
     variableValues: {
+      industry: prospect.industry,
+      business_type: INDUSTRY_COPY[prospect.industry].businessType,
       practice_name: practiceName,
       suburb: prospect.suburb ?? '',
       services: prospect.services.length
@@ -671,6 +782,8 @@ function buildOverrides(prospect: PublicProspect, maxSeconds: number) {
     // Vapi ends the call here even if this page is closed or its timer
     // starved, so the countdown on screen is the courtesy version.
     maxDurationSeconds: maxSeconds,
+    // On the call record in Vapi, so calls can be told apart by industry.
+    metadata: { industry: prospect.industry, slug: prospect.slug },
   };
 }
 
