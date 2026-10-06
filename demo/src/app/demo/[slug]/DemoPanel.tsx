@@ -5,7 +5,9 @@ import type Vapi from '@vapi-ai/web';
 
 import {
   describeDuration,
+  describePrimedWith,
   formatCountdown,
+  INDUSTRY_COPY,
   joinServices,
   spokenPracticeName,
   type DemoEventBody,
@@ -529,7 +531,7 @@ export default function DemoPanel({
             {lastDuration !== null ? `${formatCountdown(lastDuration)} on the line. ` : ''}
             {prospect.public_line
               ? 'That was a sample practice. Set up for yours, she works from your own hours, services and diary, and every call she takes reaches your team with a full transcript — the ones they couldn’t get to included.'
-              : 'She was primed with nothing but your practice name, your services and your hours. Live, she also holds your diary, and every call she takes reaches your team with a full transcript — the ones they couldn’t get to included.'}
+              : `She was primed with nothing but ${describePrimedWith(prospect.industry, prospect.hours !== null)}. Live, she also holds your diary, and every call she takes reaches your team with a full transcript — the ones they couldn’t get to included.`}
           </p>
           {captions.length > 0 && (
             <details className="mt-4 rounded-lg border border-line p-3">
@@ -643,20 +645,23 @@ export default function DemoPanel({
 }
 
 /**
- * One assistant serves every prospect. Everything that differs between
- * practices arrives here, at call time, as overrides — never as a second
- * assistant, a second page or a second deployment.
+ * One assistant serves every prospect of the same industry. Everything that
+ * differs between practices or firms arrives here, at call time, as overrides —
+ * never as another assistant per prospect, a second page or a second deployment.
  */
 function buildOverrides(prospect: PublicProspect, maxSeconds: number) {
   const practiceName = spokenPracticeName(prospect.practice_name);
   return {
     // Substituted into the assistant's system prompt, which holds
     // {{practice_name}}, {{suburb}}, {{services}} and {{hours}}.
-    // See vapi/assistant.md for the prompt this expects.
+    // See vapi/assistant.md and vapi/assistant-legal.md for the prompts this
+    // expects.
     variableValues: {
       practice_name: practiceName,
       suburb: prospect.suburb ?? '',
-      services: prospect.services.length ? joinServices(prospect.services) : 'general dentistry',
+      services: prospect.services.length
+        ? joinServices(prospect.services)
+        : INDUSTRY_COPY[prospect.industry].fallbackServices,
       hours: prospect.hours ?? 'not listed',
     },
     // Interpolated here rather than templated, so the practice name is certain

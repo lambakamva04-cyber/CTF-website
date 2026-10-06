@@ -3,15 +3,19 @@ import { cache } from 'react';
 
 import { db } from './supabase';
 import {
+  isIndustry,
   PUBLIC_LINE_FALLBACK_SECONDS,
   type DemoEventType,
   type GateResponse,
+  type Industry,
   type PublicProspect,
 } from './demo';
 
 type ProspectRow = {
   id: string;
   slug: string;
+  /** 'dental' or 'legal' (migration 0013). Anything else is treated as dental. */
+  industry: string | null;
   practice_name: string;
   suburb: string | null;
   services: string[] | null;
@@ -24,7 +28,12 @@ type ProspectRow = {
 };
 
 const PROSPECT_COLUMNS =
-  'id, slug, practice_name, suburb, services, hours, demo_used_at, is_public, is_test';
+  'id, slug, industry, practice_name, suburb, services, hours, demo_used_at, is_public, is_test';
+
+/** The row's industry. Every row before migration 0013 was a dental practice. */
+export function industryOf(row: ProspectRow): Industry {
+  return isIndustry(row.industry) ? row.industry : 'dental';
+}
 
 /** Public and test links are never spent: one call does not use them up. */
 export function isReusable(row: ProspectRow): boolean {
@@ -55,6 +64,7 @@ export const getProspectBySlug = cache(async (slug: string): Promise<ProspectRow
 export function toPublicProspect(row: ProspectRow): PublicProspect {
   return {
     slug: row.slug,
+    industry: industryOf(row),
     practice_name: row.practice_name,
     suburb: row.suburb,
     services: row.services ?? [],

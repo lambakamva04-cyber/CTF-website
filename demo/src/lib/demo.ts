@@ -39,9 +39,81 @@ export function isValidSlug(value: unknown): value is string {
   return typeof value === 'string' && SLUG_PATTERN.test(value);
 }
 
+/**
+ * The kinds of business a demo can be prepared for. Each has its own words on
+ * the page and its own Vapi assistant: the dental one introduces itself as a
+ * dental practice's receptionist, so a law firm must never reach it.
+ */
+export const INDUSTRIES = ['dental', 'legal'] as const;
+
+export type Industry = (typeof INDUSTRIES)[number];
+
+export function isIndustry(value: unknown): value is Industry {
+  return typeof value === 'string' && (INDUSTRIES as readonly string[]).includes(value);
+}
+
+/** The words that differ between a dental practice's page and a law firm's. */
+export type IndustryCopy = {
+  /** "Practice" or "Firm", as a label. */
+  businessLabel: string;
+  /** "your practice name" / "your firm's name". */
+  yourName: string;
+  /** "Services" or "Practice areas", as a label. */
+  servicesLabel: string;
+  /** "your services" / "your practice areas". */
+  yourServices: string;
+  /** Who is at the counter while the phone rings. */
+  personAtCounter: string;
+  /** What Hope takes when she answers. */
+  takes: string;
+  /** Said to Hope when the row has no services listed. */
+  fallbackServices: string;
+  /** What to try on the call. */
+  tryAsking: string;
+};
+
+export const INDUSTRY_COPY: Record<Industry, IndustryCopy> = {
+  dental: {
+    businessLabel: 'Practice',
+    yourName: 'your practice name',
+    servicesLabel: 'Services',
+    yourServices: 'your services',
+    personAtCounter: 'a patient at the counter',
+    takes: 'takes the booking',
+    fallbackServices: 'general dentistry',
+    tryAsking:
+      'Ask her for an appointment on Thursday morning, or what time you close on a Saturday. She answers as though she is sitting behind your front desk.',
+  },
+  legal: {
+    businessLabel: 'Firm',
+    yourName: 'your firm’s name',
+    servicesLabel: 'Practice areas',
+    yourServices: 'your practice areas',
+    personAtCounter: 'a client at reception',
+    takes: 'takes the enquiry',
+    fallbackServices: 'general legal services',
+    tryAsking:
+      'Call as a new client: ask to book a consultation for Thursday morning, or what time you close on a Friday. She answers as though she is sitting at your reception.',
+  },
+};
+
+/**
+ * "your practice name, your services and your hours" — what Hope was told
+ * about this prospect, for the line after a call. Hours are only claimed when
+ * the row has them.
+ */
+export function describePrimedWith(industry: Industry, hasHours: boolean): string {
+  const copy = INDUSTRY_COPY[industry];
+  return hasHours
+    ? `${copy.yourName}, ${copy.yourServices} and your hours`
+    : `${copy.yourName} and ${copy.yourServices}`;
+}
+
 /** The only prospect fields the browser is ever given. */
 export type PublicProspect = {
   slug: string;
+  /** Which words and which assistant this page uses. */
+  industry: Industry;
   practice_name: string;
   suburb: string | null;
   services: string[];

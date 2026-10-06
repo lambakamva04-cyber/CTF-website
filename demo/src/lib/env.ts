@@ -35,6 +35,15 @@ export function vapiAssistantId(): string {
   return required('VAPI_ASSISTANT_ID');
 }
 
+/**
+ * The law-firm assistant (vapi/assistant-legal.md). Optional: until it is set,
+ * a law firm's link is a 404, so it can never reach the dental assistant and
+ * the outreach routine's link check stops it from being emailed.
+ */
+export function vapiLawAssistantId(): string | null {
+  return process.env.VAPI_LAW_ASSISTANT_ID?.trim() || null;
+}
+
 /** Where "Book a 15-minute call" points. Calendly, SavvyCal, Cal.com — any URL. */
 export function bookingUrl(): string {
   return required('BOOKING_URL');

@@ -4,13 +4,20 @@ import { notFound } from 'next/navigation';
 import {
   DEMO_MAX_SECONDS,
   describeDuration,
+  INDUSTRY_COPY,
   isValidSlug,
   joinServices,
   spokenPracticeName,
+  type Industry,
 } from '@/lib/demo';
-import { bookingUrl, vapiAssistantId, vapiPublicKey } from '@/lib/env';
+import { bookingUrl, vapiAssistantId, vapiLawAssistantId, vapiPublicKey } from '@/lib/env';
 import { demoPageAllowed } from '@/lib/limits';
-import { getProspectBySlug, getPublicLineSeconds, toPublicProspect } from '@/lib/prospects';
+import {
+  getProspectBySlug,
+  getPublicLineSeconds,
+  industryOf,
+  toPublicProspect,
+} from '@/lib/prospects';
 
 import DemoPanel from './DemoPanel';
 
@@ -20,12 +27,21 @@ export const dynamic = 'force-dynamic';
 
 type PageProps = { params: Promise<{ slug: string }> };
 
+/**
+ * The Vapi assistant for this kind of business, or null when it is not set up.
+ * Each industry has its own: the dental assistant introduces itself as a dental
+ * practice's receptionist, so a law firm's page must never fall back to it.
+ */
+function assistantFor(industry: Industry): string | null {
+  return industry === 'legal' ? vapiLawAssistantId() : vapiAssistantId();
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   if (!isValidSlug(slug) || !(await demoPageAllowed())) return { title: 'Not found' };
 
   const prospect = await getProspectBySlug(slug);
-  if (!prospect) return { title: 'Not found' };
+  if (!prospect || !assistantFor(industryOf(prospect))) return { title: 'Not found' };
 
   if (prospect.is_public) {
     const length = describeDuration(await getPublicLineSeconds());
@@ -58,7 +74,14 @@ export default async function DemoPage({ params }: PageProps) {
   const row = await getProspectBySlug(slug);
   if (!row) notFound();
 
+  // A law firm's link stays a 404 until its assistant is set up, exactly like
+  // a wrong link. That also fails the outreach routine's link check, so it is
+  // never emailed before it works.
+  const assistantId = assistantFor(industryOf(row));
+  if (!assistantId) notFound();
+
   const prospect = toPublicProspect(row);
+  const copy = INDUSTRY_COPY[prospect.industry];
   const services = joinServices(prospect.services);
   // The public line's length lives in `demo_limits`; a personal link's is fixed.
   const maxSeconds = prospect.public_line ? await getPublicLineSeconds() : DEMO_MAX_SECONDS;
@@ -91,8 +114,7 @@ export default async function DemoPage({ params }: PageProps) {
           </h1>
           <p className="mt-4 text-[17px] leading-relaxed text-ink-soft">
             Hope is the overflow line for your front desk. She picks up when your team can&rsquo;t
-            &mdash; another call, a patient at the counter, after hours &mdash; and takes the
-            booking.
+            &mdash; another call, {copy.personAtCounter}, after hours &mdash; and {copy.takes}.
           </p>
         </header>
       )}
@@ -106,7 +128,7 @@ export default async function DemoPage({ params }: PageProps) {
         maxSeconds={maxSeconds}
         bookingUrl={bookingUrl()}
         vapiPublicKey={vapiPublicKey()}
-        vapiAssistantId={vapiAssistantId()}
+        vapiAssistantId={assistantId}
       />
 
       <section className="mt-8 rounded-xl border border-line bg-white/60 p-5">
@@ -115,7 +137,7 @@ export default async function DemoPage({ params }: PageProps) {
         </h2>
         <dl className="mt-4 space-y-3 text-[15px]">
           <div className="flex gap-3">
-            <dt className="w-20 shrink-0 text-ink-faint">Practice</dt>
+            <dt className="w-20 shrink-0 text-ink-faint">{copy.businessLabel}</dt>
             <dd className="font-medium">
               {prospect.practice_name}
               {prospect.suburb ? `, ${prospect.suburb}` : ''}
@@ -123,7 +145,7 @@ export default async function DemoPage({ params }: PageProps) {
           </div>
           {services ? (
             <div className="flex gap-3">
-              <dt className="w-20 shrink-0 text-ink-faint">Services</dt>
+              <dt className="w-20 shrink-0 text-ink-faint">{copy.servicesLabel}</dt>
               <dd className="font-medium">{services}</dd>
             </div>
           ) : null}
@@ -137,7 +159,7 @@ export default async function DemoPage({ params }: PageProps) {
         <p className="mt-4 border-t border-line pt-4 text-sm leading-relaxed text-ink-soft">
           {prospect.public_line
             ? 'Ask her for an appointment on Thursday morning, or what time the practice closes on a Saturday. She answers as though she is sitting behind its front desk.'
-            : 'Ask her for an appointment on Thursday morning, or what time you close on a Saturday. She answers as though she is sitting behind your front desk.'}
+            : copy.tryAsking}
         </p>
       </section>
 
