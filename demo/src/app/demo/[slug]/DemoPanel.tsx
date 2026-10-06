@@ -78,7 +78,8 @@ export default function DemoPanel({
     const url = new URL(window.location.href);
     if (url.searchParams.get('industry') === industry) return;
     url.searchParams.set('industry', industry);
-    window.history.replaceState(window.history.state, '', url);
+    // `null`, so Next.js's router takes the new address as its own too.
+    window.history.replaceState(null, '', url);
   }, [industry, prospect.public_line]);
   // The cap for the call in progress. The public line's gate can hand back a
   // different number than the page was rendered with, if the limit was changed
@@ -234,6 +235,14 @@ export default function DemoPanel({
 
     const onError = () => {
       if (cancelled) return;
+      // Vapi already said the call ended (a silence timeout, the time limit):
+      // the error that follows is the line closing, not a failure, and the
+      // reason Vapi gave is the one to log.
+      if (reportedReasonRef.current) {
+        if (callActiveRef.current) finishCall();
+        setPhase((current) => (current === 'live' || current === 'ended' ? 'ended' : current));
+        return;
+      }
       if (callActiveRef.current) {
         intentRef.current = intentRef.current ?? 'connection-error';
         finishCall();
@@ -465,8 +474,8 @@ export default function DemoPanel({
               // order, so keyboard and screen reader users reach it and hear why.
               aria-disabled={business ? undefined : true}
               aria-describedby={business ? undefined : 'pick-industry-hint'}
-              className={`flex w-full items-center justify-center gap-3 rounded-xl bg-ink px-6 py-5 text-[17px] font-semibold text-paper transition-opacity hover:opacity-90 disabled:opacity-70 ${
-                business ? '' : 'opacity-50 hover:opacity-50'
+              className={`flex w-full items-center justify-center gap-3 rounded-xl bg-ink px-6 py-5 text-[17px] font-semibold text-paper transition-opacity disabled:opacity-70 ${
+                business ? 'hover:opacity-90' : 'cursor-not-allowed opacity-50'
               }`}
             >
               {phase === 'connecting' ? (
@@ -814,8 +823,6 @@ function buildOverrides(prospect: PublicProspect, maxSeconds: number) {
     // Substituted into the dental assistant's dashboard prompt
     // (vapi/assistant.md), which a dental prospect's link still uses.
     variableValues: {
-      industry: prospect.industry,
-      business_type: INDUSTRY_COPY[prospect.industry].businessType,
       practice_name: practiceName,
       suburb: prospect.suburb ?? '',
       services: prospect.services.length
@@ -830,8 +837,6 @@ function buildOverrides(prospect: PublicProspect, maxSeconds: number) {
     // Vapi ends the call here even if this page is closed or its timer
     // starved, so the countdown on screen is the courtesy version.
     maxDurationSeconds: maxSeconds,
-    // On the call record in Vapi, so calls can be told apart by industry.
-    metadata: { industry: prospect.industry, slug: prospect.slug },
     // Hope's script for this industry, in place of the dashboard's. The voice
     // and transcriber stay the assistant's own. Same model as the heartbeat's
     // callbacks, which replace the script the same way. No endCall tool: the
@@ -840,6 +845,8 @@ function buildOverrides(prospect: PublicProspect, maxSeconds: number) {
     // dropped line.
     ...(usesHopeScript(prospect)
       ? {
+          // On the call record in Vapi, so calls can be told apart by industry.
+          metadata: { industry: prospect.industry, slug: prospect.slug },
           model: {
             provider: 'openai' as const,
             model: 'gpt-4o' as const,

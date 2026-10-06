@@ -2,8 +2,9 @@
 
 Hope answers for dental practices, law firms, mechanics and salons. There is
 nothing to set up in Vapi for this: every call uses the one demo assistant
-(`VAPI_ASSISTANT_ID`) for its voice and transcriber, and the page sends Hope's
-script for the business's industry with the call, in place of the dashboard's.
+(`VAPI_ASSISTANT_ID`) for its voice and transcriber, and on every call but a
+dental prospect's own link the page sends Hope's script for the business's
+industry with the call, in place of the dashboard's.
 The heartbeat's callbacks already replace the script the same way
 (`heartbeat/src/callbackAssistant.ts`).
 
