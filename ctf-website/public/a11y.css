@@ -23,7 +23,8 @@
   box-sizing: border-box;
 }
 
-/* ---- the button ---- */
+/* ---- the button ----
+   A 44px circle with just the icon: the smallest a finger can reliably tap. */
 .ctf-a11y-toggle {
   position: fixed;
   left: 16px;
@@ -31,20 +32,27 @@
   z-index: 9000;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 10px 16px 10px 12px;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
   border: 2px solid var(--ctf-a11y-paper);
   border-radius: 999px;
   background: var(--ctf-a11y-ink);
   color: var(--ctf-a11y-paper);
-  font: 600 14px/1 system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
   cursor: pointer;
 }
 
 .ctf-a11y-toggle:hover {
   background: #2a2d33;
+}
+
+/* While a page's own modal dialog is open (the dashboard's "are you sure?"
+   sheet sits at the bottom of a phone screen), step out of the way: the
+   button would cover that dialog's buttons, and the page behind is inert. */
+body:has([aria-modal='true']) .ctf-a11y {
+  display: none;
 }
 
 /* On the marketing site's phone layout, sit above the WhatsApp / Phone Hope bar. */
