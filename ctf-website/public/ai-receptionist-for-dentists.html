@@ -76,8 +76,10 @@
   .footer-inner { display:flex; justify-content:space-between; gap:14px; flex-wrap:wrap; }
   footer a { color:rgba(247,246,243,0.72); }
   /* The accessibility button (a11y.js) sits in the bottom-left corner. Wherever
-     the footer starts near the left edge, leave its last line room above it. */
-  @media (max-width: 1200px) { footer { padding-bottom: 76px; } }
+     the footer starts near the left edge, leave its last line room above it.
+     1520px, not 1200px: the menu's Largest text size zooms the page by 1.3, which
+     keeps the footer under the button on wider screens too. */
+  @media (max-width: 1520px) { footer { padding-bottom: 76px; } }
   .stickybar { display:none; }
   @media (max-width:760px) {
     .stickybar { display:grid; grid-template-columns:1fr 1fr; gap:10px; position:fixed;
