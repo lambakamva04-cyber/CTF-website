@@ -1,4 +1,7 @@
 @import 'tailwindcss';
+/* CTF admin-dashboard theme: --ctf-* tokens + ctf-* utilities, dark-mode aware.
+   Scoped by convention to /admin; harmless elsewhere (only adds variables). */
+@import './admin/_theme/ctf-theme.css';
 
 /*
  * Brand tokens, carried over from the marketing site so a prospect who clicks
