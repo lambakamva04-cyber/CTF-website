@@ -1,0 +1,305 @@
+/* ==========================================================================
+   CTF — Cut Through Faster
+   Design-language theme for the internal admin analytics dashboard.
+
+   Source of truth: the live marketing site (cutthroughfaster.com, in
+   ctf-website/public/index.html) and the demo app's own brand tokens
+   (demo/src/app/globals.css). Every colour below is pulled from one of those
+   two places or derived from them for accessible contrast — nothing invented.
+
+   Brand in one line: ink on cream/paper, flat and border-first, one signal
+   colour (green = "live"), no gradients, warm and quietly professional.
+
+   HOW TO LOAD
+   -----------
+   Preferred (gives you both the CSS variables AND the `ctf-*` Tailwind v4
+   utilities). In demo/src/app/globals.css, after `@import 'tailwindcss';`:
+
+       @import './admin/_theme/ctf-theme.css';
+
+   Alternative (variables only — always works, utilities may not generate):
+   import it from the admin layout:  import './_theme/ctf-theme.css';
+   then use arbitrary values, e.g. bg-[var(--ctf-surface)].
+
+   FONTS
+   -----
+   The demo app already self-hosts Inter, Space Grotesk and JetBrains Mono via
+   next/font (see layout.tsx) and exposes them as --font-inter /
+   --font-space-grotesk / --font-jetbrains-mono on <html>. This file reuses
+   those, so DON'T double-load. If you ever use this theme OUTSIDE the demo app,
+   uncomment the import below (both domains are already allow-listed by the app
+   CSP in app/public/_headers: style-src fonts.googleapis.com, font-src
+   fonts.gstatic.com).
+
+   @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+   ========================================================================== */
+
+:root {
+  /* ---- Core palette (light) ------------------------------------------------
+     Matches demo/globals.css --color-* and the marketing --cream/--ink. */
+  --ctf-paper:        #f7f6f3;  /* app background (cream)                     */
+  --ctf-paper-dim:    #efeeea;  /* recessed wells, table zebra, inert tracks  */
+  --ctf-surface:      #ffffff;  /* cards, tiles, table surface                */
+  --ctf-surface-2:    #faf9f6;  /* table header / subtle raised rows          */
+
+  --ctf-ink:          #14161a;  /* primary text, solid dark buttons           */
+  --ctf-ink-soft:     #4a4e55;  /* body copy        (7.7:1 on paper)          */
+  --ctf-ink-faint:    #63666d;  /* meta, labels, captions (5.3:1 on paper)    */
+  --ctf-on-ink:       #f7f6f3;  /* text on ink/dark buttons                   */
+
+  --ctf-line:         #dedcd6;  /* hairline borders / dividers                */
+  --ctf-line-strong:  #c9c7bf;  /* interactive outlines, inputs, hover edge   */
+
+  /* The one brand accent. Reserve it for "live / connected / go" meaning —
+     the pulse dot, the active funnel fill, a positive trend. Not decoration. */
+  --ctf-signal:        #0b7a4b; /* fills, dots, bars, focus ring              */
+  --ctf-signal-strong: #0a6b43; /* signal used as TEXT  (6.1:1 on paper)      */
+  --ctf-signal-wash:   #e4f1ea; /* faint green wash behind a live area        */
+  --ctf-on-signal:     #ffffff; /* text on a solid signal fill (5.4:1)        */
+
+  /* WhatsApp is a real CTF contact channel (marketing site). Use ONLY for a
+     WhatsApp affordance — never as a general UI green. */
+  --ctf-whatsapp:    #25d366;
+  --ctf-on-whatsapp: #0b1f12;
+
+  /* ---- Status / funnel scale ----------------------------------------------
+     A restrained, warm extension of the monochrome brand for the one thing the
+     dashboard needs that the site never did: many states at once. Each family
+     = fg (text/icon, AA+ on its own bg), bg (tint), border. Mapped to the
+     prospect funnel but reusable:
+       neutral → opened     amber → called      info → replied
+       success → interested  danger → opted-out                               */
+  --ctf-neutral-fg:     #4a4e55;  --ctf-neutral-bg:  #eceae4;  --ctf-neutral-border:  #d9d6cf;
+  --ctf-amber-fg:       #845313;  --ctf-amber-bg:    #f5ecd6;  --ctf-amber-border:    #e7d6a8;
+  --ctf-info-fg:        #2f5590;  --ctf-info-bg:     #e7eef7;  --ctf-info-border:     #c9d8ee;
+  --ctf-success-fg:     #0a6b43;  --ctf-success-bg:  #dff0e6;  --ctf-success-border:  #b7e0c8;
+  --ctf-danger-fg:      #9c3a2b;  --ctf-danger-bg:   #f6e5e0;  --ctf-danger-border:   #ecc6bc;
+
+  /* ---- Typography ----------------------------------------------------------
+     Space Grotesk = display/headings · Inter = UI/body · JetBrains Mono =
+     numbers, eyebrows, IDs, timestamps. */
+  --ctf-font-sans:    var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --ctf-font-display: var(--font-space-grotesk), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --ctf-font-mono:    var(--font-jetbrains-mono), ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, monospace;
+
+  --ctf-text-eyebrow: 0.6875rem; /* 11px — mono, UPPERCASE, tracked           */
+  --ctf-text-xs:      0.75rem;   /* 12px                                      */
+  --ctf-text-sm:      0.8125rem; /* 13px — captions, footer                   */
+  --ctf-text-body:    0.9375rem; /* 15px — default UI/body                    */
+  --ctf-text-md:      1.0625rem; /* 17px — lead paragraph                     */
+  --ctf-text-h3:      1.25rem;   /* 20px — section-card titles                */
+  --ctf-text-h2:      1.5rem;    /* 24px                                      */
+  --ctf-text-h1:      clamp(1.875rem, 1.4rem + 1.6vw, 2.375rem); /* 30→38px   */
+  --ctf-text-kpi:     2rem;      /* 32px — KPI tile number                    */
+
+  --ctf-weight-body:    400;
+  --ctf-weight-medium:  500;
+  --ctf-weight-semi:    600;
+  --ctf-weight-display: 700;
+
+  --ctf-leading-tight:   1.12;  /* display headings                          */
+  --ctf-leading-snug:    1.3;
+  --ctf-leading-normal:  1.5;
+  --ctf-leading-relaxed: 1.6;   /* body copy                                 */
+
+  --ctf-tracking-display: -0.025em; /* Space Grotesk headings                 */
+  --ctf-tracking-tight:   -0.01em;  /* big numbers                            */
+  --ctf-tracking-eyebrow:  0.18em;  /* mono eyebrow                           */
+
+  /* ---- Radius (card default = 12px, matches marketing + demo rounded-xl) -- */
+  --ctf-radius-xs:   6px;   /* chips, small inputs                           */
+  --ctf-radius-sm:   8px;   /* inner panels, table wells                     */
+  --ctf-radius-md:   10px;
+  --ctf-radius-lg:   12px;  /* cards, tiles, primary buttons                 */
+  --ctf-radius-xl:   16px;  /* page-level panels                             */
+  --ctf-radius-pill: 999px; /* badges, bars, dots                            */
+
+  /* ---- Spacing (semantic; the grid is Tailwind's 4px scale) --------------- */
+  --ctf-gutter:       24px;    /* desktop page gutter (20px on phones)        */
+  --ctf-shell-max:    1120px;  /* content max-width (marketing container)     */
+  --ctf-shell-wide:   1280px;  /* wide dashboards with a side rail            */
+  --ctf-card-pad:     20px;    /* standard card padding (p-5)                 */
+  --ctf-card-gap:     16px;    /* gap between cards/tiles                     */
+  --ctf-section-gap:  36px;    /* gap between dashboard sections              */
+  --ctf-header-h:     60px;    /* sticky app header height                    */
+
+  /* ---- Elevation -----------------------------------------------------------
+     Brand is flat and border-first. Shadows are for things that float OVER
+     the page (menus, modals, the sticky header on scroll) — not for cards. */
+  --ctf-shadow-sm:   0 1px 2px rgba(20, 22, 26, 0.05);
+  --ctf-shadow-card: 0 1px 3px rgba(20, 22, 26, 0.06), 0 1px 2px rgba(20, 22, 26, 0.04);
+  --ctf-shadow-pop:  0 24px 48px rgba(18, 24, 31, 0.18); /* from the marketing site */
+
+  /* ---- Motion (honour the demo's reduced-motion rule in globals.css) ------ */
+  --ctf-ease:        cubic-bezier(0.4, 0, 0.2, 1);
+  --ctf-duration:    0.15s;
+
+  color-scheme: light;
+}
+
+/* ==========================================================================
+   DARK MODE
+   Flips surfaces to ink and text to cream; keeps the single-signal discipline.
+   Three-way guard so it follows the OS by default AND can be forced either way
+   with <html data-theme="dark"> / data-theme="light">.
+   ========================================================================== */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ctf-paper:        #14161a;
+    --ctf-paper-dim:    #1b1e23;
+    --ctf-surface:      #1c1f24;
+    --ctf-surface-2:    #23272d;
+
+    --ctf-ink:          #f4f3ef;
+    --ctf-ink-soft:     #c3c6cb;  /* 10.6:1 on paper                          */
+    --ctf-ink-faint:    #8b8e95;  /* 5.5:1 on paper                           */
+    --ctf-on-ink:       #14161a;
+
+    --ctf-line:         #2c2f35;
+    --ctf-line-strong:  #3a3e45;
+
+    --ctf-signal:        #2fb277; /* fills/dots/bars (6.7:1 on paper)         */
+    --ctf-signal-strong: #4cc98c; /* signal as TEXT  (8.7:1 on paper)         */
+    --ctf-signal-wash:   #15241c;
+    --ctf-on-signal:     #06140d;
+
+    --ctf-neutral-fg:  #b7bac0;  --ctf-neutral-bg:  #23262c;  --ctf-neutral-border:  #34383f;
+    --ctf-amber-fg:    #e3b457;  --ctf-amber-bg:    #2a2416;  --ctf-amber-border:    #4a3f22;
+    --ctf-info-fg:     #86aae0;  --ctf-info-bg:     #1a2130;  --ctf-info-border:     #2f3c54;
+    --ctf-success-fg:  #4cc98c;  --ctf-success-bg:  #15241c;  --ctf-success-border:  #255238;
+    --ctf-danger-fg:   #e0917f;  --ctf-danger-bg:   #2a1b17;  --ctf-danger-border:   #4d2f28;
+
+    --ctf-shadow-sm:   0 1px 2px rgba(0, 0, 0, 0.4);
+    --ctf-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.35);
+    --ctf-shadow-pop:  0 24px 60px rgba(0, 0, 0, 0.55);
+
+    color-scheme: dark;
+  }
+}
+
+/* Forced dark (manual toggle), independent of the OS setting. Keep in sync
+   with the block above. */
+:root[data-theme="dark"] {
+  --ctf-paper:        #14161a;
+  --ctf-paper-dim:    #1b1e23;
+  --ctf-surface:      #1c1f24;
+  --ctf-surface-2:    #23272d;
+
+  --ctf-ink:          #f4f3ef;
+  --ctf-ink-soft:     #c3c6cb;
+  --ctf-ink-faint:    #8b8e95;
+  --ctf-on-ink:       #14161a;
+
+  --ctf-line:         #2c2f35;
+  --ctf-line-strong:  #3a3e45;
+
+  --ctf-signal:        #2fb277;
+  --ctf-signal-strong: #4cc98c;
+  --ctf-signal-wash:   #15241c;
+  --ctf-on-signal:     #06140d;
+
+  --ctf-neutral-fg:  #b7bac0;  --ctf-neutral-bg:  #23262c;  --ctf-neutral-border:  #34383f;
+  --ctf-amber-fg:    #e3b457;  --ctf-amber-bg:    #2a2416;  --ctf-amber-border:    #4a3f22;
+  --ctf-info-fg:     #86aae0;  --ctf-info-bg:     #1a2130;  --ctf-info-border:     #2f3c54;
+  --ctf-success-fg:  #4cc98c;  --ctf-success-bg:  #15241c;  --ctf-success-border:  #255238;
+  --ctf-danger-fg:   #e0917f;  --ctf-danger-bg:   #2a1b17;  --ctf-danger-border:   #4d2f28;
+
+  --ctf-shadow-sm:   0 1px 2px rgba(0, 0, 0, 0.4);
+  --ctf-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.35);
+  --ctf-shadow-pop:  0 24px 60px rgba(0, 0, 0, 0.55);
+
+  color-scheme: dark;
+}
+
+/* ==========================================================================
+   TAILWIND v4 BRIDGE
+   `@theme inline` emits each utility as `var(--ctf-*)`, so the colours resolve
+   at runtime and the utilities respect dark mode. Processed only when this
+   file is reached through the `@import 'tailwindcss'` entry (see HOW TO LOAD).
+   Gives you: bg/text/border-ctf-*, font-ctf-*, rounded-ctf-*, shadow-ctf-*.
+   The status families expose -fg (text-ctf-success), -bg (bg-ctf-success-bg)
+   and -border (border-ctf-success-border).
+   ========================================================================== */
+@theme inline {
+  --color-ctf-paper:       var(--ctf-paper);
+  --color-ctf-paper-dim:   var(--ctf-paper-dim);
+  --color-ctf-surface:     var(--ctf-surface);
+  --color-ctf-surface-2:   var(--ctf-surface-2);
+
+  --color-ctf-ink:         var(--ctf-ink);
+  --color-ctf-ink-soft:    var(--ctf-ink-soft);
+  --color-ctf-ink-faint:   var(--ctf-ink-faint);
+  --color-ctf-on-ink:      var(--ctf-on-ink);
+
+  --color-ctf-line:        var(--ctf-line);
+  --color-ctf-line-strong: var(--ctf-line-strong);
+
+  --color-ctf-signal:        var(--ctf-signal);
+  --color-ctf-signal-strong: var(--ctf-signal-strong);
+  --color-ctf-signal-wash:   var(--ctf-signal-wash);
+  --color-ctf-on-signal:     var(--ctf-on-signal);
+  --color-ctf-whatsapp:      var(--ctf-whatsapp);
+
+  --color-ctf-neutral:          var(--ctf-neutral-fg);
+  --color-ctf-neutral-bg:       var(--ctf-neutral-bg);
+  --color-ctf-neutral-border:   var(--ctf-neutral-border);
+  --color-ctf-amber:            var(--ctf-amber-fg);
+  --color-ctf-amber-bg:         var(--ctf-amber-bg);
+  --color-ctf-amber-border:     var(--ctf-amber-border);
+  --color-ctf-info:             var(--ctf-info-fg);
+  --color-ctf-info-bg:          var(--ctf-info-bg);
+  --color-ctf-info-border:      var(--ctf-info-border);
+  --color-ctf-success:          var(--ctf-success-fg);
+  --color-ctf-success-bg:       var(--ctf-success-bg);
+  --color-ctf-success-border:   var(--ctf-success-border);
+  --color-ctf-danger:           var(--ctf-danger-fg);
+  --color-ctf-danger-bg:        var(--ctf-danger-bg);
+  --color-ctf-danger-border:    var(--ctf-danger-border);
+
+  --font-ctf-sans:    var(--ctf-font-sans);
+  --font-ctf-display: var(--ctf-font-display);
+  --font-ctf-mono:    var(--ctf-font-mono);
+
+  --radius-ctf-xs:   var(--ctf-radius-xs);
+  --radius-ctf-sm:   var(--ctf-radius-sm);
+  --radius-ctf-md:   var(--ctf-radius-md);
+  --radius-ctf-lg:   var(--ctf-radius-lg);
+  --radius-ctf-xl:   var(--ctf-radius-xl);
+  --radius-ctf-pill: var(--ctf-radius-pill);
+
+  --shadow-ctf-sm:   var(--ctf-shadow-sm);
+  --shadow-ctf-card: var(--ctf-shadow-card);
+  --shadow-ctf-pop:  var(--ctf-shadow-pop);
+}
+
+/* ==========================================================================
+   A FEW OPT-IN HELPERS
+   Not required — the patterns in DESIGN.md are plain Tailwind — but handy and
+   keep the brand's focus/typography consistent. The live-dot pulse and the
+   connect spinner already exist as .ctf-pulse / .ctf-spin in globals.css.
+   ========================================================================== */
+
+/* Brand focus ring — green, offset, keyboard-only. */
+.ctf-focus:focus-visible,
+.ctf-focusable:focus-visible {
+  outline: 2px solid var(--ctf-signal);
+  outline-offset: 2px;
+  border-radius: var(--ctf-radius-xs);
+}
+
+/* Mono eyebrow / kicker (the "Cut Through Faster" label used across the app). */
+.ctf-eyebrow {
+  font-family: var(--ctf-font-mono);
+  font-size: var(--ctf-text-eyebrow);
+  letter-spacing: var(--ctf-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--ctf-ink-faint);
+}
+
+/* Tabular figures for KPI numbers, tables and timers. */
+.ctf-nums {
+  font-family: var(--ctf-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
