@@ -1,0 +1,16 @@
+# Workers config for the OMG – Oh! My Glam site.
+#
+# A static site: no entrypoint, the files in ./public are served from the edge.
+# Deploy from the repo root with:
+#
+#   npm run deploy:omg
+#
+# The first deploy creates the Worker and gives it a *.workers.dev URL. Attach
+# OMG's own domain to it in the Cloudflare dashboard (Workers > omg-oh-my-glam >
+# Settings > Domains & Routes) rather than here, so a deploy never touches
+# routing.
+name = "omg-oh-my-glam"
+compatibility_date = "2026-09-01"
+
+[assets]
+directory = "./public"

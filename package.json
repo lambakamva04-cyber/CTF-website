@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "deploy": "wrangler deploy --config ctf-website/wrangler.toml",
-    "deploy:app": "npm --prefix app install && npm --prefix app run deploy"
+    "deploy:app": "npm --prefix app install && npm --prefix app run deploy",
+    "deploy:omg": "wrangler deploy --config omg-website/wrangler.toml"
   },
   "devDependencies": {
     "wrangler": "^3.60.0"
