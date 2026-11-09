@@ -1,12 +1,13 @@
 # Cut Through Faster
 
-Four deployables live in this repository.
+Five deployables live in this repository.
 
 | Directory | What it is | Deploys to |
 | --- | --- | --- |
 | `ctf-website/public/` | Marketing site — the public `cutthroughfaster.com` page | Cloudflare Workers, the `throbbing-disk-fd8d` Worker (`npm run deploy` from the repo root) |
 | `app/` | Client control platform — where clients watch their AI receptionist, take calls over, and read transcripts | Cloudflare Workers (`npm run deploy` from `app/`) |
 | `demo/` | Personalised demo pages — one link per cold-email prospect, who talks to Hope live in the browser | Cloudflare Workers (`npm run deploy` from `demo/`) |
+| `omg-website/public/` | Client site for OMG – Oh! My Glam (makeup and hair): price list, gallery, WhatsApp booking ([README](omg-website/README.md)) | Cloudflare Workers, the `omg-oh-my-glam` Worker (`npm run deploy:omg` from the repo root) |
 | `infra/n8n/` | Self-hosted n8n for back-office automation, published through a Cloudflare Tunnel with no inbound ports open | Your own Ubuntu VPS ([runbook](infra/n8n/README.md)) |
 
 The control platform is the product clients log into. It has its own
@@ -24,6 +25,9 @@ spend caps and how to read the click-to-talk numbers.
 # Marketing site
 npm install
 npm run deploy
+
+# OMG – Oh! My Glam client site
+npm run deploy:omg
 
 # Control platform
 cd app
