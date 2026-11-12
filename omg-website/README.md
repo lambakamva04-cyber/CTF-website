@@ -52,7 +52,7 @@ cd omg-website/public && python3 -m http.server 8080
 | File | What it is |
 | --- | --- |
 | `img/logo.webp`, `img/logo@2x.webp`, `img/logo.png` | The OMG logo, cut out of the poster onto a transparent background |
-| `img/gallery/glam-*.webp` | Five looks supplied by OMG, each cropped to 4:5 at 720×900, with a 360×450 copy for phones |
+| `img/gallery/glam-*.webp` | Five looks supplied by OMG, 720px wide, each with a 360px copy for phones. `glam-1` to `glam-3` are used exactly as OMG cropped them |
 | `og.jpg` | 1200×630 link-preview card |
 | `favicon.png`, `apple-touch-icon.png`, `img/icon-*.png` | The swirled "O" from the logo |
 | `img/contours.svg` | The swirled background pattern, redrawn as vector |
@@ -60,6 +60,8 @@ cd omg-website/public && python3 -m http.server 8080
 The logo and icons were cut from a 702×713 photo of the poster, so they are
 soft at large sizes. Swap in the original logo file whenever it is available.
 
-To change the gallery, replace the `glam-*.webp` files with photos of the same
-shape (4:5 portrait). To add or remove a photo, add or remove its `<li>` in the
-gallery list in `index.html`.
+The gallery photos are different shapes, so the grid is laid out by hand: each
+cell is sized to its photo's own proportions and nothing is trimmed. Swapping a
+photo for one of the same shape needs no code change. A photo of a different
+shape, or adding or removing one, means updating the row and column sizes in
+the `.grid` rules in `index.html`; the comment there explains how they work.

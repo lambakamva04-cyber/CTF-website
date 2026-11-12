@@ -364,23 +364,53 @@
 
   /* ===== Gallery ===== */
   .gallery { background: var(--cocoa-800); }
+  /* The photos are different shapes, so the grid is laid out by hand: every
+     cell is sized to its photo's own proportions, and nothing gets trimmed.
+     Row and column sizes are the pixel sizes at the design width; as "fr"
+     units, with the grid's aspect-ratio, they scale together on any screen.
+     Phones: updo + waves side by side, the wide close-up full width, then the
+     two portraits, then the booking band. */
   .grid {
-    display: grid; gap: 12px;
-    grid-template-columns: repeat(2, 1fr);
+    display: grid; gap: min(12px, 3.35vw);
+    grid-template-columns: minmax(0, 173fr) minmax(0, 6.6fr) minmax(0, 154.4fr);
+    grid-template-rows: minmax(0, 177.1fr) minmax(0, 265.8fr) minmax(0, 216.2fr) minmax(0, 112fr);
+    aspect-ratio: 358 / 807.1;
     list-style: none; margin: 0; padding: 0;
   }
-  @media (min-width: 700px) { .grid { grid-template-columns: repeat(3, 1fr); gap: 20px; } }
-  .grid li { margin: 0; }
+  .grid li { margin: 0; min-width: 0; min-height: 0; }
+  .g-updo  { grid-area: 1 / 1 / 2 / 3; }
+  .g-waves { grid-area: 1 / 3 / 2 / 4; }
+  .g-wide  { grid-area: 2 / 1 / 3 / 4; }
+  .g-tall1 { grid-area: 3 / 1 / 4 / 2; }
+  .g-tall2 { grid-area: 3 / 2 / 4 / 4; }
+  .g-cta   { grid-area: 4 / 1 / 5 / 4; }
+  /* Wider screens: three equal columns, each a photo stacked on a tile, with
+     the top and bottom edges of all three columns lined up. */
+  @media (min-width: 700px) {
+    .grid {
+      gap: min(20px, 1.9vw);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-rows: minmax(0, 267.3fr) minmax(0, 45.4fr) minmax(0, 60.3fr) minmax(0, 369.7fr);
+      aspect-ratio: 1120 / 802.7;
+    }
+    .g-updo  { grid-area: 1 / 1 / 3 / 2; }
+    .g-wide  { grid-area: 1 / 2 / 2 / 3; }
+    .g-waves { grid-area: 1 / 3 / 4 / 4; }
+    .g-tall1 { grid-area: 3 / 1 / 5 / 2; }
+    .g-tall2 { grid-area: 2 / 2 / 5 / 3; }
+    .g-cta   { grid-area: 4 / 3 / 5 / 4; }
+  }
   .shot {
-    aspect-ratio: 4 / 5; width: 100%; height: auto;
+    width: 100%; height: 100%;
     object-fit: cover;
     border-radius: 20px;
     border: 3px solid var(--gold-200);
     box-shadow: 0 16px 34px -18px rgba(0,0,0,.85);
     background: var(--cocoa-700);
   }
+  .g-tall2 .shot { object-position: 50% 40%; }
   .cta-tile {
-    aspect-ratio: 4 / 5; height: 100%;
+    height: 100%;
     display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 10px;
     padding: 18px;
     border-radius: 20px;
@@ -730,12 +760,12 @@
         <h2 id="gallery-title" class="script-title">the glam</h2>
       </div>
       <ul class="grid">
-        <li><img class="shot" src="/img/gallery/glam-1.webp" srcset="/img/gallery/glam-1-360.webp 360w, /img/gallery/glam-1.webp 720w" sizes="(max-width: 699px) 46vw, 350px" width="720" height="900" loading="lazy" decoding="async" alt="Soft glam makeup with a mauve lip, worn with a braided updo"></li>
-        <li><img class="shot" src="/img/gallery/glam-2.webp" srcset="/img/gallery/glam-2-360.webp 360w, /img/gallery/glam-2.webp 720w" sizes="(max-width: 699px) 46vw, 350px" width="720" height="900" loading="lazy" decoding="async" alt="Copper cut-crease eyeshadow with full lashes and a nude lip"></li>
-        <li><img class="shot" src="/img/gallery/glam-3.webp" srcset="/img/gallery/glam-3-360.webp 360w, /img/gallery/glam-3.webp 720w" sizes="(max-width: 699px) 46vw, 350px" width="720" height="900" loading="lazy" decoding="async" alt="Glam makeup with blue liner and a nude lip, worn with long brown waves"></li>
-        <li><img class="shot" src="/img/gallery/glam-4.webp" srcset="/img/gallery/glam-4-360.webp 360w, /img/gallery/glam-4.webp 720w" sizes="(max-width: 699px) 46vw, 350px" width="720" height="900" loading="lazy" decoding="async" alt="Bronze shimmer eyeshadow with full lashes and a nude lip"></li>
-        <li><img class="shot" src="/img/gallery/glam-5.webp" srcset="/img/gallery/glam-5-360.webp 360w, /img/gallery/glam-5.webp 720w" sizes="(max-width: 699px) 46vw, 350px" width="720" height="900" loading="lazy" decoding="async" alt="Copper and gold eyeshadow with dramatic lashes and a nude lip"></li>
-        <li>
+        <li class="g-updo"><img class="shot" src="/img/gallery/glam-1.webp" srcset="/img/gallery/glam-1-360.webp 360w, /img/gallery/glam-1.webp 720w" sizes="(max-width: 699px) 54vw, 350px" width="720" height="665" loading="lazy" decoding="async" alt="Soft glam makeup with a mauve lip, worn with a braided updo"></li>
+        <li class="g-wide"><img class="shot" src="/img/gallery/glam-2.webp" srcset="/img/gallery/glam-2-360.webp 360w, /img/gallery/glam-2.webp 720w" sizes="(max-width: 699px) 92vw, 350px" width="720" height="535" loading="lazy" decoding="async" alt="Copper cut-crease eyeshadow with full lashes and a nude lip"></li>
+        <li class="g-waves"><img class="shot" src="/img/gallery/glam-3.webp" srcset="/img/gallery/glam-3-360.webp 360w, /img/gallery/glam-3.webp 720w" sizes="(max-width: 699px) 44vw, 350px" width="720" height="826" loading="lazy" decoding="async" alt="Glam makeup with blue liner and a nude lip, worn with long brown waves"></li>
+        <li class="g-tall1"><img class="shot" src="/img/gallery/glam-4.webp" srcset="/img/gallery/glam-4-360.webp 360w, /img/gallery/glam-4.webp 720w" sizes="(max-width: 699px) 46vw, 350px" width="720" height="900" loading="lazy" decoding="async" alt="Bronze shimmer eyeshadow with full lashes and a nude lip"></li>
+        <li class="g-tall2"><img class="shot" src="/img/gallery/glam-5.webp" srcset="/img/gallery/glam-5-360.webp 360w, /img/gallery/glam-5.webp 720w" sizes="(max-width: 699px) 46vw, 350px" width="720" height="1031" loading="lazy" decoding="async" alt="Copper and gold eyeshadow with dramatic lashes and a nude lip"></li>
+        <li class="g-cta">
           <a class="cta-tile" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20a%20glam%20session.%0A%0AService%3A%0ADate%3A%0ATime%3A%0AHome%20call%3F%20%28yes%2Fno%2C%20and%20your%20area%29%3A" target="_blank" rel="noopener">
             <strong>Your turn.</strong>
             <span>Book your glam on WhatsApp <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span>
