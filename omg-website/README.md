@@ -14,7 +14,8 @@ bridal price list: the Bridal Package (R4500), the two makeup-and-leave options
 and bridesmaid full glam (R850 with strip lashes, R950 with cut crease). Return
 transport and accommodation to the bride's location are excluded.
 
-Plain HTML and CSS, no build step and no JavaScript. Every booking button opens
+Plain HTML and CSS with no build step. The only script is a short one written
+into the page, which runs the gallery's tabs and swipe. Every booking button opens
 WhatsApp (+27 78 576 7604) with a message already filled in for that service,
 so the enquiry arrives with the service, price, date, time and home-call details
 in one go. The bridal buttons ask for the wedding date, the venue and the
@@ -53,6 +54,7 @@ cd omg-website/public && python3 -m http.server 8080
 | --- | --- |
 | `img/logo.webp`, `img/logo@2x.webp`, `img/logo.png` | The OMG logo, cut out of the poster onto a transparent background |
 | `img/gallery/glam-*.webp` | Five looks supplied by OMG, 720px wide, each with a 360px copy for phones. `glam-1` to `glam-3` are used exactly as OMG cropped them |
+| `img/before-after/ba-*.webp` | Five before-and-after pictures supplied by OMG, used whole. 720px wide, each with a larger `-lg` copy for sharp phone screens |
 | `og.jpg` | 1200×630 link-preview card |
 | `favicon.png`, `apple-touch-icon.png`, `img/icon-*.png` | The swirled "O" from the logo |
 | `img/contours.svg` | The swirled background pattern, redrawn as vector |
@@ -60,8 +62,36 @@ cd omg-website/public && python3 -m http.server 8080
 The logo and icons were cut from a 702×713 photo of the poster, so they are
 soft at large sizes. Swap in the original logo file whenever it is available.
 
-The gallery photos are different shapes, so the grid is laid out by hand: each
-cell is sized to its photo's own proportions and nothing is trimmed. Swapping a
-photo for one of the same shape needs no code change. A photo of a different
-shape, or adding or removing one, means updating the row and column sizes in
-the `.grid` rules in `index.html`; the comment there explains how they work.
+## The glam: photos, before & after, videos
+
+"the glam" is three slides. Visitors move between them with the tabs, with the
+buttons at the foot of each slide, or by swiping sideways on a phone. A link
+ending in `#before-after` (or `#photos`, `#videos`) opens that slide directly,
+which is useful for a WhatsApp status or an Instagram bio.
+
+With scripts switched off the three slides simply stack, each under its own
+heading, so nothing is ever hidden.
+
+**Photos.** The photos are different shapes, so this grid is laid out by hand:
+each cell is sized to its photo's own proportions and nothing is trimmed.
+Swapping a photo for one of the same shape needs no code change. A photo of a
+different shape, or adding or removing one, means updating the row and column
+sizes in the `.grid` rules in `index.html`; the comment there explains how they
+work.
+
+**Before & after.** An ordinary grid: one picture per row on phones, two and
+then three across on wider screens. To add one, copy an `<li>` in the
+`ba-grid` list and point it at the new files.
+
+**Videos.** The slide and its tab are built but stay hidden while the list is
+empty, so visitors never land on an empty tab. Adding the first video switches
+them on. For each video:
+
+1. Put the video in `public/video/` as an MP4 (H.264), with a still image of
+   the same name as its cover, e.g. `soft-glam.mp4` and `soft-glam.jpg`.
+   Cloudflare will not serve a file over 25 MB, so keep each video under that.
+2. Add a line to the `video-grid` list in `index.html`, following the commented
+   example there, with the video's real width and height.
+
+Nothing is downloaded until a visitor presses play, and only one video plays
+at a time.
