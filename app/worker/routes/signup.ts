@@ -7,6 +7,7 @@ import {
   type LegalDocumentId,
 } from '../../shared/legal';
 import type { Env } from '../env';
+import { LIST_PRICE } from '../lib/billing';
 import { newId, randomToken } from '../lib/crypto';
 import { UNUSABLE_PASSWORD_HASH, writeAudit, type OrgRow, type UserRow } from '../lib/db';
 import { recordPlatformNotice } from '../lib/notices';
@@ -127,9 +128,23 @@ export async function createPendingOrganization(
     env.DB.prepare(
       `INSERT INTO organizations (
          id, name, slug, timezone, services, status, plan,
-         billing_email, signup_note, created_at, updated_at
-       ) VALUES (?, ?, ?, 'Africa/Johannesburg', '[]', 'pending', 'standard', ?, ?, ?, ?)`,
-    ).bind(orgId, payload.orgName, slug, identity.email, payload.note, now, now),
+         billing_email, signup_note,
+         plan_minutes, subscription_zar, overage_rate_zar, setup_fee_zar,
+         created_at, updated_at
+       ) VALUES (?, ?, ?, 'Africa/Johannesburg', '[]', 'pending', 'standard', ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).bind(
+      orgId,
+      payload.orgName,
+      slug,
+      identity.email,
+      payload.note,
+      LIST_PRICE.planMinutes,
+      LIST_PRICE.subscriptionZar,
+      LIST_PRICE.overageRateZar,
+      LIST_PRICE.setupFeeZar,
+      now,
+      now,
+    ),
 
     // Google-only: no password is generated, so nothing has to be transmitted
     // to the new owner, and no hashing happens on the request path.
