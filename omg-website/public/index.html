@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OMG – Oh! My Glam | Makeup &amp; Hair | 2026 Price List</title>
-<meta name="description" content="OMG – Oh! My Glam 2026 price list: Soft Glam R750, Full Glam R850, Bold/Dramatic R950, hair installation R400 and long weave styling R450. Home calls available on request. Book on WhatsApp: +27 78 576 7604.">
+<meta name="description" content="OMG – Oh! My Glam 2026 price list: Soft Glam R750, Full Glam R850, Bold/Dramatic R950, Basic Installation R400 and Curling Long Weave R450. Bridal glam by quote. Home calls available on request. Book on WhatsApp: +27 78 576 7604.">
 <meta name="theme-color" content="#3A1D18">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="OMG – Oh! My Glam">
@@ -31,7 +31,7 @@
   "@type": "HealthAndBeautyBusiness",
   "name": "OMG – Oh! My Glam",
   "alternateName": ["OMG", "Oh! My Glam"],
-  "description": "Makeup and hair styling. Home calls available on request.",
+  "description": "Makeup and hair styling, including bridal glam by quote. Home calls available on request.",
   "telephone": "+27785767604",
   "priceRange": "R400 – R950",
   "currenciesAccepted": "ZAR",
@@ -43,8 +43,8 @@
       { "@type": "Offer", "price": "750", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Soft Glam makeup" } },
       { "@type": "Offer", "price": "850", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Full Glam makeup" } },
       { "@type": "Offer", "price": "950", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Bold / Dramatic makeup" } },
-      { "@type": "Offer", "price": "400", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Hair installation" } },
-      { "@type": "Offer", "price": "450", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Styling long weave" } }
+      { "@type": "Offer", "price": "400", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Basic Installation (hair)" } },
+      { "@type": "Offer", "price": "450", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Curling Long Weave" } }
     ]
   }
 }
@@ -284,13 +284,57 @@
   .fine-print strong { font-weight: 700; }
   @media (min-width: 640px) { .fine-print { padding: 20px 28px; font-size: 16px; } }
 
-  .download { margin: 18px 0 0; text-align: center; }
-  .download a {
-    display: inline-flex; align-items: center; gap: 8px; padding: 8px 2px;
-    font: 600 14px/1.3 var(--sans); color: var(--gold-200); text-decoration: none;
-    border-bottom: 1px solid rgba(241, 217, 154, .4);
+  /* ===== Bridal ===== */
+  .bridal {
+    position: relative; isolation: isolate;
+    background: linear-gradient(180deg, var(--band-top), var(--band-bot));
+    color: var(--cocoa-900);
   }
-  .download a:hover { color: var(--gold-50); border-bottom-color: currentColor; }
+  .bridal::before {
+    content: ''; position: absolute; inset: 0; z-index: -1;
+    background: url('/img/contours.svg') center / cover no-repeat;
+    opacity: .28;
+  }
+  .bridal .eyebrow { color: var(--cocoa-600); }
+  .bridal .section-head h2 { color: var(--cocoa-900); }
+  .bridal .section-head p { color: var(--cocoa-700); max-width: 52ch; }
+  .bridal-grid { display: grid; gap: 28px; align-items: center; }
+  @media (min-width: 900px) { .bridal-grid { grid-template-columns: 1.05fr 1fr; gap: 56px; } }
+  .bridal-points { list-style: none; margin: 0; padding: 0; display: grid; gap: 22px; }
+  .bridal-points li { display: flex; gap: 16px; align-items: flex-start; }
+  .bridal-points .icon {
+    width: 40px; height: 40px; padding: 11px; border-radius: 50%;
+    background: var(--cocoa-800); fill: var(--gold-200);
+  }
+  .bridal-points h3 { margin: 0 0 2px; font: 600 26px/1.15 var(--serif); color: var(--cocoa-900); }
+  .bridal-points p { margin: 0; font-size: 15.5px; color: var(--cocoa-700); }
+  .quote-card {
+    border-radius: var(--radius);
+    background: var(--cocoa-800);
+    color: var(--cream);
+    padding: 28px 22px;
+    box-shadow: 0 24px 50px -26px rgba(31, 14, 11, .9);
+  }
+  @media (min-width: 640px) { .quote-card { padding: 36px; } }
+  .quote-card h3 { margin: 0; font: 600 32px/1.1 var(--serif); }
+  .quote-card > p { margin: 10px 0 0; color: var(--cream-soft); }
+  .quote-card ol { list-style: none; counter-reset: q; margin: 16px 0 24px; padding: 0; }
+  .quote-card li {
+    counter-increment: q;
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 0;
+    border-bottom: 1px dashed rgba(230, 194, 122, .25);
+    font-weight: 500;
+  }
+  .quote-card li:last-child { border-bottom: 0; }
+  .quote-card li::before {
+    content: counter(q);
+    flex: none; width: 28px; height: 28px; border-radius: 50%;
+    display: grid; place-items: center;
+    font: 700 16px/1 var(--serif);
+    color: var(--cocoa-900); background: var(--gold-fill);
+  }
+  .quote-card .btn { width: 100%; }
 
   /* ===== Gallery ===== */
   .gallery { background: var(--cocoa-800); }
@@ -436,6 +480,7 @@
     </a>
     <nav class="nav" aria-label="Main">
       <a href="#prices">Prices</a>
+      <a href="#bridal">Bridal</a>
       <a href="#gallery">Gallery</a>
       <a href="#book">Book</a>
     </nav>
@@ -465,6 +510,7 @@
       <ul class="chips" aria-label="At a glance">
         <li>Makeup from <b>R750</b></li>
         <li>Hair from <b>R400</b></li>
+        <li>Bridal glam by quote</li>
         <li>Home calls on request</li>
       </ul>
     </div>
@@ -512,19 +558,19 @@
         <article class="card" aria-labelledby="hair-title">
           <div class="card-head">
             <h3 id="hair-title" class="gold-text">Hair</h3>
-            <span>Install &amp; style</span>
+            <span>Install &amp; curl</span>
           </div>
           <ul class="svc-list">
             <li class="svc">
-              <div class="svc-line"><span class="svc-name">Installation</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R400</span></div>
+              <div class="svc-line"><span class="svc-name">Basic Installation</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R400</span></div>
               <div class="svc-meta">
-                <a class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20Installation%20%28R400%29.%0A%0ADate%3A%0ATime%3A%0AHome%20call%3F%20%28yes%2Fno%2C%20and%20your%20area%29%3A" target="_blank" rel="noopener" aria-label="Book Installation, R400, on WhatsApp">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+                <a class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20Basic%20Installation%20%28R400%29.%0A%0ADate%3A%0ATime%3A%0AHome%20call%3F%20%28yes%2Fno%2C%20and%20your%20area%29%3A" target="_blank" rel="noopener" aria-label="Book Basic Installation, R400, on WhatsApp">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
               </div>
             </li>
             <li class="svc">
-              <div class="svc-line"><span class="svc-name">Styling Long Weave</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R450</span></div>
+              <div class="svc-line"><span class="svc-name">Curling Long Weave</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R450</span></div>
               <div class="svc-meta">
-                <a class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20Styling%20Long%20Weave%20%28R450%29.%0A%0ADate%3A%0ATime%3A%0AHome%20call%3F%20%28yes%2Fno%2C%20and%20your%20area%29%3A" target="_blank" rel="noopener" aria-label="Book Styling Long Weave, R450, on WhatsApp">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+                <a class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20Curling%20Long%20Weave%20%28R450%29.%0A%0ADate%3A%0ATime%3A%0AHome%20call%3F%20%28yes%2Fno%2C%20and%20your%20area%29%3A" target="_blank" rel="noopener" aria-label="Book Curling Long Weave, R450, on WhatsApp">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
               </div>
             </li>
           </ul>
@@ -536,7 +582,56 @@
         <svg class="icon" aria-hidden="true"><use href="#i-home"/></svg>
         <p><strong>Home calls are available upon request</strong> – transportation fee is excluded from the above price list and is subject to change per client’s location.</p>
       </div>
-      <p class="download"><a href="/omg-2026-price-list.jpg" download="OMG-Oh-My-Glam-2026-price-list.jpg">Save the 2026 price list to share <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></p>
+    </div>
+  </section>
+
+  <section class="section bridal" id="bridal" aria-labelledby="bridal-title">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow" aria-hidden="true">the big day</span>
+        <h2 id="bridal-title">Bridal Glam</h2>
+        <p>Your wedding day gets its own plan. Tell us your date and where you’re getting ready, and we’ll put together a bridal quote for makeup, hair, or both.</p>
+      </div>
+
+      <div class="bridal-grid">
+        <ul class="bridal-points">
+          <li>
+            <svg class="icon" aria-hidden="true"><use href="#i-spark"/></svg>
+            <div>
+              <h3>Bridal makeup</h3>
+              <p>Soft, full or bold. Your bridal look, your way.</p>
+            </div>
+          </li>
+          <li>
+            <svg class="icon" aria-hidden="true"><use href="#i-spark"/></svg>
+            <div>
+              <h3>Bridal hair</h3>
+              <p>Hair styled to go with your look, on the same day as your makeup.</p>
+            </div>
+          </li>
+          <li>
+            <svg class="icon" aria-hidden="true"><use href="#i-spark"/></svg>
+            <div>
+              <h3>We can come to you</h3>
+              <p>Home calls are available on request. The transport fee is quoted for your location.</p>
+            </div>
+          </li>
+        </ul>
+
+        <div class="quote-card">
+          <h3 class="gold-text">Get your bridal quote</h3>
+          <p>Send us these four things on WhatsApp:</p>
+          <ol>
+            <li>Your wedding date</li>
+            <li>Your venue or area</li>
+            <li>How many people need makeup</li>
+            <li>How many people need hair</li>
+          </ol>
+          <a class="btn btn-gold" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20a%20bridal%20quote.%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A%0APeople%20needing%20makeup%3A%0APeople%20needing%20hair%3A" target="_blank" rel="noopener">
+            <svg class="icon" aria-hidden="true"><use href="#i-wa"/></svg>Get a bridal quote
+          </a>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -574,7 +669,7 @@
         <ol class="steps">
           <li>
             <h3>Choose your look</h3>
-            <p>Soft Glam, Full Glam or Bold / Dramatic, plus hair installation or long weave styling if you need it.</p>
+            <p>Soft Glam, Full Glam or Bold / Dramatic, plus Basic Installation or Curling Long Weave if you need hair. Getting married? Ask for a bridal quote.</p>
           </li>
           <li>
             <h3>Send a WhatsApp</h3>
@@ -620,7 +715,7 @@
 <footer>
   <div class="wrap">
     <img src="/img/logo.webp" width="150" height="93" loading="lazy" alt="OMG – Oh! My Glam">
-    <p>Makeup &amp; hair · Home calls on request</p>
+    <p>Makeup &amp; hair · Bridal · Home calls on request</p>
     <p><a href="https://wa.me/27785767604" target="_blank" rel="noopener">WhatsApp +27 78 576 7604</a></p>
     <p>Prices valid for 2026. Home call transport fees are quoted separately.</p>
     <p>© 2026 OMG – Oh! My Glam</p>
