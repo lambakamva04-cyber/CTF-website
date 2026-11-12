@@ -231,6 +231,11 @@
     font: 600 clamp(36px, 7vw, 54px)/1.05 var(--serif);
     letter-spacing: .01em;
   }
+  .section-head h2.script-title {
+    font: 400 clamp(56px, 13vw, 84px)/1.15 var(--script);
+    letter-spacing: 0;
+    color: var(--gold-200);
+  }
   .section-head p { max-width: 46ch; margin: 14px auto 0; color: var(--cream-soft); }
 
   /* ===== Price list ===== */
@@ -364,10 +369,10 @@
     grid-template-columns: repeat(2, 1fr);
     list-style: none; margin: 0; padding: 0;
   }
-  @media (min-width: 820px) { .grid { grid-template-columns: repeat(4, 1fr); gap: 18px; } }
+  @media (min-width: 700px) { .grid { grid-template-columns: repeat(3, 1fr); gap: 20px; } }
   .grid li { margin: 0; }
   .shot {
-    aspect-ratio: 1 / 1; width: 100%; height: auto;
+    aspect-ratio: 4 / 5; width: 100%; height: auto;
     object-fit: cover;
     border-radius: 20px;
     border: 3px solid var(--gold-200);
@@ -375,7 +380,7 @@
     background: var(--cocoa-700);
   }
   .cta-tile {
-    aspect-ratio: 1 / 1;
+    aspect-ratio: 4 / 5; height: 100%;
     display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 10px;
     padding: 18px;
     border-radius: 20px;
@@ -708,7 +713,7 @@
 
       <div class="bridal-note" role="note">
         <svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>
-        <p><strong>Return transport &amp; accommodation</strong> (if needed) to the bride’s location is excluded from the package.</p>
+        <p><strong>Return transport &amp; accommodation</strong> to the bride’s location is excluded from the package.</p>
       </div>
 
       <p class="bridal-cta">
@@ -722,17 +727,14 @@
   <section class="section gallery" id="gallery" aria-labelledby="gallery-title">
     <div class="wrap">
       <div class="section-head">
-        <span class="eyebrow" aria-hidden="true">the glam</span>
-        <h2 id="gallery-title" class="gold-text">Recent Looks</h2>
+        <h2 id="gallery-title" class="script-title">the glam</h2>
       </div>
       <ul class="grid">
-        <li><img class="shot" src="/img/gallery/makeup-1.webp" width="339" height="393" loading="lazy" decoding="async" alt="Soft, glowing makeup look with closed eyes showing shimmer eyeshadow"></li>
-        <li><img class="shot" src="/img/gallery/makeup-2.webp" width="423" height="381" loading="lazy" decoding="async" alt="Makeup look with smoky rose eyeshadow and a nude lip"></li>
-        <li><img class="shot" src="/img/gallery/makeup-3.webp" width="441" height="372" loading="lazy" decoding="async" alt="Sculpted makeup look in profile with a sleek low bun" style="object-position: 62% 50%"></li>
-        <li><img class="shot" src="/img/gallery/makeup-4.webp" width="351" height="387" loading="lazy" decoding="async" alt="Full glam makeup look with lashes and a glossy nude lip"></li>
-        <li><img class="shot" src="/img/gallery/hair-1.webp" width="330" height="315" loading="lazy" decoding="async" alt="Curled updo finished with a pearl hair accessory"></li>
-        <li><img class="shot" src="/img/gallery/hair-2.webp" width="327" height="309" loading="lazy" decoding="async" alt="Sleek low bun with sculpted curl detail"></li>
-        <li><img class="shot" src="/img/gallery/hair-3.webp" width="324" height="315" loading="lazy" decoding="async" alt="High curled updo with a swept fringe and statement earrings"></li>
+        <li><img class="shot" src="/img/gallery/glam-1.webp" srcset="/img/gallery/glam-1-360.webp 360w, /img/gallery/glam-1.webp 720w" sizes="(max-width: 699px) 46vw, 350px" width="720" height="900" loading="lazy" decoding="async" alt="Soft glam makeup with a mauve lip, worn with a braided updo"></li>
+        <li><img class="shot" src="/img/gallery/glam-2.webp" srcset="/img/gallery/glam-2-360.webp 360w, /img/gallery/glam-2.webp 720w" sizes="(max-width: 699px) 46vw, 350px" width="720" height="900" loading="lazy" decoding="async" alt="Copper cut-crease eyeshadow with full lashes and a nude lip"></li>
+        <li><img class="shot" src="/img/gallery/glam-3.webp" srcset="/img/gallery/glam-3-360.webp 360w, /img/gallery/glam-3.webp 720w" sizes="(max-width: 699px) 46vw, 350px" width="720" height="900" loading="lazy" decoding="async" alt="Glam makeup with blue liner and a nude lip, worn with long brown waves"></li>
+        <li><img class="shot" src="/img/gallery/glam-4.webp" srcset="/img/gallery/glam-4-360.webp 360w, /img/gallery/glam-4.webp 720w" sizes="(max-width: 699px) 46vw, 350px" width="720" height="900" loading="lazy" decoding="async" alt="Bronze shimmer eyeshadow with full lashes and a nude lip"></li>
+        <li><img class="shot" src="/img/gallery/glam-5.webp" srcset="/img/gallery/glam-5-360.webp 360w, /img/gallery/glam-5.webp 720w" sizes="(max-width: 699px) 46vw, 350px" width="720" height="900" loading="lazy" decoding="async" alt="Copper and gold eyeshadow with dramatic lashes and a nude lip"></li>
         <li>
           <a class="cta-tile" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20a%20glam%20session.%0A%0AService%3A%0ADate%3A%0ATime%3A%0AHome%20call%3F%20%28yes%2Fno%2C%20and%20your%20area%29%3A" target="_blank" rel="noopener">
             <strong>Your turn.</strong>

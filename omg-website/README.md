@@ -52,12 +52,14 @@ cd omg-website/public && python3 -m http.server 8080
 | File | What it is |
 | --- | --- |
 | `img/logo.webp`, `img/logo@2x.webp`, `img/logo.png` | The OMG logo, cut out of the poster onto a transparent background |
-| `img/gallery/*.webp` | The seven looks from the poster, cropped out of their frames |
+| `img/gallery/glam-*.webp` | Five looks supplied by OMG, each cropped to 4:5 at 720×900, with a 360×450 copy for phones |
 | `og.jpg` | 1200×630 link-preview card |
 | `favicon.png`, `apple-touch-icon.png`, `img/icon-*.png` | The swirled "O" from the logo |
 | `img/contours.svg` | The swirled background pattern, redrawn as vector |
 
-Everything was cut from a 702×713 photo of the poster, so the gallery photos
-are soft. Swap in the original photos (same file names, roughly square, 800px or
-more) and the original logo file whenever they are available. No code changes
-are needed.
+The logo and icons were cut from a 702×713 photo of the poster, so they are
+soft at large sizes. Swap in the original logo file whenever it is available.
+
+To change the gallery, replace the `glam-*.webp` files with photos of the same
+shape (4:5 portrait). To add or remove a photo, add or remove its `<li>` in the
+gallery list in `index.html`.
