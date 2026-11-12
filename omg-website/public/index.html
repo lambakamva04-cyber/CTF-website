@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OMG – Oh! My Glam | Makeup &amp; Hair | 2026 Price List</title>
-<meta name="description" content="OMG – Oh! My Glam 2026 price list: Soft Glam R750, Full Glam R850, Bold/Dramatic R950, Basic Installation R400 and Curling Long Weave R450. Bridal glam by quote. Home calls available on request. Book on WhatsApp: +27 78 576 7604.">
+<meta name="description" content="OMG – Oh! My Glam 2026 price list: Soft Glam R750, Full Glam R850, Bold/Dramatic R950, Basic Installation R400 and Curling Long Weave R450. Bridal Package R4500, bridesmaids from R850. Home calls available on request. Book on WhatsApp: +27 78 576 7604.">
 <meta name="theme-color" content="#3A1D18">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="OMG – Oh! My Glam">
@@ -31,9 +31,9 @@
   "@type": "HealthAndBeautyBusiness",
   "name": "OMG – Oh! My Glam",
   "alternateName": ["OMG", "Oh! My Glam"],
-  "description": "Makeup and hair styling, including bridal glam by quote. Home calls available on request.",
+  "description": "Makeup and hair styling, including bridal and bridesmaid packages. Home calls available on request.",
   "telephone": "+27785767604",
-  "priceRange": "R400 – R950",
+  "priceRange": "R400 – R4500",
   "currenciesAccepted": "ZAR",
   "sameAs": ["https://www.instagram.com/asanda_tiwani/"],
   "hasOfferCatalog": {
@@ -44,7 +44,14 @@
       { "@type": "Offer", "price": "850", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Full Glam makeup" } },
       { "@type": "Offer", "price": "950", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Bold / Dramatic makeup" } },
       { "@type": "Offer", "price": "400", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Basic Installation (hair)" } },
-      { "@type": "Offer", "price": "450", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Curling Long Weave" } }
+      { "@type": "Offer", "price": "450", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Curling Long Weave" } },
+      { "@type": "Offer", "price": "4500", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Bridal Package", "description": "Weave installation (your hair), bridal hairstyle of your choice, skin prep, full bridal coverage makeup, strip lashes and touch-ups for the photoshoot hour." } },
+      { "@type": "Offer", "price": "1800", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Bridal makeup & leave immediately" } },
+      { "@type": "Offer", "price": "2900", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Bridal makeup, installation + style & leave" } },
+      { "@type": "Offer", "price": "850", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Bridal natural hairstyle" } },
+      { "@type": "Offer", "price": "750", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Bridal trial makeup" } },
+      { "@type": "Offer", "price": "850", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Bridesmaid full glam with strip lashes" } },
+      { "@type": "Offer", "price": "950", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Bridesmaid full glam with cut crease" } }
     ]
   }
 }
@@ -298,43 +305,57 @@
   .bridal .eyebrow { color: var(--cocoa-600); }
   .bridal .section-head h2 { color: var(--cocoa-900); }
   .bridal .section-head p { color: var(--cocoa-700); max-width: 52ch; }
-  .bridal-grid { display: grid; gap: 28px; align-items: center; }
-  @media (min-width: 900px) { .bridal-grid { grid-template-columns: 1.05fr 1fr; gap: 56px; } }
-  .bridal-points { list-style: none; margin: 0; padding: 0; display: grid; gap: 22px; }
-  .bridal-points li { display: flex; gap: 16px; align-items: flex-start; }
-  .bridal-points .icon {
-    width: 40px; height: 40px; padding: 11px; border-radius: 50%;
-    background: var(--cocoa-800); fill: var(--gold-200);
-  }
-  .bridal-points h3 { margin: 0 0 2px; font: 600 26px/1.15 var(--serif); color: var(--cocoa-900); }
-  .bridal-points p { margin: 0; font-size: 15.5px; color: var(--cocoa-700); }
-  .quote-card {
+
+  /* The headline package: price and button on one side, what's included on the other. */
+  .pkg {
+    display: grid; gap: 26px;
     border-radius: var(--radius);
     background: var(--cocoa-800);
     color: var(--cream);
-    padding: 28px 22px;
+    padding: 30px 22px;
     box-shadow: 0 24px 50px -26px rgba(31, 14, 11, .9);
   }
-  @media (min-width: 640px) { .quote-card { padding: 36px; } }
-  .quote-card h3 { margin: 0; font: 600 32px/1.1 var(--serif); }
-  .quote-card > p { margin: 10px 0 0; color: var(--cream-soft); }
-  .quote-card ol { list-style: none; counter-reset: q; margin: 16px 0 24px; padding: 0; }
-  .quote-card li {
-    counter-increment: q;
-    display: flex; align-items: center; gap: 14px;
-    padding: 12px 0;
-    border-bottom: 1px dashed rgba(230, 194, 122, .25);
-    font-weight: 500;
+  @media (min-width: 640px) { .pkg { padding: 32px; } }
+  @media (min-width: 900px) { .pkg { grid-template-columns: auto 1fr; gap: 56px; align-items: center; padding: 44px 48px; } }
+  .pkg-main { display: flex; flex-direction: column; align-items: flex-start; }
+  .pkg-tag { font: 600 11px/1 var(--sans); letter-spacing: .24em; text-transform: uppercase; color: var(--cream-faint); }
+  .pkg h3 { margin: 10px 0 0; font: 600 clamp(36px, 8vw, 44px)/1 var(--serif); }
+  .pkg-price { margin: 10px 0 22px; font: 700 clamp(40px, 10vw, 52px)/1 var(--sans); letter-spacing: -.01em; }
+  .pkg-incl { display: grid; gap: 22px; }
+  @media (min-width: 640px) { .pkg-incl { grid-template-columns: repeat(3, 1fr); gap: 28px; } }
+  @media (min-width: 900px) { .pkg-incl { padding-left: 56px; border-left: 1px solid var(--line); } }
+  .pkg-incl h4 { margin: 0 0 10px; font: 600 11px/1 var(--sans); letter-spacing: .24em; text-transform: uppercase; color: var(--gold-300); }
+  .pkg-incl ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
+  .pkg-incl li { position: relative; padding-left: 20px; font-size: 15.5px; line-height: 1.4; }
+  .pkg-incl li::before {
+    content: ''; position: absolute; left: 0; top: .32em;
+    width: 11px; height: 11px;
+    background: var(--gold-300);
+    clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
   }
-  .quote-card li:last-child { border-bottom: 0; }
-  .quote-card li::before {
-    content: counter(q);
-    flex: none; width: 28px; height: 28px; border-radius: 50%;
-    display: grid; place-items: center;
-    font: 700 16px/1 var(--serif);
-    color: var(--cocoa-900); background: var(--gold-fill);
+
+  .bridal-menu { margin-top: 20px; align-items: start; }
+  @media (min-width: 860px) { .bridal-menu { margin-top: 28px; } }
+  .bridal .card {
+    background: var(--cocoa-800); border-color: transparent;
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+    box-shadow: 0 24px 50px -30px rgba(31, 14, 11, .9);
   }
-  .quote-card .btn { width: 100%; }
+  .bridal .card-note { margin-top: 4px; }
+  .svc-note { font: 500 13px/1.3 var(--sans); color: var(--cream-faint); }
+
+  .bridal-note {
+    display: flex; gap: 14px; align-items: flex-start;
+    margin-top: 28px; padding: 18px 20px;
+    border-radius: 18px;
+    border: 1.5px solid rgba(74, 38, 32, .45);
+    background: rgba(255, 248, 230, .45);
+    font-size: 15px; line-height: 1.55;
+  }
+  .bridal-note .icon { width: 24px; height: 24px; margin-top: 1px; fill: var(--cocoa-700); }
+  .bridal-note p { margin: 0; }
+  @media (min-width: 640px) { .bridal-note { padding: 20px 28px; font-size: 16px; } }
+  .bridal-cta { margin: 30px 0 0; text-align: center; }
 
   /* ===== Gallery ===== */
   .gallery { background: var(--cocoa-800); }
@@ -467,6 +488,7 @@
   <symbol id="i-ig" viewBox="0 0 24 24"><path d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9a5.5 5.5 0 0 1-5.5 5.5h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2Zm0 2A3.5 3.5 0 0 0 4 7.5v9A3.5 3.5 0 0 0 7.5 20h9a3.5 3.5 0 0 0 3.5-3.5v-9A3.5 3.5 0 0 0 16.5 4h-9ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm5.25-3.25a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5Z"/></symbol>
   <symbol id="i-phone" viewBox="0 0 24 24"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1L6.6 10.8Z"/></symbol>
   <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9.5Z"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm0 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm0 6.5a1 1 0 0 1 1 1V16a1 1 0 1 1-2 0v-4.5a1 1 0 0 1 1-1Zm0-3.75a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5Z"/></symbol>
   <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M13.2 5.3a1 1 0 0 1 1.4 0l6 6a1 1 0 0 1 0 1.4l-6 6a1 1 0 1 1-1.4-1.4l4.3-4.3H4a1 1 0 1 1 0-2h13.5l-4.3-4.3a1 1 0 0 1 0-1.4Z"/></symbol>
   <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 0c.8 7.5 4.5 11.2 12 12-7.5.8-11.2 4.5-12 12-.8-7.5-4.5-11.2-12-12 7.5-.8 11.2-4.5 12-12Z"/></symbol>
 </svg>
@@ -510,7 +532,7 @@
       <ul class="chips" aria-label="At a glance">
         <li>Makeup from <b>R750</b></li>
         <li>Hair from <b>R400</b></li>
-        <li>Bridal glam by quote</li>
+        <li>Bridal Package <b>R4500</b></li>
         <li>Home calls on request</li>
       </ul>
     </div>
@@ -589,49 +611,111 @@
     <div class="wrap">
       <div class="section-head">
         <span class="eyebrow" aria-hidden="true">the big day</span>
-        <h2 id="bridal-title">Bridal Glam</h2>
-        <p>Your wedding day gets its own plan. Tell us your date and where you’re getting ready, and we’ll put together a bridal quote for makeup, hair, or both.</p>
+        <h2 id="bridal-title">2026 Bridal Price List</h2>
+        <p>Hair and makeup for the bride and her bridesmaids. Tap any option to book it on WhatsApp.</p>
       </div>
 
-      <div class="bridal-grid">
-        <ul class="bridal-points">
-          <li>
-            <svg class="icon" aria-hidden="true"><use href="#i-spark"/></svg>
-            <div>
-              <h3>Bridal makeup</h3>
-              <p>Soft, full or bold. Your bridal look, your way.</p>
-            </div>
-          </li>
-          <li>
-            <svg class="icon" aria-hidden="true"><use href="#i-spark"/></svg>
-            <div>
-              <h3>Bridal hair</h3>
-              <p>Hair styled to go with your look, on the same day as your makeup.</p>
-            </div>
-          </li>
-          <li>
-            <svg class="icon" aria-hidden="true"><use href="#i-spark"/></svg>
-            <div>
-              <h3>We can come to you</h3>
-              <p>Home calls are available on request. The transport fee is quoted for your location.</p>
-            </div>
-          </li>
-        </ul>
-
-        <div class="quote-card">
-          <h3 class="gold-text">Get your bridal quote</h3>
-          <p>Send us these four things on WhatsApp:</p>
-          <ol>
-            <li>Your wedding date</li>
-            <li>Your venue or area</li>
-            <li>How many people need makeup</li>
-            <li>How many people need hair</li>
-          </ol>
-          <a class="btn btn-gold" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20a%20bridal%20quote.%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A%0APeople%20needing%20makeup%3A%0APeople%20needing%20hair%3A" target="_blank" rel="noopener">
-            <svg class="icon" aria-hidden="true"><use href="#i-wa"/></svg>Get a bridal quote
+      <article class="pkg" aria-labelledby="pkg-title">
+        <div class="pkg-main">
+          <span class="pkg-tag">For the bride</span>
+          <h3 id="pkg-title" class="gold-text">Bridal Package</h3>
+          <p class="pkg-price gold-text">R4500</p>
+          <a class="btn btn-gold" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20the%20Bridal%20Package%20%28R4500%29.%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A%0ABridesmaids%20needing%20makeup%3A%0ATrial%20makeup%3F%20%28yes%2Fno%29%3A" target="_blank" rel="noopener" aria-label="Book the Bridal Package, R4500, on WhatsApp">
+            <svg class="icon" aria-hidden="true"><use href="#i-wa"/></svg>Book the package
           </a>
         </div>
+        <div class="pkg-incl">
+          <div>
+            <h4>Hair</h4>
+            <ul>
+              <li>Weave installation (your hair)</li>
+              <li>Bridal hairstyle of your choice</li>
+            </ul>
+          </div>
+          <div>
+            <h4>Makeup</h4>
+            <ul>
+              <li>Skin prep</li>
+              <li>Full bridal coverage makeup</li>
+              <li>Strip lashes</li>
+            </ul>
+          </div>
+          <div>
+            <h4>On the day</h4>
+            <ul>
+              <li>Touch-ups for the photoshoot hour</li>
+            </ul>
+          </div>
+        </div>
+      </article>
+
+      <div class="menu bridal-menu">
+        <article class="card" aria-labelledby="bride-title">
+          <div class="card-head">
+            <h3 id="bride-title" class="gold-text">Bride</h3>
+            <span>More options</span>
+          </div>
+          <ul class="svc-list">
+            <li class="svc">
+              <div class="svc-line"><span class="svc-name">Makeup &amp; leave immediately</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R1800</span></div>
+              <div class="svc-meta">
+                <a class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20bridal%20Makeup%20%26%20leave%20immediately%20%28R1800%29.%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A%0ABridesmaids%20needing%20makeup%3A" target="_blank" rel="noopener" aria-label="Book bridal Makeup and leave immediately, R1800, on WhatsApp">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+              </div>
+            </li>
+            <li class="svc">
+              <div class="svc-line"><span class="svc-name">Makeup, installation + style &amp; leave</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R2900</span></div>
+              <div class="svc-meta">
+                <a class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20bridal%20Makeup%2C%20installation%20%2B%20style%20%26%20leave%20%28R2900%29.%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A%0ABridesmaids%20needing%20makeup%3A" target="_blank" rel="noopener" aria-label="Book bridal Makeup, installation, style and leave, R2900, on WhatsApp">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+              </div>
+            </li>
+            <li class="svc">
+              <div class="svc-line"><span class="svc-name">All bridal natural hairstyles</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R850</span></div>
+              <div class="svc-meta">
+                <span class="svc-note">We bring everything</span><a class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20a%20bridal%20natural%20hairstyle%20%28R850%29.%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A" target="_blank" rel="noopener" aria-label="Book a bridal natural hairstyle, R850, on WhatsApp">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+              </div>
+            </li>
+            <li class="svc">
+              <div class="svc-line"><span class="svc-name">Trial makeup</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R750</span></div>
+              <div class="svc-meta">
+                <span class="svc-note">Not compulsory</span><a class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20a%20bridal%20Trial%20Makeup%20%28R750%29.%0A%0AWedding%20date%3A%0APreferred%20trial%20date%3A" target="_blank" rel="noopener" aria-label="Book bridal Trial makeup, R750, on WhatsApp">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+              </div>
+            </li>
+          </ul>
+        </article>
+
+        <article class="card" aria-labelledby="maids-title">
+          <div class="card-head">
+            <h3 id="maids-title" class="gold-text">Bridesmaid</h3>
+            <span>Full glam</span>
+          </div>
+          <ul class="svc-list">
+            <li class="svc">
+              <div class="svc-line"><span class="svc-name">Full glam with strip lashes</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R850</span></div>
+              <div class="svc-meta">
+                <a class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20bridesmaid%20Full%20glam%20with%20strip%20lashes%20%28R850%29.%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A%0ANumber%20of%20bridesmaids%3A" target="_blank" rel="noopener" aria-label="Book bridesmaid Full glam with strip lashes, R850, on WhatsApp">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+              </div>
+            </li>
+            <li class="svc">
+              <div class="svc-line"><span class="svc-name">Full glam with cut crease</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R950</span></div>
+              <div class="svc-meta">
+                <a class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20bridesmaid%20Full%20glam%20with%20cut%20crease%20%28R950%29.%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A%0ANumber%20of%20bridesmaids%3A" target="_blank" rel="noopener" aria-label="Book bridesmaid Full glam with cut crease, R950, on WhatsApp">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+              </div>
+            </li>
+          </ul>
+          <p class="card-note"><b>Booking the whole bridal party?</b> Send the bride’s option and the number of bridesmaids in one WhatsApp.</p>
+        </article>
       </div>
+
+      <div class="bridal-note" role="note">
+        <svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>
+        <p><strong>Return transport &amp; accommodation</strong> (if needed) to the bride’s location is excluded from the package.</p>
+      </div>
+
+      <p class="bridal-cta">
+        <a class="btn btn-cocoa" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20bridal%20glam.%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A%0AFor%20the%20bride%20%28Bridal%20Package%20%2F%20Makeup%20%26%20leave%20%2F%20Makeup%2C%20installation%20%2B%20style%29%3A%0ABridesmaids%20needing%20makeup%3A%0ATrial%20makeup%3F%20%28yes%2Fno%29%3A" target="_blank" rel="noopener">
+          <svg class="icon" aria-hidden="true"><use href="#i-wa"/></svg>Book your wedding date
+        </a>
+      </p>
     </div>
   </section>
 
@@ -669,7 +753,7 @@
         <ol class="steps">
           <li>
             <h3>Choose your look</h3>
-            <p>Soft Glam, Full Glam or Bold / Dramatic, plus Basic Installation or Curling Long Weave if you need hair. Getting married? Ask for a bridal quote.</p>
+            <p>Soft Glam, Full Glam or Bold / Dramatic, plus Basic Installation or Curling Long Weave if you need hair. Getting married? Choose from the bridal price list.</p>
           </li>
           <li>
             <h3>Send a WhatsApp</h3>

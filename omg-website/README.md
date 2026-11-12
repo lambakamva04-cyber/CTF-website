@@ -6,15 +6,19 @@ print and the contact details come from the 2026 price-list poster.
 Two hair services have been renamed since the poster was printed, at the
 same prices: "Installation" is now **Basic Installation** (R400) and "Styling
 Long Weave" is now **Curling Long Weave** (R450). The poster is no longer
-offered as a download for that reason. The site also has a **Bridal** section,
-which is not on the poster: it carries no prices and sends brides to WhatsApp
-for a quote.
+offered as a download for that reason.
+
+The **Bridal** section is not on the poster. Its prices come from OMG's 2026
+bridal price list: the Bridal Package (R4500), the two makeup-and-leave options
+(R1800 and R2900), bridal natural hairstyles (R850), the optional trial (R750)
+and bridesmaid full glam (R850 with strip lashes, R950 with cut crease). Return
+transport and accommodation to the bride's location are excluded.
 
 Plain HTML and CSS, no build step and no JavaScript. Every booking button opens
 WhatsApp (+27 78 576 7604) with a message already filled in for that service,
 so the enquiry arrives with the service, price, date, time and home-call details
-in one go. The bridal button asks for the wedding date, venue, and how many
-people need makeup and hair.
+in one go. The bridal buttons ask for the wedding date, the venue and the
+number of bridesmaids instead.
 
 ## Deploy
 
