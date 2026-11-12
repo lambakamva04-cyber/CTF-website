@@ -1,14 +1,20 @@
 # OMG – Oh! My Glam
 
-Single-page site for OMG – Oh! My Glam (makeup and hair). Every price, the
-fine print and the contact details come straight from the 2026 price-list
-poster, which is also published at `/omg-2026-price-list.jpg` so clients can
-save and forward it.
+Single-page site for OMG – Oh! My Glam (makeup and hair). The prices, the fine
+print and the contact details come from the 2026 price-list poster.
+
+Two hair services have been renamed since the poster was printed, at the
+same prices: "Installation" is now **Basic Installation** (R400) and "Styling
+Long Weave" is now **Curling Long Weave** (R450). The poster is no longer
+offered as a download for that reason. The site also has a **Bridal** section,
+which is not on the poster: it carries no prices and sends brides to WhatsApp
+for a quote.
 
 Plain HTML and CSS, no build step and no JavaScript. Every booking button opens
 WhatsApp (+27 78 576 7604) with a message already filled in for that service,
 so the enquiry arrives with the service, price, date, time and home-call details
-in one go.
+in one go. The bridal button asks for the wedding date, venue, and how many
+people need makeup and hair.
 
 ## Deploy
 
