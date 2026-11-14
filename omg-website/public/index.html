@@ -11,8 +11,8 @@
 <meta property="og:locale" content="en_ZA">
 <meta property="og:title" content="OMG – Oh! My Glam | 2026 Makeup &amp; Hair Price List">
 <meta property="og:description" content="Soft Glam R750 · Full Glam R850 · Bold/Dramatic R950 · Hair from R400. Book on WhatsApp: +27 78 576 7604.">
-<!-- Swap to an absolute URL (https://your-domain/og.jpg) once the domain is live:
-     WhatsApp, Facebook and Instagram only show a preview card for absolute image URLs. -->
+<!-- Share previews need an absolute image URL; the Worker rewrites this one
+     for whichever domain served the page (src/index.js). -->
 <meta property="og:image" content="/og.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -84,6 +84,8 @@
   }
 
   *, *::before, *::after { box-sizing: border-box; }
+  /* `hidden` always wins, even over a class that sets display (e.g. .btn). */
+  [hidden] { display: none !important; }
   html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
   @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
 
@@ -145,6 +147,8 @@
     font: 600 15px/1 var(--sans);
     letter-spacing: .02em;
     text-decoration: none;
+    border: 0;
+    cursor: pointer;
     transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease;
     white-space: nowrap;
   }
@@ -156,9 +160,11 @@
   .btn-gold:hover { transform: translateY(-1px); box-shadow: 0 1px 0 rgba(255,255,255,.55) inset, 0 14px 28px -10px rgba(0,0,0,.7); }
   .btn-ghost {
     color: var(--gold-100);
+    background: transparent;
     border: 1.5px solid rgba(241, 217, 154, .55);
   }
   .btn-ghost:hover { background: rgba(241, 217, 154, .1); }
+  .btn:disabled { opacity: .6; cursor: progress; transform: none; }
 
   /* ===== Top bar ===== */
   .topbar {

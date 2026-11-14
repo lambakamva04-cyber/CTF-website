@@ -5,10 +5,12 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "setup": "node scripts/setup.mjs",
     "dev": "wrangler dev",
     "db:migrate:local": "wrangler d1 migrations apply omg-oh-my-glam --local",
     "db:migrate": "wrangler d1 migrations apply omg-oh-my-glam --remote",
     "test": "node --test \"test/**/*.test.js\"",
+    "predeploy": "node scripts/check-config.mjs",
     "deploy": "wrangler deploy"
   },
   "devDependencies": {

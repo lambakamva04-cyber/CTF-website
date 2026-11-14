@@ -59,36 +59,57 @@ Open `/admin/` and sign in with the admin password. It is made for a phone.
 
 Sign-in lasts 14 days on a device. Log out on shared devices.
 
-## One-time setup
+## Go live (one time)
 
-Needs Node.js 22 and a Cloudflare account. From this folder:
+Needs Node.js 22 and a free Cloudflare account. From this folder:
 
 ```bash
 npm install
-npx wrangler login
-npx wrangler d1 create omg-oh-my-glam
+npm run setup
 ```
 
-Copy the `database_id` it prints into `wrangler.toml`, over the placeholder.
-Then create the tables and set the admin password (at least 12 characters;
-this is the only login):
+`npm run setup` (or `npm run setup:omg` from the repo root) does the whole
+first launch and is safe to run again:
 
-```bash
-npm run db:migrate
-npx wrangler secret put ADMIN_PASSWORD
-```
+1. signs in to Cloudflare (opens the browser the first time);
+2. creates the `omg-oh-my-glam` database and writes its id into
+   `wrangler.toml`. **Commit that change**, so later deploys use it;
+3. creates the tables;
+4. deploys the site to a `*.workers.dev` address;
+5. asks for the admin password (at least 12 characters, hidden as you type).
+   This is the only login, so keep it somewhere safe;
+6. checks that the live site answers, and prints its address and the admin
+   page's.
 
-## Deploy
+To use OMG's own domain, attach it in the Cloudflare dashboard (Workers &
+Pages > omg-oh-my-glam > Settings > Domains & Routes). Nothing in the code
+needs to change: the link-preview image follows whichever domain served the
+page.
+
+## Deploy changes
 
 ```bash
 npm run deploy            # from this folder
 npm run deploy:omg        # or from the repo root
 ```
 
-Run `npm run db:migrate` before deploying whenever a new file appears in
-`migrations/`. The first deploy creates the `omg-oh-my-glam` Worker on a
-`*.workers.dev` URL. Attach OMG's own domain to it in the Cloudflare dashboard
-(Workers > omg-oh-my-glam > Settings > Domains & Routes).
+Run `npm run db:migrate` first whenever a new file appears in `migrations/`.
+`npm run deploy` refuses to run, and says why, until `npm run setup` has been
+done once.
+
+## Backups
+
+D1 keeps a rolling history of the database (Time Travel), so it can be put
+back to any minute in the last 30 days (7 on the free plan):
+
+```bash
+npx wrangler d1 time-travel info omg-oh-my-glam                                 # current restore point
+npx wrangler d1 time-travel restore omg-oh-my-glam --timestamp=2026-12-01T09:00:00+02:00
+npx wrangler d1 export omg-oh-my-glam --remote --output backup.sql             # a copy to keep
+```
+
+A copy made with `export` holds clients' names and numbers: keep it private
+and delete it when it is no longer needed.
 
 ## Run it locally
 
@@ -144,11 +165,11 @@ bash e2e/run.sh       # ~310 black-box security checks against a local Worker
 `e2e/run.sh` starts a throwaway Worker on a fresh local database, so it never
 touches real data. GitHub runs both on every push.
 
-## After the domain is live
+## Still to supply
 
-- **Share preview.** Change `og:image` in `public/index.html` to the full URL,
-  e.g. `https://your-domain/og.jpg`. WhatsApp, Facebook and Instagram only show
-  the preview card for absolute image URLs.
+- **Service durations.** The times in `public/js/catalog.js` are estimates.
+  Set them to how long each service really takes, or the calendar will book
+  clients too close together (or too far apart).
 - **Facebook link.** The poster gives only the name "Asanda Tiwani", so the
   Facebook link is a search for that name. Replace it with the page's real URL.
 

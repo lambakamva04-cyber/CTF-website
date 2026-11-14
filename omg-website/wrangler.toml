@@ -17,10 +17,12 @@ compatibility_date = "2026-09-01"
 directory = "./public"
 binding = "ASSETS"
 run_worker_first = true
+# Unknown addresses get public/404.html with a 404 status.
+not_found_handling = "404-page"
 
 # Bookings, reviews, admin sessions and rate-limit counters.
-# Create it once with `npx wrangler d1 create omg-oh-my-glam` and paste the
-# database_id it prints over the placeholder below.
+# `npm run setup` creates it and writes its id here; commit that change.
+# Until then the placeholder below stops `npm run deploy` with a clear message.
 [[d1_databases]]
 binding = "DB"
 database_name = "omg-oh-my-glam"

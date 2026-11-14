@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en-ZA">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Page not found | OMG – Oh! My Glam</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Montserrat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 32px 16px;
+    background: #3a1d18; color: #f7edd8; font: 500 16px/1.6 Montserrat, system-ui, sans-serif; text-align: center;
+  }
+  img { width: min(280px, 70vw); height: auto; }
+  h1 { margin: 18px 0 6px; font: 600 clamp(30px, 7vw, 40px)/1.15 'Cormorant Garamond', serif; color: #f1d99a; }
+  p { margin: 0 auto 26px; max-width: 34ch; color: rgba(247, 237, 216, .76); }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+  a {
+    display: inline-flex; align-items: center; min-height: 48px; padding: 0 22px; border-radius: 999px;
+    font-weight: 600; text-decoration: none; color: #2b1512; background: linear-gradient(180deg, #f8e3a8, #e3bd6c 52%, #c99643);
+  }
+  a.ghost { color: #fbefcb; background: none; border: 1.5px solid rgba(241, 217, 154, .55); }
+  a:focus-visible { outline: 3px solid #f1d99a; outline-offset: 3px; }
+</style>
+</head>
+<body>
+<main>
+  <img src="/img/logo.webp" width="560" height="350" alt="OMG – Oh! My Glam">
+  <h1>That page isn’t here</h1>
+  <p>The link may be old or mistyped. Everything you need is on the main page.</p>
+  <div class="actions">
+    <a href="/#book">Book an appointment</a>
+    <a class="ghost" href="/">Go to the main page</a>
+  </div>
+</main>
+</body>
+</html>

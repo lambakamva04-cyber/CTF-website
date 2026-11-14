@@ -70,11 +70,32 @@ export async function purge(env, nowMs = Date.now()) {
   ]);
 }
 
+/**
+ * WhatsApp, Facebook and Instagram only show a link's preview image when its
+ * URL is absolute. The page says "/og.jpg"; make that absolute for whichever
+ * domain served it (workers.dev now, OMG's own domain later), so nobody has to
+ * edit the page when the domain changes.
+ */
+function absoluteShareImage(response, url) {
+  if (response.status !== 200 || !response.body) return response;
+  if (!(response.headers.get('content-type') || '').startsWith('text/html')) return response;
+  const absolute = {
+    element(meta) {
+      const value = meta.getAttribute('content');
+      if (value && value.startsWith('/') && !value.startsWith('//')) meta.setAttribute('content', url.origin + value);
+    },
+  };
+  return new HTMLRewriter()
+    .on('meta[property="og:image"]', absolute)
+    .on('meta[name="twitter:image"]', absolute)
+    .transform(response);
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const isApi = url.pathname === '/api' || url.pathname.startsWith('/api/');
-    const response = isApi ? await api(request, env, url) : await env.ASSETS.fetch(request);
+    const response = isApi ? await api(request, env, url) : absoluteShareImage(await env.ASSETS.fetch(request), url);
     return withSecurityHeaders(response, url);
   },
 
