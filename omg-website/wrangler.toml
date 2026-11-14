@@ -26,7 +26,7 @@ not_found_handling = "404-page"
 [[d1_databases]]
 binding = "DB"
 database_name = "omg-oh-my-glam"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "2b9f3a76-bdfc-49d9-8164-fe0683ef64f0"
 migrations_dir = "migrations"
 
 # Daily clean-up: old personal data, expired sessions and rate-limit counters.
