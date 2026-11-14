@@ -101,7 +101,7 @@ returns the first request's `ref` instead of storing a duplicate.
 
 ### `GET /api/reviews?page=1`
 
-Approved reviews, newest first, six per page. `Cache-Control: public, max-age=60`.
+Approved reviews, newest first, six per page. Not cached, so an approval shows at once.
 
 ```json
 { "ok": true, "average": 3.75, "count": 12, "page": 1, "hasMore": true,

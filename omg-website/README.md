@@ -14,31 +14,135 @@ bridal price list: the Bridal Package (R4500), the two makeup-and-leave options
 and bridesmaid full glam (R850 with strip lashes, R950 with cut crease). Return
 transport and accommodation to the bride's location are excluded.
 
-Plain HTML and CSS with no build step. The only script is a short one written
-into the page, which runs the gallery's tabs and swipe. Every booking button opens
-WhatsApp (+27 78 576 7604) with a message already filled in for that service,
-so the enquiry arrives with the service, price, date, time and home-call details
-in one go. The bridal buttons ask for the wedding date, the venue and the
-number of bridesmaids instead.
+The site is static pages plus a small Cloudflare Worker (`src/`) with a D1
+database. The Worker runs the **booking calendar**, the **reviews** and the
+**admin page** at `/admin/`. The full API is in [API.md](API.md).
 
-## Deploy
+## How booking works
 
-From the repo root:
+1. A client picks a service, a day and a free start time on the calendar.
+   Every "Book" button on the price lists opens the calendar with that
+   service already chosen.
+2. They enter their **Name and Surname** and **Contact Number** and tap
+   "Request this time". The request is saved as *pending* and they get a
+   button that opens WhatsApp with this message ready to send:
+
+   ```
+   Name and Surname: Thandi Mokoena
+   Contact Number: 082 123 4567
+   Service: Full Glam (R850)
+   Date and Time: Saturday 12 December 2026 at 09:00
+   Ref: OMG-7K2P
+   ```
+
+3. OMG confirms it on the admin page with one tap. Only then does the time
+   show as booked on the calendar.
+
+Pending requests never block the calendar, so nobody can fill it with fake
+requests. The calendar shows only booked time ranges: never names, numbers,
+services or notes. If saving fails, the page still offers the WhatsApp
+message, so a booking is never lost.
+
+## The admin page
+
+Open `/admin/` and sign in with the admin password. It is made for a phone.
+
+- **Requests**: pending requests, soonest first, with Call and WhatsApp
+  buttons. **Confirm** blocks the time on the calendar; **Decline** removes
+  the request. If a time clashes with something already booked, the page says
+  so and offers "Confirm anyway".
+- **Calendar**: everything booked in a month. Add a booking taken by phone, or
+  time off (tick "Whole day" for a day off), and delete entries. Deleting a
+  booking also deletes that client's details.
+- **Reviews**: new reviews wait here. **Approve** puts one on the site. Approve
+  genuine reviews, critical ones included; delete only spam or abuse.
+
+Sign-in lasts 14 days on a device. Log out on shared devices.
+
+## One-time setup
+
+Needs Node.js 22 and a Cloudflare account. From this folder:
 
 ```bash
 npm install
-npm run deploy:omg
+npx wrangler login
+npx wrangler d1 create omg-oh-my-glam
 ```
 
-The first deploy creates the `omg-oh-my-glam` Worker on a `*.workers.dev` URL.
-Attach OMG's own domain to it in the Cloudflare dashboard (Workers >
-omg-oh-my-glam > Settings > Domains & Routes).
-
-Preview locally with any static server, for example:
+Copy the `database_id` it prints into `wrangler.toml`, over the placeholder.
+Then create the tables and set the admin password (at least 12 characters;
+this is the only login):
 
 ```bash
-cd omg-website/public && python3 -m http.server 8080
+npm run db:migrate
+npx wrangler secret put ADMIN_PASSWORD
 ```
+
+## Deploy
+
+```bash
+npm run deploy            # from this folder
+npm run deploy:omg        # or from the repo root
+```
+
+Run `npm run db:migrate` before deploying whenever a new file appears in
+`migrations/`. The first deploy creates the `omg-oh-my-glam` Worker on a
+`*.workers.dev` URL. Attach OMG's own domain to it in the Cloudflare dashboard
+(Workers > omg-oh-my-glam > Settings > Domains & Routes).
+
+## Run it locally
+
+```bash
+cp .dev.vars.example .dev.vars     # then set a local ADMIN_PASSWORD
+npm run db:migrate:local
+npm run dev                        # http://localhost:8787
+```
+
+## Change prices, durations or opening hours
+
+Everything bookable is in `public/js/catalog.js`: the services with their
+prices and how long each takes, the opening hours, the 30-minute grid of start
+times, the 3 hours' minimum notice and how far ahead clients can book. The page
+and the Worker both read this one file, so a change there is a change
+everywhere. **The durations are estimates: set them to the real times.**
+
+## Security
+
+- **SQL injection**: every query uses bound parameters; no request value is
+  ever put into SQL text. Inputs are checked against fixed formats and lists
+  before they reach the database.
+- **Rate limits** on every API route, per visitor and site-wide (the table is
+  in API.md). Visitors are identified by a salted hash of their IP; raw IPs are
+  never stored.
+- **Cross-site requests**: every state-changing request must come from the
+  site itself (`Origin` check) and be JSON. The admin cookie is `__Host-`,
+  `Secure`, `HttpOnly` and `SameSite=Strict`.
+- **Script injection**: a strict Content-Security-Policy allows scripts only
+  from the site's own files; names and reviews are always shown as text.
+- **Admin**: constant-time password check, 5 tries per 15 minutes per address,
+  and sign-in pauses for everyone after 30 wrong passwords in an hour. Session
+  tokens are random and stored only as hashes.
+- **Bots**: a hidden honeypot field and a minimum fill time. Bots get a reply
+  that looks normal, and nothing is stored.
+- Bodies are capped at 8 KB. Errors never reveal internals. Every response,
+  pages included, carries the security headers listed in API.md.
+
+## Personal data
+
+A daily job deletes requests nobody confirmed, client details 30 days after
+the appointment, calendar entries older than 180 days, and expired sessions
+and counters. The booking form tells clients their details are deleted within
+30 days after the appointment.
+
+## Tests
+
+```bash
+npm test              # unit tests: validation, slot maths, headers
+bash e2e/run.sh       # ~310 black-box security checks against a local Worker
+```
+
+`e2e/run.sh` starts a throwaway Worker on a fresh local database, so it never
+touches real data. GitHub runs both on every push.
 
 ## After the domain is live
 

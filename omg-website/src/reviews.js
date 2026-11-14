@@ -24,6 +24,7 @@ export async function list({ env, url, client }) {
     .all();
 
   const count = stats ? stats.count : 0;
+  // Not cached: OMG approves a review and expects to see it straight away.
   return json(
     {
       ok: true,
@@ -39,8 +40,6 @@ export async function list({ env, url, client }) {
         date: nowInZone(UTC_OFFSET_MINUTES, row.created_at).date,
       })),
     },
-    200,
-    { 'cache-control': 'public, max-age=60' },
   );
 }
 
