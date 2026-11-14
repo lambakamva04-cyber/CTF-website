@@ -96,3 +96,42 @@ jobs:
 
       - name: Typecheck
         run: npm run typecheck
+
+  omg-site:
+    name: OMG site (unit tests, security suite, bundle)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: omg-website
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: omg-website/package-lock.json
+
+      - run: npm ci
+
+      - name: Unit tests
+        run: npm test
+
+      # ~310 black-box attack checks (SQL injection, cross-site requests,
+      # oversized and malformed bodies, rate limits, admin sign-in, privacy,
+      # security headers) against the real Worker on a throwaway local
+      # database. The browser check needs Chromium, so it is skipped here.
+      - name: Security suite
+        run: bash e2e/run.sh
+        env:
+          SKIP_BROWSER: '1'
+          WRANGLER_SEND_METRICS: 'false'
+
+      # The deployable artefact: proves the Worker and the shared browser
+      # modules it imports still bundle, without touching Cloudflare.
+      - name: Bundle the Worker
+        run: npx wrangler deploy --dry-run --outdir dist
+        env:
+          WRANGLER_SEND_METRICS: 'false'
+

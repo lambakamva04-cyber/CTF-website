@@ -1,0 +1,19 @@
+{
+  "name": "omg-website",
+  "version": "1.0.0",
+  "description": "OMG \u2013 Oh! My Glam: client site with booking calendar and reviews",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "dev": "wrangler dev",
+    "db:migrate:local": "wrangler d1 migrations apply omg-oh-my-glam --local",
+    "db:migrate": "wrangler d1 migrations apply omg-oh-my-glam --remote",
+    "test": "node --test \"test/**/*.test.js\"",
+    "predeploy": "node scripts/check-config.mjs",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "4.143.0"
+  }
+}
