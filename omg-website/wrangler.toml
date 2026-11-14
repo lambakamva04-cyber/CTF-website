@@ -1,16 +1,38 @@
-# Workers config for the OMG – Oh! My Glam site.
+# Worker for the OMG – Oh! My Glam site: the static pages in ./public, the
+# booking calendar and reviews API under /api/, and the admin page at /admin/.
 #
-# A static site: no entrypoint, the files in ./public are served from the edge.
-# Deploy from the repo root with:
+# Deploy from this folder with `npm run deploy` (or `npm run deploy:omg` from
+# the repo root). One-time setup is in README.md.
 #
-#   npm run deploy:omg
-#
-# The first deploy creates the Worker and gives it a *.workers.dev URL. Attach
-# OMG's own domain to it in the Cloudflare dashboard (Workers > omg-oh-my-glam >
-# Settings > Domains & Routes) rather than here, so a deploy never touches
-# routing.
+# The first deploy gives the Worker a *.workers.dev URL. Attach OMG's own
+# domain in the Cloudflare dashboard (Workers > omg-oh-my-glam > Settings >
+# Domains & Routes) rather than here, so a deploy never touches routing.
 name = "omg-oh-my-glam"
+main = "src/index.js"
 compatibility_date = "2026-09-01"
 
+# Every request runs through the Worker first, pages and images included, so
+# every response carries the security headers set in src/security.js.
 [assets]
 directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
+
+# Bookings, reviews, admin sessions and rate-limit counters.
+# Create it once with `npx wrangler d1 create omg-oh-my-glam` and paste the
+# database_id it prints over the placeholder below.
+[[d1_databases]]
+binding = "DB"
+database_name = "omg-oh-my-glam"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+# Daily clean-up: old personal data, expired sessions and rate-limit counters.
+[triggers]
+crons = ["17 1 * * *"]
+
+[observability]
+enabled = true
+
+# Secrets, set with `npx wrangler secret put <NAME>`, never in this file:
+#   ADMIN_PASSWORD   the admin page password, at least 12 characters

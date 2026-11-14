@@ -169,6 +169,10 @@ the session cookie, otherwise 401.
 
 ## Rate limits
 
+Every attempt counts against the "any attempt" limits, so nobody can hammer
+a form. Only what is actually saved counts against the tighter limits, so a
+visitor who gets a field wrong is not locked out.
+
 Fixed-window counters in D1, keyed by a salted SHA-256 of the client IP
 (`CF-Connecting-IP`). Raw IPs are never stored. The salt is a random value
 created once and kept in the `settings` table.
@@ -176,8 +180,10 @@ created once and kept in the `settings` table.
 | What | Limit per IP | Across everyone |
 | --- | --- | --- |
 | `GET /api/availability`, `GET /api/reviews` | 120 a minute | |
-| `POST /api/bookings` | 5 an hour | 300 a day |
-| `POST /api/reviews` | 3 a day | 100 a day |
+| `POST /api/bookings`, any attempt | 30 an hour | |
+| `POST /api/bookings`, requests saved | 5 an hour | 300 a day |
+| `POST /api/reviews`, any attempt | 20 an hour | |
+| `POST /api/reviews`, reviews saved | 3 a day | 100 a day |
 | `POST /api/admin/login` | 5 per 15 minutes | 30 failed logins an hour |
 | Other `/api/admin/*` | 300 a minute | |
 

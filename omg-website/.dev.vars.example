@@ -1,0 +1,2 @@
+# Copy to .dev.vars for `npm run dev` (that file is git-ignored).
+ADMIN_PASSWORD=choose-a-long-local-password

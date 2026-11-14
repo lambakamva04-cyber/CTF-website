@@ -367,6 +367,8 @@ function selectTab(name, { focus = false } = {}) {
     $(`panel-${key}`).hidden = !on;
   }
   hideBanner();
+  clearTimeout(toastTimer);
+  $('toast').hidden = true;
   loaders[name]();
   if (focus) $(`panel-${name}`).focus({ preventScroll: true });
 }
