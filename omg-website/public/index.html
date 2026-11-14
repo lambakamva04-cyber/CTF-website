@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OMG – Oh! My Glam | Makeup &amp; Hair | 2026 Price List</title>
-<meta name="description" content="OMG – Oh! My Glam 2026 price list: Soft Glam R750, Full Glam R850, Bold/Dramatic R950, Basic Installation R400 and Curling Long Weave R450. Bridal glam by quote. Home calls available on request. Book on WhatsApp: +27 78 576 7604.">
+<meta name="description" content="OMG – Oh! My Glam 2026 price list: Soft Glam R750, Full Glam R850, Bold/Dramatic R950, Basic Installation R400 and Curling Long Weave R450. Bridal Package R4500, bridesmaids from R850. Home calls available on request. Book on WhatsApp: +27 78 576 7604.">
 <meta name="theme-color" content="#3A1D18">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="OMG – Oh! My Glam">
@@ -24,16 +24,16 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Great+Vibes&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="preload" as="image" href="/img/logo@2x.webp" imagesrcset="/img/logo.webp 461w, /img/logo@2x.webp 922w" imagesizes="(max-width: 600px) 88vw, 520px">
+<link rel="preload" as="image" href="/img/logo@2x.webp" imagesrcset="/img/logo.webp 560w, /img/logo-840.webp 840w, /img/logo@2x.webp 1120w" imagesizes="(max-width: 600px) 88vw, 520px">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "HealthAndBeautyBusiness",
   "name": "OMG – Oh! My Glam",
   "alternateName": ["OMG", "Oh! My Glam"],
-  "description": "Makeup and hair styling, including bridal glam by quote. Home calls available on request.",
+  "description": "Makeup and hair styling, including bridal and bridesmaid packages. Home calls available on request.",
   "telephone": "+27785767604",
-  "priceRange": "R400 – R950",
+  "priceRange": "R400 – R4500",
   "currenciesAccepted": "ZAR",
   "sameAs": ["https://www.instagram.com/asanda_tiwani/"],
   "hasOfferCatalog": {
@@ -44,7 +44,14 @@
       { "@type": "Offer", "price": "850", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Full Glam makeup" } },
       { "@type": "Offer", "price": "950", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Bold / Dramatic makeup" } },
       { "@type": "Offer", "price": "400", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Basic Installation (hair)" } },
-      { "@type": "Offer", "price": "450", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Curling Long Weave" } }
+      { "@type": "Offer", "price": "450", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Curling Long Weave" } },
+      { "@type": "Offer", "price": "4500", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Bridal Package", "description": "Weave installation (your hair), bridal hairstyle of your choice, skin prep, full bridal coverage makeup, strip lashes and touch-ups for the photoshoot hour." } },
+      { "@type": "Offer", "price": "1800", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Bridal makeup & leave immediately" } },
+      { "@type": "Offer", "price": "2900", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Bridal makeup, installation + style & leave" } },
+      { "@type": "Offer", "price": "850", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Bridal natural hairstyle" } },
+      { "@type": "Offer", "price": "750", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Bridal trial makeup" } },
+      { "@type": "Offer", "price": "850", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Bridesmaid full glam with strip lashes" } },
+      { "@type": "Offer", "price": "950", "priceCurrency": "ZAR", "itemOffered": { "@type": "Service", "name": "Bridesmaid full glam with cut crease" } }
     ]
   }
 }
@@ -176,10 +183,63 @@
   .hero { text-align: center; padding: 44px 0 64px; }
   @media (min-width: 640px) { .hero { padding: 64px 0 88px; } }
   .hero h1 { margin: 0; }
-  .hero-logo {
-    width: min(520px, 88vw); height: auto; margin: 0 auto;
-    filter: drop-shadow(0 8px 18px rgba(20, 6, 3, .55));
+  /* --w is the logo's width; --u is a hundredth of it, the unit the sparkles are measured in. */
+  .logo-stage { --w: min(520px, 88vw); --u: calc(var(--w) / 100); position: relative; display: block; width: var(--w); margin: 0 auto; }
+  .hero-logo { width: 100%; height: auto; }
+
+  /* Sparkles on the logo. Each glint is placed as a percentage of the logo,
+     so they stay in position at every screen size. Thirteen sit on the
+     sparkles already painted into the logo and flare in turn, so those
+     sparkles appear to twinkle. Three more travel around the outline of the
+     OMG letters. Only transform and opacity are animated, which keeps it
+     smooth on phones. */
+  .glints { position: absolute; inset: 0; pointer-events: none; }
+  .glints i {
+    position: absolute; left: var(--x, 0); top: var(--y, 0);
+    width: calc(var(--u) * 9 * var(--s, 1)); height: calc(var(--u) * 9 * var(--s, 1));
+    margin: calc(var(--u) * -4.5 * var(--s, 1)) 0 0 calc(var(--u) * -4.5 * var(--s, 1));
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3CradialGradient id='g'%3E%3Cstop offset='0' stop-color='%23fffdf6'/%3E%3Cstop offset='.12' stop-color='%23fff1c9' stop-opacity='.95'/%3E%3Cstop offset='.28' stop-color='%23ffd98f' stop-opacity='.4'/%3E%3Cstop offset='.6' stop-color='%23ffb44a' stop-opacity='.1'/%3E%3Cstop offset='1' stop-color='%23ffb44a' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='34' fill='url(%23g)'/%3E%3Cpath fill='%23fff0c4' d='M50 0C50.7 38 62 49.3 100 50 62 50.7 50.7 62 50 100 49.3 62 38 50.7 0 50 38 49.3 49.3 38 50 0Z'/%3E%3Cpath fill='%23ffe3a1' opacity='.8' transform='rotate(45 50 50)' d='M50 24C50.5 43 57 49.5 76 50 57 50.5 50.5 57 50 76 49.5 57 43 50.5 24 50 43 49.5 49.5 43 50 24Z'/%3E%3C/svg%3E") center / contain no-repeat;
+    opacity: 0;
+    animation: glint-twinkle var(--t, 5s) var(--d, 0s) infinite both;
   }
+  @keyframes glint-twinkle {
+    0%, 32%, 100% { opacity: 0; transform: scale(.3) rotate(0deg); }
+    9%  { opacity: 1;   transform: scale(1) rotate(14deg); }
+    15% { opacity: .7;  transform: scale(.6) rotate(22deg); }
+    21% { opacity: 1;   transform: scale(.86) rotate(30deg); }
+  }
+  /* A traveller: a point that is carried around the outline of the OMG
+     letters, holding one glint that shimmers as it goes. */
+  .glints b { position: absolute; left: 0; top: 0; width: 0; height: 0; animation: glint-orbit var(--t, 20s) var(--d, 0s) linear infinite; }
+  .glints b i { --s: .62; animation: glint-shimmer 1.7s var(--d, 0s) ease-in-out infinite; }
+  @keyframes glint-shimmer {
+    0%, 100% { opacity: .8; transform: scale(.42) rotate(0deg); }
+    50% { opacity: 1; transform: scale(1) rotate(45deg); }
+  }
+  @keyframes glint-orbit {
+    0% { transform: translate(calc(var(--u) * 1.8), calc(var(--u) * 21.3)); }  2.5% { transform: translate(calc(var(--u) * 2.7), calc(var(--u) * 15.4)); }
+    5% { transform: translate(calc(var(--u) * 5.6), calc(var(--u) * 10.2)); }  7.5% { transform: translate(calc(var(--u) * 9.9), calc(var(--u) * 6.1)); }
+    10% { transform: translate(calc(var(--u) * 15.4), calc(var(--u) * 3.8)); }  12.5% { transform: translate(calc(var(--u) * 21.3), calc(var(--u) * 2.9)); }
+    15% { transform: translate(calc(var(--u) * 27.2), calc(var(--u) * 3.7)); }  17.5% { transform: translate(calc(var(--u) * 32.7), calc(var(--u) * 6.0)); }
+    20% { transform: translate(calc(var(--u) * 37.7), calc(var(--u) * 4.6)); }  22.5% { transform: translate(calc(var(--u) * 43.7), calc(var(--u) * 4.4)); }
+    25% { transform: translate(calc(var(--u) * 49.7), calc(var(--u) * 4.4)); }  27.5% { transform: translate(calc(var(--u) * 55.7), calc(var(--u) * 4.4)); }
+    30% { transform: translate(calc(var(--u) * 61.6), calc(var(--u) * 4.4)); }  32.5% { transform: translate(calc(var(--u) * 67.6), calc(var(--u) * 4.6)); }
+    35% { transform: translate(calc(var(--u) * 73.2), calc(var(--u) * 6.3)); }  37.5% { transform: translate(calc(var(--u) * 78.8), calc(var(--u) * 4.3)); }
+    40% { transform: translate(calc(var(--u) * 84.7), calc(var(--u) * 3.4)); }  42.5% { transform: translate(calc(var(--u) * 90.6), calc(var(--u) * 4.4)); }
+    45% { transform: translate(calc(var(--u) * 94.2), calc(var(--u) * 8.3)); }  47.5% { transform: translate(calc(var(--u) * 94.6), calc(var(--u) * 14.2)); }
+    50% { transform: translate(calc(var(--u) * 96.2), calc(var(--u) * 20.0)); }  52.5% { transform: translate(calc(var(--u) * 96.3), calc(var(--u) * 26.0)); }
+    55% { transform: translate(calc(var(--u) * 94.8), calc(var(--u) * 31.6)); }  57.5% { transform: translate(calc(var(--u) * 89.3), calc(var(--u) * 34.0)); }
+    60% { transform: translate(calc(var(--u) * 83.4), calc(var(--u) * 35.0)); }  62.5% { transform: translate(calc(var(--u) * 77.6), calc(var(--u) * 34.2)); }
+    65% { transform: translate(calc(var(--u) * 71.7), calc(var(--u) * 33.0)); }  67.5% { transform: translate(calc(var(--u) * 65.7), calc(var(--u) * 33.1)); }
+    70% { transform: translate(calc(var(--u) * 59.7), calc(var(--u) * 33.2)); }  72.5% { transform: translate(calc(var(--u) * 53.8), calc(var(--u) * 32.5)); }
+    75% { transform: translate(calc(var(--u) * 47.9), calc(var(--u) * 32.0)); }  77.5% { transform: translate(calc(var(--u) * 42.0), calc(var(--u) * 33.1)); }
+    80% { transform: translate(calc(var(--u) * 36.2), calc(var(--u) * 33.5)); }  82.5% { transform: translate(calc(var(--u) * 33.1), calc(var(--u) * 38.6)); }
+    85% { transform: translate(calc(var(--u) * 28.2), calc(var(--u) * 39.7)); }  87.5% { transform: translate(calc(var(--u) * 22.3), calc(var(--u) * 38.7)); }
+    90% { transform: translate(calc(var(--u) * 16.4), calc(var(--u) * 37.9)); }  92.5% { transform: translate(calc(var(--u) * 10.8), calc(var(--u) * 35.9)); }
+    95% { transform: translate(calc(var(--u) * 6.0), calc(var(--u) * 32.3)); }  97.5% { transform: translate(calc(var(--u) * 3.0), calc(var(--u) * 27.1)); }
+    100% { transform: translate(calc(var(--u) * 1.8), calc(var(--u) * 21.3)); }
+  }
+  @media (prefers-reduced-motion: reduce) { .glints { display: none; } }
   .kicker {
     margin: 18px 0 0;
     font: 500 clamp(12px, 3.4vw, 15px)/1.4 var(--sans);
@@ -223,6 +283,11 @@
     margin: 0;
     font: 600 clamp(36px, 7vw, 54px)/1.05 var(--serif);
     letter-spacing: .01em;
+  }
+  .section-head h2.script-title {
+    font: 400 clamp(56px, 13vw, 84px)/1.15 var(--script);
+    letter-spacing: 0;
+    color: var(--gold-200);
   }
   .section-head p { max-width: 46ch; margin: 14px auto 0; color: var(--cream-soft); }
 
@@ -298,63 +363,180 @@
   .bridal .eyebrow { color: var(--cocoa-600); }
   .bridal .section-head h2 { color: var(--cocoa-900); }
   .bridal .section-head p { color: var(--cocoa-700); max-width: 52ch; }
-  .bridal-grid { display: grid; gap: 28px; align-items: center; }
-  @media (min-width: 900px) { .bridal-grid { grid-template-columns: 1.05fr 1fr; gap: 56px; } }
-  .bridal-points { list-style: none; margin: 0; padding: 0; display: grid; gap: 22px; }
-  .bridal-points li { display: flex; gap: 16px; align-items: flex-start; }
-  .bridal-points .icon {
-    width: 40px; height: 40px; padding: 11px; border-radius: 50%;
-    background: var(--cocoa-800); fill: var(--gold-200);
-  }
-  .bridal-points h3 { margin: 0 0 2px; font: 600 26px/1.15 var(--serif); color: var(--cocoa-900); }
-  .bridal-points p { margin: 0; font-size: 15.5px; color: var(--cocoa-700); }
-  .quote-card {
+
+  /* The headline package: price and button on one side, what's included on the other. */
+  .pkg {
+    display: grid; gap: 26px;
     border-radius: var(--radius);
     background: var(--cocoa-800);
     color: var(--cream);
-    padding: 28px 22px;
+    padding: 30px 22px;
     box-shadow: 0 24px 50px -26px rgba(31, 14, 11, .9);
   }
-  @media (min-width: 640px) { .quote-card { padding: 36px; } }
-  .quote-card h3 { margin: 0; font: 600 32px/1.1 var(--serif); }
-  .quote-card > p { margin: 10px 0 0; color: var(--cream-soft); }
-  .quote-card ol { list-style: none; counter-reset: q; margin: 16px 0 24px; padding: 0; }
-  .quote-card li {
-    counter-increment: q;
-    display: flex; align-items: center; gap: 14px;
-    padding: 12px 0;
-    border-bottom: 1px dashed rgba(230, 194, 122, .25);
-    font-weight: 500;
+  @media (min-width: 640px) { .pkg { padding: 32px; } }
+  @media (min-width: 900px) { .pkg { grid-template-columns: auto 1fr; gap: 56px; align-items: center; padding: 44px 48px; } }
+  .pkg-main { display: flex; flex-direction: column; align-items: flex-start; }
+  .pkg-tag { font: 600 11px/1 var(--sans); letter-spacing: .24em; text-transform: uppercase; color: var(--cream-faint); }
+  .pkg h3 { margin: 10px 0 0; font: 600 clamp(36px, 8vw, 44px)/1 var(--serif); }
+  .pkg-price { margin: 10px 0 22px; font: 700 clamp(40px, 10vw, 52px)/1 var(--sans); letter-spacing: -.01em; }
+  .pkg-incl { display: grid; gap: 22px; }
+  @media (min-width: 640px) { .pkg-incl { grid-template-columns: repeat(3, 1fr); gap: 28px; } }
+  @media (min-width: 900px) { .pkg-incl { padding-left: 56px; border-left: 1px solid var(--line); } }
+  .pkg-incl h4 { margin: 0 0 10px; font: 600 11px/1 var(--sans); letter-spacing: .24em; text-transform: uppercase; color: var(--gold-300); }
+  .pkg-incl ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
+  .pkg-incl li { position: relative; padding-left: 20px; font-size: 15.5px; line-height: 1.4; }
+  .pkg-incl li::before {
+    content: ''; position: absolute; left: 0; top: .32em;
+    width: 11px; height: 11px;
+    background: var(--gold-300);
+    clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
   }
-  .quote-card li:last-child { border-bottom: 0; }
-  .quote-card li::before {
-    content: counter(q);
-    flex: none; width: 28px; height: 28px; border-radius: 50%;
-    display: grid; place-items: center;
-    font: 700 16px/1 var(--serif);
-    color: var(--cocoa-900); background: var(--gold-fill);
+
+  .bridal-menu { margin-top: 20px; align-items: start; }
+  @media (min-width: 860px) { .bridal-menu { margin-top: 28px; } }
+  .bridal .card {
+    background: var(--cocoa-800); border-color: transparent;
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+    box-shadow: 0 24px 50px -30px rgba(31, 14, 11, .9);
   }
-  .quote-card .btn { width: 100%; }
+  .bridal .card-note { margin-top: 4px; }
+  .svc-note { font: 500 13px/1.3 var(--sans); color: var(--cream-faint); }
+
+  .bridal-note {
+    display: flex; gap: 14px; align-items: flex-start;
+    margin-top: 28px; padding: 18px 20px;
+    border-radius: 18px;
+    border: 1.5px solid rgba(74, 38, 32, .45);
+    background: rgba(255, 248, 230, .45);
+    font-size: 15px; line-height: 1.55;
+  }
+  .bridal-note .icon { width: 24px; height: 24px; margin-top: 1px; fill: var(--cocoa-700); }
+  .bridal-note p { margin: 0; }
+  @media (min-width: 640px) { .bridal-note { padding: 20px 28px; font-size: 16px; } }
+  .bridal-cta { margin: 30px 0 0; text-align: center; }
 
   /* ===== Gallery ===== */
   .gallery { background: var(--cocoa-800); }
+  .gallery .section-head { margin-bottom: 26px; }
+
+  /* "the glam" is three slides: photos, before & after, and videos. On their
+     own they simply stack, each under its heading. The script after them
+     turns the stack into tabs, with a sideways swipe on touch screens. */
+  .looks-heading {
+    margin: 0 0 18px; text-align: center;
+    font: 600 12px/1 var(--sans); letter-spacing: .22em; text-transform: uppercase;
+    color: var(--gold-200);
+  }
+  .looks-panel { scroll-margin-top: 156px; }
+  .looks-panel + .looks-panel { margin-top: 56px; }
+  .looks-panel[hidden] { display: none; }
+  /* A slide with nothing in it yet (Videos, until the first one is added) stays out of sight. */
+  .looks-panel:not(:has(img, video)) { display: none; }
+
+  .looks.is-tabbed .looks-heading { display: none; }
+  .looks.is-tabbed .looks-panel { grid-area: 1 / 1; min-width: 0; margin-top: 0; }
+  /* The extra space under the track is room for the tiles' shadows while a slide is moving. */
+  .looks.is-tabbed .looks-track { display: grid; align-items: start; padding-bottom: 28px; margin-bottom: -28px; }
+  .looks-track.is-sliding { overflow: hidden; overflow: clip; transition: height .36s cubic-bezier(.3, .7, .2, 1); }
+  .is-leaving-left   { animation: looks-leave-left  .36s cubic-bezier(.3, .7, .2, 1) both; }
+  .is-leaving-right  { animation: looks-leave-right .36s cubic-bezier(.3, .7, .2, 1) both; }
+  .is-entering-left  { animation: looks-enter-left  .36s cubic-bezier(.3, .7, .2, 1) both; }
+  .is-entering-right { animation: looks-enter-right .36s cubic-bezier(.3, .7, .2, 1) both; }
+  @keyframes looks-leave-left  { to   { transform: translateX(calc(-100% - 24px)); } }
+  @keyframes looks-leave-right { to   { transform: translateX(calc(100% + 24px)); } }
+  @keyframes looks-enter-left  { from { transform: translateX(calc(-100% - 24px)); } }
+  @keyframes looks-enter-right { from { transform: translateX(calc(100% + 24px)); } }
+
+  .looks-tabs {
+    display: flex; gap: 4px;
+    width: max-content; max-width: 100%;
+    margin: 0 auto 22px; padding: 5px;
+    border-radius: 999px; border: 1px solid var(--line);
+    background: rgba(31, 14, 11, .6);
+  }
+  .looks-tab {
+    -webkit-appearance: none; appearance: none;
+    margin: 0; border: 0; background: none; cursor: pointer;
+    min-height: 44px; padding: 0 clamp(10px, 3.4vw, 20px);
+    border-radius: 999px;
+    font: 600 clamp(10.5px, 3vw, 12.5px)/1 var(--sans); letter-spacing: .12em; text-transform: uppercase;
+    color: var(--cream-soft); white-space: nowrap;
+    transition: color .15s ease, background-color .15s ease;
+  }
+  .looks-tab:hover { color: var(--gold-100); }
+  .looks-tab:focus-visible { outline-offset: -3px; }
+  .looks-tab[aria-selected="true"] { background: var(--gold-fill); color: var(--cocoa-900); }
+  /* Three tabs on the narrowest phones: tighten up, and let the bar scroll rather than spill if it still can't fit. */
+  .looks-tabs { overflow-x: auto; scrollbar-width: none; }
+  .looks-tabs::-webkit-scrollbar { display: none; }
+  @media (max-width: 359px) {
+    .looks-tabs { gap: 2px; padding: 4px; }
+    .looks-tab { padding: 0 8px; letter-spacing: .05em; }
+  }
+
+  /* At the foot of every slide: buttons on to the next slide and back to the last. */
+  .looks-pager { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 24px; }
+  .looks-step {
+    -webkit-appearance: none; appearance: none;
+    margin: 0; background: none; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 9px;
+    min-height: 44px; padding: 0 18px;
+    border-radius: 999px; border: 1.5px solid rgba(241, 217, 154, .45);
+    font: 600 12px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase;
+    color: var(--gold-100);
+    transition: background-color .15s ease;
+  }
+  .looks-step:hover { background: rgba(241, 217, 154, .1); }
+  .looks-step .icon { width: 14px; height: 14px; }
+  .looks-step.is-back .icon { transform: scaleX(-1); }
+
+  /* The photos are different shapes, so the grid is laid out by hand: every
+     cell is sized to its photo's own proportions, and nothing gets trimmed.
+     Row and column sizes are the pixel sizes at the design width; as "fr"
+     units, with the grid's aspect-ratio, they scale together on any screen.
+     Phones: updo + waves side by side, the wide close-up full width, then the
+     two portraits, then the booking band. */
   .grid {
-    display: grid; gap: 12px;
-    grid-template-columns: repeat(2, 1fr);
+    display: grid; gap: min(12px, 3.35vw);
+    grid-template-columns: minmax(0, 173fr) minmax(0, 6.6fr) minmax(0, 154.4fr);
+    grid-template-rows: minmax(0, 177.1fr) minmax(0, 265.8fr) minmax(0, 216.2fr) minmax(0, 112fr);
+    aspect-ratio: 358 / 807.1;
     list-style: none; margin: 0; padding: 0;
   }
-  @media (min-width: 820px) { .grid { grid-template-columns: repeat(4, 1fr); gap: 18px; } }
-  .grid li { margin: 0; }
+  .grid li { margin: 0; min-width: 0; min-height: 0; }
+  .g-updo  { grid-area: 1 / 1 / 2 / 3; }
+  .g-waves { grid-area: 1 / 3 / 2 / 4; }
+  .g-wide  { grid-area: 2 / 1 / 3 / 4; }
+  .g-tall1 { grid-area: 3 / 1 / 4 / 2; }
+  .g-tall2 { grid-area: 3 / 2 / 4 / 4; }
+  .g-cta   { grid-area: 4 / 1 / 5 / 4; }
+  /* Wider screens: three equal columns, each a photo stacked on a tile, with
+     the top and bottom edges of all three columns lined up. */
+  @media (min-width: 700px) {
+    .grid {
+      gap: min(20px, 1.9vw);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-rows: minmax(0, 267.3fr) minmax(0, 45.4fr) minmax(0, 60.3fr) minmax(0, 369.7fr);
+      aspect-ratio: 1120 / 802.7;
+    }
+    .g-updo  { grid-area: 1 / 1 / 3 / 2; }
+    .g-wide  { grid-area: 1 / 2 / 2 / 3; }
+    .g-waves { grid-area: 1 / 3 / 4 / 4; }
+    .g-tall1 { grid-area: 3 / 1 / 5 / 2; }
+    .g-tall2 { grid-area: 2 / 2 / 5 / 3; }
+    .g-cta   { grid-area: 4 / 3 / 5 / 4; }
+  }
   .shot {
-    aspect-ratio: 1 / 1; width: 100%; height: auto;
+    width: 100%; height: 100%;
     object-fit: cover;
     border-radius: 20px;
     border: 3px solid var(--gold-200);
     box-shadow: 0 16px 34px -18px rgba(0,0,0,.85);
     background: var(--cocoa-700);
   }
+  .g-tall2 .shot { object-position: 50% 40%; }
   .cta-tile {
-    aspect-ratio: 1 / 1;
+    height: 100%;
     display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 10px;
     padding: 18px;
     border-radius: 20px;
@@ -368,6 +550,32 @@
   .cta-tile strong { font: 700 clamp(28px, 6vw, 38px)/1 var(--serif); }
   .cta-tile span { display: inline-flex; align-items: center; gap: 8px; font: 600 14px/1.35 var(--sans); }
   @media (min-width: 640px) { .cta-tile { padding: 26px; } }
+
+  /* Before & after: each picture is shown whole. One per row on phones, where
+     they need the full width to be readable; two, then three, across as the
+     screen widens. */
+  .ba-grid, .video-grid { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+  .ba-grid li, .video-grid li { margin: 0; min-width: 0; }
+  .ba-grid { grid-template-columns: minmax(0, 1fr); }
+  .ba-grid .shot { height: auto; }
+  .ba-grid .cta-tile { min-height: 112px; }
+  @media (min-width: 560px) {
+    .ba-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .ba-grid .shot { aspect-ratio: 4 / 5; }
+  }
+  @media (min-width: 900px) { .ba-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; } }
+
+  /* Videos: each keeps its own shape, and nothing downloads until it is played. */
+  .video-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+  .video-grid video {
+    display: block; width: 100%; height: auto;
+    border-radius: 20px;
+    border: 3px solid var(--gold-200);
+    box-shadow: 0 16px 34px -18px rgba(0,0,0,.85);
+    background: #000;
+  }
+  @media (min-width: 700px) { .video-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; } }
+  @media (min-width: 1000px) { .video-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 
   /* ===== Booking ===== */
   .book-grid { display: grid; gap: 28px; align-items: start; }
@@ -467,6 +675,7 @@
   <symbol id="i-ig" viewBox="0 0 24 24"><path d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9a5.5 5.5 0 0 1-5.5 5.5h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2Zm0 2A3.5 3.5 0 0 0 4 7.5v9A3.5 3.5 0 0 0 7.5 20h9a3.5 3.5 0 0 0 3.5-3.5v-9A3.5 3.5 0 0 0 16.5 4h-9ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm5.25-3.25a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5Z"/></symbol>
   <symbol id="i-phone" viewBox="0 0 24 24"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1L6.6 10.8Z"/></symbol>
   <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9.5Z"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm0 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm0 6.5a1 1 0 0 1 1 1V16a1 1 0 1 1-2 0v-4.5a1 1 0 0 1 1-1Zm0-3.75a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5Z"/></symbol>
   <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M13.2 5.3a1 1 0 0 1 1.4 0l6 6a1 1 0 0 1 0 1.4l-6 6a1 1 0 1 1-1.4-1.4l4.3-4.3H4a1 1 0 1 1 0-2h13.5l-4.3-4.3a1 1 0 0 1 0-1.4Z"/></symbol>
   <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 0c.8 7.5 4.5 11.2 12 12-7.5.8-11.2 4.5-12 12-.8-7.5-4.5-11.2-12-12 7.5-.8 11.2-4.5 12-12Z"/></symbol>
 </svg>
@@ -476,7 +685,7 @@
 <header class="topbar">
   <div class="wrap">
     <a class="brand" href="#top" aria-label="OMG – Oh! My Glam, back to top">
-      <img src="/img/logo.webp" srcset="/img/logo.webp 461w, /img/logo@2x.webp 922w" sizes="81px" width="81" height="50" alt="">
+      <img src="/img/logo-240.webp" srcset="/img/logo-240.webp 240w, /img/logo.webp 560w" sizes="80px" width="80" height="50" alt="">
     </a>
     <nav class="nav" aria-label="Main">
       <a href="#prices">Prices</a>
@@ -497,7 +706,27 @@
     <svg class="sparkle" style="left:22%;bottom:16%;width:14px;height:14px" aria-hidden="true"><use href="#i-spark"/></svg>
     <div class="wrap">
       <h1>
-        <img class="hero-logo" src="/img/logo@2x.webp" srcset="/img/logo.webp 461w, /img/logo@2x.webp 922w" sizes="(max-width: 600px) 88vw, 520px" width="461" height="286" alt="OMG – Oh! My Glam" fetchpriority="high">
+        <span class="logo-stage">
+          <img class="hero-logo" src="/img/logo@2x.webp" srcset="/img/logo.webp 560w, /img/logo-840.webp 840w, /img/logo@2x.webp 1120w" sizes="(max-width: 600px) 88vw, 520px" width="560" height="350" alt="OMG – Oh! My Glam" fetchpriority="high">
+          <span class="glints" aria-hidden="true">
+            <i style="--x:28.2%;--y:7.4%;--s:1.25;--t:5.3s;--d:-0.4s"></i>
+            <i style="--x:2.9%;--y:25.6%;--s:1;--t:6.7s;--d:-1.8s"></i>
+            <i style="--x:7.0%;--y:25.9%;--s:0.7;--t:4.3s;--d:-3.1s"></i>
+            <i style="--x:30.8%;--y:26.6%;--s:0.8;--t:5.9s;--d:-4.5s"></i>
+            <i style="--x:48.1%;--y:24.4%;--s:1.15;--t:4.7s;--d:-1.2s"></i>
+            <i style="--x:39.2%;--y:50.6%;--s:0.95;--t:6.1s;--d:-1.2s"></i>
+            <i style="--x:92.3%;--y:9.7%;--s:1.1;--t:5.1s;--d:-3.5s"></i>
+            <i style="--x:94.5%;--y:31.7%;--s:0.9;--t:7.1s;--d:-2.9s"></i>
+            <i style="--x:5.2%;--y:78.3%;--s:1;--t:6.3s;--d:-5.1s"></i>
+            <i style="--x:8.8%;--y:78.5%;--s:0.7;--t:4.9s;--d:-2.9s"></i>
+            <i style="--x:72.4%;--y:67.1%;--s:1.1;--t:5.7s;--d:-2.7s"></i>
+            <i style="--x:95.5%;--y:66.3%;--s:1.2;--t:4.1s;--d:-3.2s"></i>
+            <i style="--x:81.0%;--y:82.5%;--s:0.9;--t:6.9s;--d:-3.0s"></i>
+            <b><i></i></b>
+            <b style="--d:-10s"><i></i></b>
+            <b style="--t:27s;--d:-6s;animation-direction:reverse"><i></i></b>
+          </span>
+        </span>
       </h1>
       <p class="kicker">2026 Makeup &amp; Hair <b>Price List</b></p>
       <p class="lede">Glam made for your moment, from soft and subtle to bold and dramatic. Home calls available on request.</p>
@@ -510,7 +739,7 @@
       <ul class="chips" aria-label="At a glance">
         <li>Makeup from <b>R750</b></li>
         <li>Hair from <b>R400</b></li>
-        <li>Bridal glam by quote</li>
+        <li>Bridal Package <b>R4500</b></li>
         <li>Home calls on request</li>
       </ul>
     </div>
@@ -589,73 +818,337 @@
     <div class="wrap">
       <div class="section-head">
         <span class="eyebrow" aria-hidden="true">the big day</span>
-        <h2 id="bridal-title">Bridal Glam</h2>
-        <p>Your wedding day gets its own plan. Tell us your date and where you’re getting ready, and we’ll put together a bridal quote for makeup, hair, or both.</p>
+        <h2 id="bridal-title">2026 Bridal Price List</h2>
+        <p>Hair and makeup for the bride and her bridesmaids. Tap any option to book it on WhatsApp.</p>
       </div>
 
-      <div class="bridal-grid">
-        <ul class="bridal-points">
-          <li>
-            <svg class="icon" aria-hidden="true"><use href="#i-spark"/></svg>
-            <div>
-              <h3>Bridal makeup</h3>
-              <p>Soft, full or bold. Your bridal look, your way.</p>
-            </div>
-          </li>
-          <li>
-            <svg class="icon" aria-hidden="true"><use href="#i-spark"/></svg>
-            <div>
-              <h3>Bridal hair</h3>
-              <p>Hair styled to go with your look, on the same day as your makeup.</p>
-            </div>
-          </li>
-          <li>
-            <svg class="icon" aria-hidden="true"><use href="#i-spark"/></svg>
-            <div>
-              <h3>We can come to you</h3>
-              <p>Home calls are available on request. The transport fee is quoted for your location.</p>
-            </div>
-          </li>
-        </ul>
-
-        <div class="quote-card">
-          <h3 class="gold-text">Get your bridal quote</h3>
-          <p>Send us these four things on WhatsApp:</p>
-          <ol>
-            <li>Your wedding date</li>
-            <li>Your venue or area</li>
-            <li>How many people need makeup</li>
-            <li>How many people need hair</li>
-          </ol>
-          <a class="btn btn-gold" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20a%20bridal%20quote.%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A%0APeople%20needing%20makeup%3A%0APeople%20needing%20hair%3A" target="_blank" rel="noopener">
-            <svg class="icon" aria-hidden="true"><use href="#i-wa"/></svg>Get a bridal quote
+      <article class="pkg" aria-labelledby="pkg-title">
+        <div class="pkg-main">
+          <span class="pkg-tag">For the bride</span>
+          <h3 id="pkg-title" class="gold-text">Bridal Package</h3>
+          <p class="pkg-price gold-text">R4500</p>
+          <a class="btn btn-gold" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20the%20Bridal%20Package%20%28R4500%29.%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A%0ABridesmaids%20needing%20makeup%3A%0ATrial%20makeup%3F%20%28yes%2Fno%29%3A" target="_blank" rel="noopener" aria-label="Book the Bridal Package, R4500, on WhatsApp">
+            <svg class="icon" aria-hidden="true"><use href="#i-wa"/></svg>Book the package
           </a>
         </div>
+        <div class="pkg-incl">
+          <div>
+            <h4>Hair</h4>
+            <ul>
+              <li>Weave installation (your hair)</li>
+              <li>Bridal hairstyle of your choice</li>
+            </ul>
+          </div>
+          <div>
+            <h4>Makeup</h4>
+            <ul>
+              <li>Skin prep</li>
+              <li>Full bridal coverage makeup</li>
+              <li>Strip lashes</li>
+            </ul>
+          </div>
+          <div>
+            <h4>On the day</h4>
+            <ul>
+              <li>Touch-ups for the photoshoot hour</li>
+            </ul>
+          </div>
+        </div>
+      </article>
+
+      <div class="menu bridal-menu">
+        <article class="card" aria-labelledby="bride-title">
+          <div class="card-head">
+            <h3 id="bride-title" class="gold-text">Bride</h3>
+            <span>More options</span>
+          </div>
+          <ul class="svc-list">
+            <li class="svc">
+              <div class="svc-line"><span class="svc-name">Makeup &amp; leave immediately</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R1800</span></div>
+              <div class="svc-meta">
+                <a class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20bridal%20Makeup%20%26%20leave%20immediately%20%28R1800%29.%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A%0ABridesmaids%20needing%20makeup%3A" target="_blank" rel="noopener" aria-label="Book bridal Makeup and leave immediately, R1800, on WhatsApp">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+              </div>
+            </li>
+            <li class="svc">
+              <div class="svc-line"><span class="svc-name">Makeup, installation + style &amp; leave</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R2900</span></div>
+              <div class="svc-meta">
+                <a class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20bridal%20Makeup%2C%20installation%20%2B%20style%20%26%20leave%20%28R2900%29.%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A%0ABridesmaids%20needing%20makeup%3A" target="_blank" rel="noopener" aria-label="Book bridal Makeup, installation, style and leave, R2900, on WhatsApp">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+              </div>
+            </li>
+            <li class="svc">
+              <div class="svc-line"><span class="svc-name">All bridal natural hairstyles</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R850</span></div>
+              <div class="svc-meta">
+                <span class="svc-note">We bring everything</span><a class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20a%20bridal%20natural%20hairstyle%20%28R850%29.%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A" target="_blank" rel="noopener" aria-label="Book a bridal natural hairstyle, R850, on WhatsApp">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+              </div>
+            </li>
+            <li class="svc">
+              <div class="svc-line"><span class="svc-name">Trial makeup</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R750</span></div>
+              <div class="svc-meta">
+                <span class="svc-note">Not compulsory</span><a class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20a%20bridal%20Trial%20Makeup%20%28R750%29.%0A%0AWedding%20date%3A%0APreferred%20trial%20date%3A" target="_blank" rel="noopener" aria-label="Book bridal Trial makeup, R750, on WhatsApp">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+              </div>
+            </li>
+          </ul>
+        </article>
+
+        <article class="card" aria-labelledby="maids-title">
+          <div class="card-head">
+            <h3 id="maids-title" class="gold-text">Bridesmaid</h3>
+            <span>Full glam</span>
+          </div>
+          <ul class="svc-list">
+            <li class="svc">
+              <div class="svc-line"><span class="svc-name">Full glam with strip lashes</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R850</span></div>
+              <div class="svc-meta">
+                <a class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20bridesmaid%20Full%20glam%20with%20strip%20lashes%20%28R850%29.%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A%0ANumber%20of%20bridesmaids%3A" target="_blank" rel="noopener" aria-label="Book bridesmaid Full glam with strip lashes, R850, on WhatsApp">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+              </div>
+            </li>
+            <li class="svc">
+              <div class="svc-line"><span class="svc-name">Full glam with cut crease</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R950</span></div>
+              <div class="svc-meta">
+                <a class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20bridesmaid%20Full%20glam%20with%20cut%20crease%20%28R950%29.%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A%0ANumber%20of%20bridesmaids%3A" target="_blank" rel="noopener" aria-label="Book bridesmaid Full glam with cut crease, R950, on WhatsApp">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+              </div>
+            </li>
+          </ul>
+          <p class="card-note"><b>Booking the whole bridal party?</b> Send the bride’s option and the number of bridesmaids in one WhatsApp.</p>
+        </article>
       </div>
+
+      <div class="bridal-note" role="note">
+        <svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>
+        <p><strong>Return transport &amp; accommodation</strong> to the bride’s location is excluded from the package.</p>
+      </div>
+
+      <p class="bridal-cta">
+        <a class="btn btn-cocoa" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20bridal%20glam.%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A%0AFor%20the%20bride%20%28Bridal%20Package%20%2F%20Makeup%20%26%20leave%20%2F%20Makeup%2C%20installation%20%2B%20style%29%3A%0ABridesmaids%20needing%20makeup%3A%0ATrial%20makeup%3F%20%28yes%2Fno%29%3A" target="_blank" rel="noopener">
+          <svg class="icon" aria-hidden="true"><use href="#i-wa"/></svg>Book your wedding date
+        </a>
+      </p>
     </div>
   </section>
 
   <section class="section gallery" id="gallery" aria-labelledby="gallery-title">
     <div class="wrap">
       <div class="section-head">
-        <span class="eyebrow" aria-hidden="true">the glam</span>
-        <h2 id="gallery-title" class="gold-text">Recent Looks</h2>
+        <h2 id="gallery-title" class="script-title">the glam</h2>
       </div>
-      <ul class="grid">
-        <li><img class="shot" src="/img/gallery/makeup-1.webp" width="339" height="393" loading="lazy" decoding="async" alt="Soft, glowing makeup look with closed eyes showing shimmer eyeshadow"></li>
-        <li><img class="shot" src="/img/gallery/makeup-2.webp" width="423" height="381" loading="lazy" decoding="async" alt="Makeup look with smoky rose eyeshadow and a nude lip"></li>
-        <li><img class="shot" src="/img/gallery/makeup-3.webp" width="441" height="372" loading="lazy" decoding="async" alt="Sculpted makeup look in profile with a sleek low bun" style="object-position: 62% 50%"></li>
-        <li><img class="shot" src="/img/gallery/makeup-4.webp" width="351" height="387" loading="lazy" decoding="async" alt="Full glam makeup look with lashes and a glossy nude lip"></li>
-        <li><img class="shot" src="/img/gallery/hair-1.webp" width="330" height="315" loading="lazy" decoding="async" alt="Curled updo finished with a pearl hair accessory"></li>
-        <li><img class="shot" src="/img/gallery/hair-2.webp" width="327" height="309" loading="lazy" decoding="async" alt="Sleek low bun with sculpted curl detail"></li>
-        <li><img class="shot" src="/img/gallery/hair-3.webp" width="324" height="315" loading="lazy" decoding="async" alt="High curled updo with a swept fringe and statement earrings"></li>
-        <li>
-          <a class="cta-tile" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20a%20glam%20session.%0A%0AService%3A%0ADate%3A%0ATime%3A%0AHome%20call%3F%20%28yes%2Fno%2C%20and%20your%20area%29%3A" target="_blank" rel="noopener">
-            <strong>Your turn.</strong>
-            <span>Book your glam on WhatsApp <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span>
-          </a>
-        </li>
-      </ul>
+      <div class="looks">
+        <div class="looks-track">
+          <div class="looks-panel" id="photos">
+            <h3 class="looks-heading">Photos</h3>
+            <ul class="grid">
+              <li class="g-updo"><img class="shot" src="/img/gallery/glam-1.webp" srcset="/img/gallery/glam-1-360.webp 360w, /img/gallery/glam-1.webp 720w" sizes="(max-width: 699px) 54vw, 350px" width="720" height="665" loading="lazy" decoding="async" alt="Soft glam makeup with a mauve lip, worn with a braided updo"></li>
+              <li class="g-wide"><img class="shot" src="/img/gallery/glam-2.webp" srcset="/img/gallery/glam-2-360.webp 360w, /img/gallery/glam-2.webp 720w" sizes="(max-width: 699px) 92vw, 350px" width="720" height="535" loading="lazy" decoding="async" alt="Copper cut-crease eyeshadow with full lashes and a nude lip"></li>
+              <li class="g-waves"><img class="shot" src="/img/gallery/glam-3.webp" srcset="/img/gallery/glam-3-360.webp 360w, /img/gallery/glam-3.webp 720w" sizes="(max-width: 699px) 44vw, 350px" width="720" height="826" loading="lazy" decoding="async" alt="Glam makeup with blue liner and a nude lip, worn with long brown waves"></li>
+              <li class="g-tall1"><img class="shot" src="/img/gallery/glam-4.webp" srcset="/img/gallery/glam-4-360.webp 360w, /img/gallery/glam-4.webp 720w" sizes="(max-width: 699px) 46vw, 350px" width="720" height="900" loading="lazy" decoding="async" alt="Bronze shimmer eyeshadow with full lashes and a nude lip"></li>
+              <li class="g-tall2"><img class="shot" src="/img/gallery/glam-5.webp" srcset="/img/gallery/glam-5-360.webp 360w, /img/gallery/glam-5.webp 720w" sizes="(max-width: 699px) 46vw, 350px" width="720" height="1031" loading="lazy" decoding="async" alt="Copper and gold eyeshadow with dramatic lashes and a nude lip"></li>
+              <li class="g-cta">
+                <a class="cta-tile" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20a%20glam%20session.%0A%0AService%3A%0ADate%3A%0ATime%3A%0AHome%20call%3F%20%28yes%2Fno%2C%20and%20your%20area%29%3A" target="_blank" rel="noopener">
+                  <strong>Your turn.</strong>
+                  <span>Book your glam on WhatsApp <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <div class="looks-panel" id="before-after">
+            <h3 class="looks-heading">Before &amp; after</h3>
+            <ul class="ba-grid">
+              <li><img class="shot" src="/img/before-after/ba-1.webp" srcset="/img/before-after/ba-1.webp 720w, /img/before-after/ba-1-lg.webp 828w" sizes="(max-width: 559px) 92vw, (max-width: 899px) 46vw, 350px" width="720" height="901" loading="lazy" decoding="async" alt="Before and after: bare skin, then soft glam with smoky eyes and a glossy nude lip"></li>
+              <li><img class="shot" src="/img/before-after/ba-2.webp" srcset="/img/before-after/ba-2.webp 720w, /img/before-after/ba-2-lg.webp 828w" sizes="(max-width: 559px) 92vw, (max-width: 899px) 46vw, 350px" width="720" height="886" loading="lazy" decoding="async" alt="Before and after: bare skin, then glam with a soft gold eye, full lashes and a nude lip"></li>
+              <li><img class="shot" src="/img/before-after/ba-3.webp" srcset="/img/before-after/ba-3.webp 720w, /img/before-after/ba-3-lg.webp 1024w" sizes="(max-width: 559px) 92vw, (max-width: 899px) 46vw, 350px" width="720" height="900" loading="lazy" decoding="async" alt="Before and after: bare skin, then full glam with dark smoky eyes, dramatic lashes and a rosy nude lip"></li>
+              <li><img class="shot" src="/img/before-after/ba-4.webp" srcset="/img/before-after/ba-4.webp 720w, /img/before-after/ba-4-lg.webp 828w" sizes="(max-width: 559px) 92vw, (max-width: 899px) 46vw, 350px" width="720" height="887" loading="lazy" decoding="async" alt="Before and after: bare skin, then glam with a gold eye, full lashes and a nude lip"></li>
+              <li><img class="shot" src="/img/before-after/ba-5.webp" srcset="/img/before-after/ba-5.webp 720w, /img/before-after/ba-5-lg.webp 1080w" sizes="(max-width: 559px) 92vw, (max-width: 899px) 46vw, 350px" width="720" height="900" loading="lazy" decoding="async" alt="Before and after: bare skin, then glam with pink eyeshadow and full lashes, hair in a side-swept curled updo"></li>
+              <li>
+                <a class="cta-tile" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20a%20glam%20session.%0A%0AService%3A%0ADate%3A%0ATime%3A%0AHome%20call%3F%20%28yes%2Fno%2C%20and%20your%20area%29%3A" target="_blank" rel="noopener">
+                  <strong>Ready for your after?</strong>
+                  <span>Book your glam on WhatsApp <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <div class="looks-panel" id="videos">
+            <h3 class="looks-heading">Videos</h3>
+            <ul class="video-grid">
+              <!-- One line per video. The Videos tab appears on its own once there is at least one.
+              <li><video controls playsinline preload="none" poster="/video/NAME.jpg" width="720" height="1280"><source src="/video/NAME.mp4" type="video/mp4"></video></li>
+              -->
+            </ul>
+          </div>
+        </div>
+      </div>
+      <script>
+      /* "the glam" slides. Turns the stacked photo, before-and-after and video
+         blocks above into tabs, with a sideways swipe on touch screens. A block
+         with no pictures or videos gets no tab, so the Videos tab appears on its
+         own once the first video is added. */
+      (function () {
+        var looks = document.querySelector('.looks');
+        if (!looks) return;
+        var track = looks.querySelector('.looks-track');
+        var panels = [].filter.call(track.children, function (panel) {
+          var filled = !!panel.querySelector('img, video');
+          panel.hidden = !filled;
+          return filled;
+        });
+        if (panels.length < 2) return;
+
+        var calm = window.matchMedia('(prefers-reduced-motion: reduce)');
+        var active = 0, slide = null, start = null;
+
+        var bar = document.createElement('div');
+        bar.className = 'looks-tabs';
+        bar.setAttribute('role', 'tablist');
+        bar.setAttribute('aria-label', 'The glam');
+        var tabs = panels.map(function (panel, i) {
+          var tab = document.createElement('button');
+          tab.type = 'button';
+          tab.className = 'looks-tab';
+          tab.id = 'tab-' + panel.id;
+          tab.textContent = panel.querySelector('.looks-heading').textContent;
+          tab.setAttribute('role', 'tab');
+          tab.setAttribute('aria-controls', panel.id);
+          tab.setAttribute('aria-selected', i === 0);
+          tab.tabIndex = i === 0 ? 0 : -1;
+          panel.setAttribute('role', 'tabpanel');
+          panel.setAttribute('aria-labelledby', tab.id);
+          panel.tabIndex = 0;
+          panel.hidden = i !== 0;
+          tab.addEventListener('click', function () { show(i); });
+          tab.addEventListener('pointerenter', function () { wake(panel); });
+          tab.addEventListener('focus', function () { wake(panel); });
+          bar.appendChild(tab);
+          return tab;
+        });
+        looks.insertBefore(bar, track);
+        looks.classList.add('is-tabbed');
+
+        /* At the foot of each slide, buttons on to the next slide and back. */
+        panels.forEach(function (panel, i) {
+          var pager = document.createElement('div');
+          pager.className = 'looks-pager';
+          [i - 1, i + 1].forEach(function (j) {
+            if (!panels[j]) return;
+            var step = document.createElement('button'), label = document.createElement('span');
+            var icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            var use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+            step.type = 'button';
+            step.className = 'looks-step' + (j < i ? ' is-back' : '');
+            step.setAttribute('aria-label', 'Go to ' + tabs[j].textContent);
+            label.textContent = tabs[j].textContent;
+            icon.setAttribute('class', 'icon');
+            icon.setAttribute('aria-hidden', 'true');
+            use.setAttribute('href', '#i-arrow');
+            icon.appendChild(use);
+            step.appendChild(j < i ? icon : label);
+            step.appendChild(j < i ? label : icon);
+            step.addEventListener('pointerenter', function () { wake(panels[j]); });
+            step.addEventListener('click', function () { show(j); tabs[j].focus({ preventScroll: true }); });
+            pager.appendChild(step);
+          });
+          panel.appendChild(pager);
+        });
+
+        /* Pictures in a slide that isn't showing are held back to save data.
+           Start fetching them as soon as someone reaches for that slide. */
+        function wake(panel) {
+          if (!panel || panel.awake) return;
+          panel.awake = true;
+          [].forEach.call(panel.querySelectorAll('img[loading="lazy"]'), function (img) { img.loading = 'eager'; });
+        }
+
+        function show(next, instant) {
+          if (next === active || !panels[next]) return;
+          finish();
+          var from = panels[active], to = panels[next], forward = next > active;
+          active = next;
+          tabs.forEach(function (tab, i) {
+            tab.setAttribute('aria-selected', i === next);
+            tab.tabIndex = i === next ? 0 : -1;
+          });
+          [].forEach.call(from.querySelectorAll('video'), function (video) { video.pause(); });
+          wake(to);
+
+          /* Part-way down a long slide the tabs have scrolled out of view.
+             Start the new slide from its top, tabs showing, not from the same depth. */
+          var over = looks.getBoundingClientRect().top - document.querySelector('.topbar').offsetHeight - 9;
+          var height = track.offsetHeight, extra = height - from.offsetHeight;
+          to.hidden = false;
+          if (over < 0) {
+            try { window.scrollBy({ top: over, behavior: 'instant' }); } catch (e) { window.scrollBy(0, over); }
+          }
+          if (instant || calm.matches) { from.hidden = true; return; }
+
+          track.style.height = height + 'px';
+          track.classList.add('is-sliding');
+          from.classList.add(forward ? 'is-leaving-left' : 'is-leaving-right');
+          to.classList.add(forward ? 'is-entering-right' : 'is-entering-left');
+          track.offsetHeight;   /* fix the starting height before moving to the new one */
+          track.style.height = to.offsetHeight + extra + 'px';
+          slide = { from: from, to: to, timer: setTimeout(finish, 400) };
+        }
+
+        function finish() {
+          if (!slide) return;
+          clearTimeout(slide.timer);
+          slide.from.hidden = true;
+          [slide.from, slide.to].forEach(function (panel) {
+            panel.classList.remove('is-leaving-left', 'is-leaving-right', 'is-entering-left', 'is-entering-right');
+          });
+          track.classList.remove('is-sliding');
+          track.style.height = '';
+          slide = null;
+        }
+
+        bar.addEventListener('keydown', function (e) {
+          var i = tabs.indexOf(document.activeElement), n = tabs.length;
+          var next = { ArrowRight: (i + 1) % n, ArrowLeft: (i + n - 1) % n, Home: 0, End: n - 1 }[e.key];
+          if (i < 0 || next === undefined) return;
+          e.preventDefault();
+          tabs[next].focus();
+          show(next);
+        });
+
+        /* Sideways swipe. The listeners are passive, so ordinary scrolling
+           and pinch-zoom carry on exactly as before. */
+        track.addEventListener('touchstart', function (e) {
+          var touch = e.touches[0];
+          start = null;
+          if (e.touches.length !== 1 || e.target.closest('video')) return;
+          if (window.visualViewport && window.visualViewport.scale > 1.01) return;        /* zoomed in: a swipe pans the page */
+          if (touch.clientX < 24 || touch.clientX > window.innerWidth - 24) return;      /* the phone's own back gesture */
+          start = { x: touch.clientX, y: touch.clientY };
+        }, { passive: true });
+        track.addEventListener('touchmove', function (e) {
+          if (!start) return;
+          if (e.touches.length !== 1) { start = null; return; }
+          var dx = e.touches[0].clientX - start.x, dy = e.touches[0].clientY - start.y;
+          if (Math.abs(dx) > 24 && Math.abs(dx) > Math.abs(dy) * 1.5) wake(panels[active + (dx < 0 ? 1 : -1)]);
+        }, { passive: true });
+        track.addEventListener('touchend', function (e) {
+          if (!start) return;
+          var touch = e.changedTouches[0], dx = touch.clientX - start.x, dy = touch.clientY - start.y;
+          start = null;
+          if (Math.abs(dx) > 56 && Math.abs(dx) > Math.abs(dy) * 1.5) show(active + (dx < 0 ? 1 : -1));
+        }, { passive: true });
+        track.addEventListener('touchcancel', function () { start = null; }, { passive: true });
+
+        /* One video at a time. */
+        track.addEventListener('play', function (e) {
+          [].forEach.call(track.querySelectorAll('video'), function (video) { if (video !== e.target) video.pause(); });
+        }, true);
+
+        /* A link straight to a slide, such as /#before-after, opens that slide. */
+        function fromHash() {
+          var i = panels.map(function (panel) { return '#' + panel.id; }).indexOf(location.hash);
+          if (i < 0) return;
+          show(i, true);
+          panels[i].scrollIntoView();
+        }
+        window.addEventListener('hashchange', fromHash);
+        fromHash();
+      })();
+      </script>
     </div>
   </section>
 
@@ -669,7 +1162,7 @@
         <ol class="steps">
           <li>
             <h3>Choose your look</h3>
-            <p>Soft Glam, Full Glam or Bold / Dramatic, plus Basic Installation or Curling Long Weave if you need hair. Getting married? Ask for a bridal quote.</p>
+            <p>Soft Glam, Full Glam or Bold / Dramatic, plus Basic Installation or Curling Long Weave if you need hair. Getting married? Choose from the bridal price list.</p>
           </li>
           <li>
             <h3>Send a WhatsApp</h3>
@@ -714,7 +1207,7 @@
 
 <footer>
   <div class="wrap">
-    <img src="/img/logo.webp" width="150" height="93" loading="lazy" alt="OMG – Oh! My Glam">
+    <img src="/img/logo.webp" srcset="/img/logo-240.webp 240w, /img/logo.webp 560w" sizes="150px" width="150" height="94" loading="lazy" alt="OMG – Oh! My Glam">
     <p>Makeup &amp; hair · Bridal · Home calls on request</p>
     <p><a href="https://wa.me/27785767604" target="_blank" rel="noopener">WhatsApp +27 78 576 7604</a></p>
     <p>Prices valid for 2026. Home call transport fees are quoted separately.</p>
