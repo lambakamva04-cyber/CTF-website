@@ -52,15 +52,31 @@ cd omg-website/public && python3 -m http.server 8080
 
 | File | What it is |
 | --- | --- |
-| `img/logo.webp`, `img/logo@2x.webp`, `img/logo.png` | The OMG logo, cut out of the poster onto a transparent background |
+| `img/logo-240.webp`, `img/logo.webp`, `img/logo-840.webp`, `img/logo@2x.webp`, `img/logo.png` | The OMG logo at four widths (240, 560, 840 and 1120px) plus a PNG copy. It is OMG's own logo artwork, cut out of its brown satin background so it sits on any of the site's backgrounds |
 | `img/gallery/glam-*.webp` | Five looks supplied by OMG, 720px wide, each with a 360px copy for phones. `glam-1` to `glam-3` are used exactly as OMG cropped them |
 | `img/before-after/ba-*.webp` | Five before-and-after pictures supplied by OMG, used whole. 720px wide, each with a larger `-lg` copy for sharp phone screens |
 | `og.jpg` | 1200×630 link-preview card |
 | `favicon.png`, `apple-touch-icon.png`, `img/icon-*.png` | The swirled "O" from the logo |
 | `img/contours.svg` | The swirled background pattern, redrawn as vector |
 
-The logo and icons were cut from a 702×713 photo of the poster, so they are
-soft at large sizes. Swap in the original logo file whenever it is available.
+The logo and icons come from the logo artwork OMG supplied (1362×768). The
+top bar and footer load the smallest file; the big logo at the top of the page
+picks a width to suit the screen.
+
+## The logo's sparkles
+
+The big logo at the top of the page has moving sparkles. They are plain CSS,
+with no script and no extra files:
+
+- Thirteen sit exactly on the sparkles painted into the logo and flare in
+  turn, so those sparkles appear to twinkle.
+- Three more travel around the outline of the OMG letters.
+
+Every position is measured as a share of the logo's width, so the sparkles
+stay in place at any screen size. Visitors who have asked their device for
+reduced motion see the logo without the animation. If the logo artwork is ever
+replaced, the positions in the `glints` block of `index.html` need redoing to
+match the new artwork.
 
 ## The glam: photos, before & after, videos
 

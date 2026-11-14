@@ -24,7 +24,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Great+Vibes&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="preload" as="image" href="/img/logo@2x.webp" imagesrcset="/img/logo.webp 461w, /img/logo@2x.webp 922w" imagesizes="(max-width: 600px) 88vw, 520px">
+<link rel="preload" as="image" href="/img/logo@2x.webp" imagesrcset="/img/logo.webp 560w, /img/logo-840.webp 840w, /img/logo@2x.webp 1120w" imagesizes="(max-width: 600px) 88vw, 520px">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -183,10 +183,63 @@
   .hero { text-align: center; padding: 44px 0 64px; }
   @media (min-width: 640px) { .hero { padding: 64px 0 88px; } }
   .hero h1 { margin: 0; }
-  .hero-logo {
-    width: min(520px, 88vw); height: auto; margin: 0 auto;
-    filter: drop-shadow(0 8px 18px rgba(20, 6, 3, .55));
+  /* --w is the logo's width; --u is a hundredth of it, the unit the sparkles are measured in. */
+  .logo-stage { --w: min(520px, 88vw); --u: calc(var(--w) / 100); position: relative; display: block; width: var(--w); margin: 0 auto; }
+  .hero-logo { width: 100%; height: auto; }
+
+  /* Sparkles on the logo. Each glint is placed as a percentage of the logo,
+     so they stay in position at every screen size. Thirteen sit on the
+     sparkles already painted into the logo and flare in turn, so those
+     sparkles appear to twinkle. Three more travel around the outline of the
+     OMG letters. Only transform and opacity are animated, which keeps it
+     smooth on phones. */
+  .glints { position: absolute; inset: 0; pointer-events: none; }
+  .glints i {
+    position: absolute; left: var(--x, 0); top: var(--y, 0);
+    width: calc(var(--u) * 9 * var(--s, 1)); height: calc(var(--u) * 9 * var(--s, 1));
+    margin: calc(var(--u) * -4.5 * var(--s, 1)) 0 0 calc(var(--u) * -4.5 * var(--s, 1));
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3CradialGradient id='g'%3E%3Cstop offset='0' stop-color='%23fffdf6'/%3E%3Cstop offset='.12' stop-color='%23fff1c9' stop-opacity='.95'/%3E%3Cstop offset='.28' stop-color='%23ffd98f' stop-opacity='.4'/%3E%3Cstop offset='.6' stop-color='%23ffb44a' stop-opacity='.1'/%3E%3Cstop offset='1' stop-color='%23ffb44a' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='34' fill='url(%23g)'/%3E%3Cpath fill='%23fff0c4' d='M50 0C50.7 38 62 49.3 100 50 62 50.7 50.7 62 50 100 49.3 62 38 50.7 0 50 38 49.3 49.3 38 50 0Z'/%3E%3Cpath fill='%23ffe3a1' opacity='.8' transform='rotate(45 50 50)' d='M50 24C50.5 43 57 49.5 76 50 57 50.5 50.5 57 50 76 49.5 57 43 50.5 24 50 43 49.5 49.5 43 50 24Z'/%3E%3C/svg%3E") center / contain no-repeat;
+    opacity: 0;
+    animation: glint-twinkle var(--t, 5s) var(--d, 0s) infinite both;
   }
+  @keyframes glint-twinkle {
+    0%, 32%, 100% { opacity: 0; transform: scale(.3) rotate(0deg); }
+    9%  { opacity: 1;   transform: scale(1) rotate(14deg); }
+    15% { opacity: .7;  transform: scale(.6) rotate(22deg); }
+    21% { opacity: 1;   transform: scale(.86) rotate(30deg); }
+  }
+  /* A traveller: a point that is carried around the outline of the OMG
+     letters, holding one glint that shimmers as it goes. */
+  .glints b { position: absolute; left: 0; top: 0; width: 0; height: 0; animation: glint-orbit var(--t, 20s) var(--d, 0s) linear infinite; }
+  .glints b i { --s: .62; animation: glint-shimmer 1.7s var(--d, 0s) ease-in-out infinite; }
+  @keyframes glint-shimmer {
+    0%, 100% { opacity: .8; transform: scale(.42) rotate(0deg); }
+    50% { opacity: 1; transform: scale(1) rotate(45deg); }
+  }
+  @keyframes glint-orbit {
+    0% { transform: translate(calc(var(--u) * 1.8), calc(var(--u) * 21.3)); }  2.5% { transform: translate(calc(var(--u) * 2.7), calc(var(--u) * 15.4)); }
+    5% { transform: translate(calc(var(--u) * 5.6), calc(var(--u) * 10.2)); }  7.5% { transform: translate(calc(var(--u) * 9.9), calc(var(--u) * 6.1)); }
+    10% { transform: translate(calc(var(--u) * 15.4), calc(var(--u) * 3.8)); }  12.5% { transform: translate(calc(var(--u) * 21.3), calc(var(--u) * 2.9)); }
+    15% { transform: translate(calc(var(--u) * 27.2), calc(var(--u) * 3.7)); }  17.5% { transform: translate(calc(var(--u) * 32.7), calc(var(--u) * 6.0)); }
+    20% { transform: translate(calc(var(--u) * 37.7), calc(var(--u) * 4.6)); }  22.5% { transform: translate(calc(var(--u) * 43.7), calc(var(--u) * 4.4)); }
+    25% { transform: translate(calc(var(--u) * 49.7), calc(var(--u) * 4.4)); }  27.5% { transform: translate(calc(var(--u) * 55.7), calc(var(--u) * 4.4)); }
+    30% { transform: translate(calc(var(--u) * 61.6), calc(var(--u) * 4.4)); }  32.5% { transform: translate(calc(var(--u) * 67.6), calc(var(--u) * 4.6)); }
+    35% { transform: translate(calc(var(--u) * 73.2), calc(var(--u) * 6.3)); }  37.5% { transform: translate(calc(var(--u) * 78.8), calc(var(--u) * 4.3)); }
+    40% { transform: translate(calc(var(--u) * 84.7), calc(var(--u) * 3.4)); }  42.5% { transform: translate(calc(var(--u) * 90.6), calc(var(--u) * 4.4)); }
+    45% { transform: translate(calc(var(--u) * 94.2), calc(var(--u) * 8.3)); }  47.5% { transform: translate(calc(var(--u) * 94.6), calc(var(--u) * 14.2)); }
+    50% { transform: translate(calc(var(--u) * 96.2), calc(var(--u) * 20.0)); }  52.5% { transform: translate(calc(var(--u) * 96.3), calc(var(--u) * 26.0)); }
+    55% { transform: translate(calc(var(--u) * 94.8), calc(var(--u) * 31.6)); }  57.5% { transform: translate(calc(var(--u) * 89.3), calc(var(--u) * 34.0)); }
+    60% { transform: translate(calc(var(--u) * 83.4), calc(var(--u) * 35.0)); }  62.5% { transform: translate(calc(var(--u) * 77.6), calc(var(--u) * 34.2)); }
+    65% { transform: translate(calc(var(--u) * 71.7), calc(var(--u) * 33.0)); }  67.5% { transform: translate(calc(var(--u) * 65.7), calc(var(--u) * 33.1)); }
+    70% { transform: translate(calc(var(--u) * 59.7), calc(var(--u) * 33.2)); }  72.5% { transform: translate(calc(var(--u) * 53.8), calc(var(--u) * 32.5)); }
+    75% { transform: translate(calc(var(--u) * 47.9), calc(var(--u) * 32.0)); }  77.5% { transform: translate(calc(var(--u) * 42.0), calc(var(--u) * 33.1)); }
+    80% { transform: translate(calc(var(--u) * 36.2), calc(var(--u) * 33.5)); }  82.5% { transform: translate(calc(var(--u) * 33.1), calc(var(--u) * 38.6)); }
+    85% { transform: translate(calc(var(--u) * 28.2), calc(var(--u) * 39.7)); }  87.5% { transform: translate(calc(var(--u) * 22.3), calc(var(--u) * 38.7)); }
+    90% { transform: translate(calc(var(--u) * 16.4), calc(var(--u) * 37.9)); }  92.5% { transform: translate(calc(var(--u) * 10.8), calc(var(--u) * 35.9)); }
+    95% { transform: translate(calc(var(--u) * 6.0), calc(var(--u) * 32.3)); }  97.5% { transform: translate(calc(var(--u) * 3.0), calc(var(--u) * 27.1)); }
+    100% { transform: translate(calc(var(--u) * 1.8), calc(var(--u) * 21.3)); }
+  }
+  @media (prefers-reduced-motion: reduce) { .glints { display: none; } }
   .kicker {
     margin: 18px 0 0;
     font: 500 clamp(12px, 3.4vw, 15px)/1.4 var(--sans);
@@ -632,7 +685,7 @@
 <header class="topbar">
   <div class="wrap">
     <a class="brand" href="#top" aria-label="OMG – Oh! My Glam, back to top">
-      <img src="/img/logo.webp" srcset="/img/logo.webp 461w, /img/logo@2x.webp 922w" sizes="81px" width="81" height="50" alt="">
+      <img src="/img/logo-240.webp" srcset="/img/logo-240.webp 240w, /img/logo.webp 560w" sizes="80px" width="80" height="50" alt="">
     </a>
     <nav class="nav" aria-label="Main">
       <a href="#prices">Prices</a>
@@ -653,7 +706,27 @@
     <svg class="sparkle" style="left:22%;bottom:16%;width:14px;height:14px" aria-hidden="true"><use href="#i-spark"/></svg>
     <div class="wrap">
       <h1>
-        <img class="hero-logo" src="/img/logo@2x.webp" srcset="/img/logo.webp 461w, /img/logo@2x.webp 922w" sizes="(max-width: 600px) 88vw, 520px" width="461" height="286" alt="OMG – Oh! My Glam" fetchpriority="high">
+        <span class="logo-stage">
+          <img class="hero-logo" src="/img/logo@2x.webp" srcset="/img/logo.webp 560w, /img/logo-840.webp 840w, /img/logo@2x.webp 1120w" sizes="(max-width: 600px) 88vw, 520px" width="560" height="350" alt="OMG – Oh! My Glam" fetchpriority="high">
+          <span class="glints" aria-hidden="true">
+            <i style="--x:28.2%;--y:7.4%;--s:1.25;--t:5.3s;--d:-0.4s"></i>
+            <i style="--x:2.9%;--y:25.6%;--s:1;--t:6.7s;--d:-1.8s"></i>
+            <i style="--x:7.0%;--y:25.9%;--s:0.7;--t:4.3s;--d:-3.1s"></i>
+            <i style="--x:30.8%;--y:26.6%;--s:0.8;--t:5.9s;--d:-4.5s"></i>
+            <i style="--x:48.1%;--y:24.4%;--s:1.15;--t:4.7s;--d:-1.2s"></i>
+            <i style="--x:39.2%;--y:50.6%;--s:0.95;--t:6.1s;--d:-1.2s"></i>
+            <i style="--x:92.3%;--y:9.7%;--s:1.1;--t:5.1s;--d:-3.5s"></i>
+            <i style="--x:94.5%;--y:31.7%;--s:0.9;--t:7.1s;--d:-2.9s"></i>
+            <i style="--x:5.2%;--y:78.3%;--s:1;--t:6.3s;--d:-5.1s"></i>
+            <i style="--x:8.8%;--y:78.5%;--s:0.7;--t:4.9s;--d:-2.9s"></i>
+            <i style="--x:72.4%;--y:67.1%;--s:1.1;--t:5.7s;--d:-2.7s"></i>
+            <i style="--x:95.5%;--y:66.3%;--s:1.2;--t:4.1s;--d:-3.2s"></i>
+            <i style="--x:81.0%;--y:82.5%;--s:0.9;--t:6.9s;--d:-3.0s"></i>
+            <b><i></i></b>
+            <b style="--d:-10s"><i></i></b>
+            <b style="--t:27s;--d:-6s;animation-direction:reverse"><i></i></b>
+          </span>
+        </span>
       </h1>
       <p class="kicker">2026 Makeup &amp; Hair <b>Price List</b></p>
       <p class="lede">Glam made for your moment, from soft and subtle to bold and dramatic. Home calls available on request.</p>
@@ -1134,7 +1207,7 @@
 
 <footer>
   <div class="wrap">
-    <img src="/img/logo.webp" width="150" height="93" loading="lazy" alt="OMG – Oh! My Glam">
+    <img src="/img/logo.webp" srcset="/img/logo-240.webp 240w, /img/logo.webp 560w" sizes="150px" width="150" height="94" loading="lazy" alt="OMG – Oh! My Glam">
     <p>Makeup &amp; hair · Bridal · Home calls on request</p>
     <p><a href="https://wa.me/27785767604" target="_blank" rel="noopener">WhatsApp +27 78 576 7604</a></p>
     <p>Prices valid for 2026. Home call transport fees are quoted separately.</p>
