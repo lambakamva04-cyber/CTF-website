@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en-ZA">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>OMG Admin</title>
+<meta name="theme-color" content="#2B1512">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cocoa-950: #1F0E0B;
+    --cocoa-900: #2B1512;
+    --cocoa-800: #3A1D18;
+    --cocoa-700: #4A2620;
+    --gold-50:  #FFF8E6;
+    --gold-100: #FBEFCB;
+    --gold-200: #F1D99A;
+    --gold-300: #E6C27A;
+    --cream: #F7EDD8;
+    --cream-soft: rgba(247, 237, 216, 0.80);
+    --cream-faint: rgba(247, 237, 216, 0.62);
+    --line: rgba(230, 194, 122, 0.28);
+    --gold-fill: linear-gradient(180deg, #F8E3A8 0%, #E3BD6C 52%, #C99643 100%);
+    --danger: #F4A892;
+    --danger-line: rgba(244, 168, 146, 0.55);
+    --danger-bg: rgba(244, 168, 146, 0.12);
+    --radius: 16px;
+    --sans: 'Montserrat', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --serif: 'Cormorant Garamond', 'Times New Roman', serif;
+    color-scheme: dark;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; min-height: 100vh;
+    font: 16px/1.5 var(--sans);
+    color: var(--cream);
+    background: var(--cocoa-900);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  img, svg { display: block; }
+  a { color: var(--gold-200); }
+  h1, h2, h3 { margin: 0; line-height: 1.2; }
+  p { margin: 0; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--gold-200); outline-offset: 2px; }
+
+  .shell { width: 100%; max-width: 760px; margin: 0 auto; padding: 0 16px; }
+  .muted { color: var(--cream-faint); }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+
+  /* ===== Buttons ===== */
+  .btn {
+    -webkit-appearance: none; appearance: none;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 48px; padding: 0 18px;
+    border: 0; border-radius: 999px; cursor: pointer;
+    font: 600 15px/1.1 var(--sans); letter-spacing: .01em;
+    text-decoration: none; text-align: center;
+    transition: background-color .15s ease, opacity .15s ease;
+  }
+  .btn.small { min-height: 40px; padding: 0 14px; font-size: 14px; }
+  .btn.wide { width: 100%; }
+  .btn-primary { background: var(--gold-fill); color: var(--cocoa-900); box-shadow: 0 1px 0 rgba(255,255,255,.5) inset; }
+  .btn-ghost { background: transparent; color: var(--gold-100); border: 1.5px solid rgba(241, 217, 154, .45); }
+  .btn-ghost:hover { background: rgba(241, 217, 154, .08); }
+  .btn-danger { background: transparent; color: var(--danger); border: 1.5px solid var(--danger-line); }
+  .btn-danger:hover { background: var(--danger-bg); }
+  .btn-danger-solid { background: var(--danger); color: var(--cocoa-950); }
+  .btn:disabled { opacity: .55; cursor: progress; }
+  .icon-btn {
+    -webkit-appearance: none; appearance: none;
+    width: 40px; height: 40px; flex: none;
+    display: grid; place-items: center;
+    border: 0; border-radius: 50%; background: transparent; cursor: pointer;
+    color: var(--cream-soft); font-size: 22px; line-height: 1;
+  }
+  .icon-btn:hover { background: rgba(247, 237, 216, .08); }
+  .icon-btn:disabled { opacity: .4; cursor: default; }
+
+  /* ===== Forms ===== */
+  .field { display: grid; gap: 6px; min-width: 0; }
+  .field > label, .legend {
+    font: 600 12px/1.2 var(--sans); letter-spacing: .08em; text-transform: uppercase;
+    color: var(--cream-faint);
+  }
+  .opt { text-transform: none; letter-spacing: 0; font-weight: 500; }
+  input[type="text"], input[type="password"], input[type="date"], input[type="time"] {
+    width: 100%; min-width: 0; min-height: 48px; padding: 0 14px;
+    border-radius: 12px; border: 1.5px solid var(--line);
+    background: rgba(31, 14, 11, .6); color: var(--cream);
+    font-size: 16px;
+  }
+  input:focus { outline: none; border-color: var(--gold-300); box-shadow: 0 0 0 3px rgba(230, 194, 122, .22); }
+  input:disabled { opacity: .45; }
+  .check { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; font-weight: 500; }
+  .check input { width: 20px; height: 20px; accent-color: #E3BD6C; margin: 0; }
+  .form-msg { padding: 12px 14px; border-radius: 12px; background: var(--danger-bg); border: 1px solid var(--danger-line); font-size: 15px; }
+  .form-msg ul { margin: 8px 0 0; padding-left: 20px; }
+  .form-msg .row-actions { margin-top: 10px; }
+
+  /* ===== Loading ===== */
+  .boot { min-height: 100vh; display: grid; place-items: center; color: var(--cream-faint); letter-spacing: .1em; text-transform: uppercase; font-size: 13px; }
+
+  /* ===== Login ===== */
+  .login { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; }
+  .login-card {
+    width: 100%; max-width: 380px;
+    display: grid; gap: 16px; justify-items: stretch;
+    padding: 28px 22px;
+    border-radius: 22px; border: 1px solid var(--line);
+    background: var(--cocoa-800);
+    box-shadow: 0 24px 50px -26px rgba(0, 0, 0, .9);
+  }
+  .login-card img { width: 160px; height: auto; margin: 0 auto; }
+  .login-card h1 { font: 600 34px/1.1 var(--serif); text-align: center; color: var(--gold-100); }
+  .login-card .lead { text-align: center; color: var(--cream-faint); font-size: 15px; }
+  .login-card form { display: grid; gap: 14px; }
+  .login-note { font-size: 14px; color: var(--cream-soft); text-align: center; }
+
+  /* ===== App frame ===== */
+  .topbar {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(31, 14, 11, .95);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar .shell { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 60px; }
+  .brand { display: flex; align-items: center; gap: 10px; font: 700 12px/1 var(--sans); letter-spacing: .2em; text-transform: uppercase; color: var(--gold-200); }
+  .brand img { width: 64px; height: 40px; }
+
+  /* Tabs: a bar along the bottom on phones, where a thumb reaches; a pill under the header on wider screens. */
+  .tabs {
+    position: fixed; z-index: 15; left: 0; right: 0; bottom: 0;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    background: rgba(31, 14, 11, .97);
+    border-top: 1px solid var(--line);
+  }
+  .tab {
+    -webkit-appearance: none; appearance: none;
+    position: relative;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    min-height: 56px; padding: 4px 6px;
+    border: 0; border-radius: 14px; background: none; cursor: pointer;
+    font: 600 13px/1.1 var(--sans); letter-spacing: .03em;
+    color: var(--cream-faint);
+  }
+  .tab svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .tab[aria-selected="true"] { background: rgba(241, 217, 154, .14); color: var(--gold-100); }
+  .badge {
+    position: absolute; top: 4px; left: calc(50% + 6px);
+    min-width: 20px; height: 20px; padding: 0 6px;
+    display: grid; place-items: center;
+    border-radius: 999px; background: var(--gold-fill); color: var(--cocoa-900);
+    font: 700 12px/1 var(--sans);
+  }
+  @media (min-width: 760px) {
+    .tabs {
+      position: sticky; top: 61px; bottom: auto;
+      width: max-content; max-width: calc(100% - 32px);
+      margin: 16px auto 0; padding: 5px;
+      border: 1px solid var(--line); border-radius: 999px;
+      grid-template-columns: repeat(3, auto);
+    }
+    .tab { flex-direction: row; gap: 8px; min-height: 44px; padding: 0 18px; border-radius: 999px; font-size: 14px; }
+    .tab svg { width: 18px; height: 18px; }
+    .badge { position: static; }
+  }
+
+  .content { padding: 20px 0 calc(100px + env(safe-area-inset-bottom)); }
+  @media (min-width: 760px) { .content { padding-bottom: 56px; } }
+  [role="tabpanel"] { outline: none; }
+
+  .banner {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+    margin-top: 14px; padding: 10px 6px 10px 14px;
+    border-radius: 12px; border: 1px solid var(--danger-line); background: var(--danger-bg);
+  }
+  .banner p { padding-top: 8px; }
+  .banner-actions { display: flex; align-items: center; gap: 4px; flex: none; }
+
+  .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+  .panel-head h2 { font: 600 30px/1.1 var(--serif); color: var(--gold-100); }
+  .sub { margin: 26px 0 12px; font: 600 12px/1.2 var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--gold-200); }
+  .hint { color: var(--cream-faint); font-size: 14px; }
+  .empty { padding: 22px 16px; border: 1px dashed var(--line); border-radius: var(--radius); color: var(--cream-faint); text-align: center; }
+  .loading { padding: 22px 0; color: var(--cream-faint); text-align: center; }
+  .load-error { display: grid; gap: 12px; justify-items: center; padding: 20px 16px; border-radius: var(--radius); border: 1px solid var(--danger-line); background: var(--danger-bg); text-align: center; }
+
+  .list { display: grid; gap: 12px; }
+  .card {
+    display: grid; gap: 10px; min-width: 0;
+    padding: 16px;
+    border-radius: var(--radius); border: 1px solid var(--line);
+    background: var(--cocoa-800);
+  }
+  .card-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .card-top h3 { font: 700 17px/1.3 var(--sans); color: var(--gold-100); overflow-wrap: anywhere; }
+  .price { font-weight: 700; color: var(--gold-200); white-space: nowrap; }
+  .when { font-size: 16px; }
+  .when strong { font-weight: 700; }
+  .who { font-weight: 600; font-size: 17px; overflow-wrap: anywhere; }
+  .meta { font-size: 13px; color: var(--cream-faint); overflow-wrap: anywhere; }
+  .contact { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .contact .phone { font-variant-numeric: tabular-nums; margin-right: 4px; overflow-wrap: anywhere; }
+  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+  .overlap { display: grid; gap: 10px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--danger-line); background: var(--danger-bg); }
+  .overlap ul { margin: 0; padding-left: 20px; }
+  .overlap li { overflow-wrap: anywhere; }
+
+  .notice { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 14px; padding: 12px 6px 12px 14px; border-radius: 12px; border: 1px solid rgba(185, 227, 168, .45); background: rgba(185, 227, 168, .10); }
+  .notice-body { display: grid; gap: 8px; min-width: 0; }
+  .notice-body p { overflow-wrap: anywhere; }
+
+  /* ===== Calendar ===== */
+  .month-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
+  .month-nav h3 { font: 600 24px/1.2 var(--serif); color: var(--gold-100); text-align: center; }
+  .month-nav .icon-btn { border: 1.5px solid rgba(241, 217, 154, .45); color: var(--gold-100); }
+
+  .add-block { margin-bottom: 18px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--cocoa-800); }
+  .add-block > summary {
+    list-style: none; cursor: pointer;
+    display: flex; align-items: center; gap: 10px;
+    min-height: 54px; padding: 0 16px;
+    font-weight: 600; color: var(--gold-100);
+  }
+  .add-block > summary::-webkit-details-marker { display: none; }
+  .add-block > summary::before {
+    content: '+'; display: grid; place-items: center;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--gold-fill); color: var(--cocoa-900); font-weight: 700;
+  }
+  .add-block[open] > summary::before { content: '–'; }
+  .add-block form { display: grid; gap: 14px; padding: 4px 16px 18px; }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0; padding: 0; border: 0; min-width: 0; }
+  .seg legend { padding: 0; margin-bottom: 6px; }
+  .seg label { position: relative; }
+  .seg input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+  .seg span {
+    display: grid; place-items: center; min-height: 46px; padding: 0 10px;
+    border-radius: 12px; border: 1.5px solid var(--line);
+    font-weight: 600; color: var(--cream-soft);
+  }
+  .seg input:checked + span { background: rgba(241, 217, 154, .16); border-color: var(--gold-300); color: var(--gold-100); }
+  .seg input:focus-visible + span { outline: 3px solid var(--gold-200); outline-offset: 2px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .days { display: grid; gap: 14px; }
+  .day { display: grid; gap: 8px; }
+  .day-head { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--gold-100); }
+  .day.past .day-head { color: var(--cream-faint); }
+  .tag { padding: 3px 8px; border-radius: 999px; font: 700 11px/1.2 var(--sans); letter-spacing: .08em; text-transform: uppercase; }
+  .tag.today { background: var(--gold-fill); color: var(--cocoa-900); }
+  .blocks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .block {
+    display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; align-items: start;
+    padding: 14px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--cocoa-800);
+  }
+  .block.closed { background: rgba(31, 14, 11, .55); border-style: dashed; }
+  .block-time { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--gold-100); padding-top: 2px; }
+  .block-body { display: grid; gap: 6px; min-width: 0; }
+  .block-del { grid-column: 1 / -1; justify-self: end; }
+  .pill { justify-self: start; padding: 3px 10px; border-radius: 999px; font: 700 11px/1.3 var(--sans); letter-spacing: .08em; text-transform: uppercase; }
+  .pill.booked { background: rgba(241, 217, 154, .18); color: var(--gold-100); }
+  .pill.off { background: rgba(247, 237, 216, .10); color: var(--cream-soft); }
+  .block-who { font-weight: 600; overflow-wrap: anywhere; }
+  .block-note { color: var(--cream-soft); overflow-wrap: anywhere; }
+
+  /* ===== Reviews ===== */
+  .stars { color: var(--gold-200); font-size: 19px; letter-spacing: 2px; }
+  .review-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; }
+  .review-name { font-weight: 700; overflow-wrap: anywhere; }
+  .review-text { white-space: pre-line; overflow-wrap: anywhere; color: var(--cream-soft); }
+  .actions.one { grid-template-columns: 1fr; justify-items: end; }
+
+  /* ===== Dialog and toast ===== */
+  dialog {
+    width: min(calc(100vw - 32px), 400px);
+    padding: 22px 20px 18px;
+    border-radius: 18px; border: 1px solid var(--line);
+    background: var(--cocoa-800); color: var(--cream);
+    box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .9);
+  }
+  dialog::backdrop { background: rgba(12, 5, 4, .72); }
+  dialog h2 { font: 600 26px/1.15 var(--serif); color: var(--gold-100); }
+  dialog p { margin-top: 10px; color: var(--cream-soft); overflow-wrap: anywhere; }
+  .dialog-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+
+  .toast {
+    position: fixed; z-index: 30; left: 50%; transform: translateX(-50%);
+    bottom: calc(86px + env(safe-area-inset-bottom));
+    width: max-content; max-width: calc(100vw - 32px);
+    padding: 12px 18px; border-radius: 12px;
+    background: var(--gold-100); color: var(--cocoa-900); font-weight: 600;
+    box-shadow: 0 14px 30px -12px rgba(0, 0, 0, .8);
+  }
+  @media (min-width: 760px) { .toast { bottom: 28px; } }
+
+  .noscript { padding: 40px 16px; text-align: center; }
+</style>
+<script type="module" src="/admin/admin.js"></script>
+</head>
+<body>
+
+<div id="boot" class="boot" role="status">Loading…</div>
+
+<main id="login" class="login" hidden>
+  <div class="login-card">
+    <img src="/img/logo-240.webp" width="240" height="150" alt="OMG – Oh! My Glam">
+    <h1>Admin</h1>
+    <p class="lead">Booking requests, your calendar and reviews.</p>
+    <p id="login-note" class="login-note" role="status" hidden></p>
+    <form id="login-form" novalidate>
+      <div class="field">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" autocapitalize="off" spellcheck="false" required>
+      </div>
+      <label class="check"><input type="checkbox" id="show-password"> Show password</label>
+      <div id="login-message" class="form-msg" role="alert" hidden></div>
+      <button class="btn btn-primary wide" id="login-button" type="submit">Log in</button>
+    </form>
+  </div>
+</main>
+
+<div id="app" hidden>
+  <header class="topbar">
+    <div class="shell">
+      <span class="brand"><img src="/img/logo-240.webp" width="64" height="40" alt="">Admin</span>
+      <button class="btn btn-ghost small" id="logout" type="button">Log out</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Admin sections">
+    <button class="tab" role="tab" id="tab-requests" data-tab="requests" aria-controls="panel-requests" aria-selected="true" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h4l2 3h4l2-3h4"/><path d="M5.5 5h13L21 13v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5z"/></svg>
+      <span>Requests</span>
+      <span class="badge" id="badge-requests" hidden></span>
+    </button>
+    <button class="tab" role="tab" id="tab-calendar" data-tab="calendar" aria-controls="panel-calendar" aria-selected="false" tabindex="-1" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
+      <span>Calendar</span>
+    </button>
+    <button class="tab" role="tab" id="tab-reviews" data-tab="reviews" aria-controls="panel-reviews" aria-selected="false" tabindex="-1" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg>
+      <span>Reviews</span>
+      <span class="badge" id="badge-reviews" hidden></span>
+    </button>
+  </nav>
+
+  <div class="shell">
+    <div id="banner" class="banner" role="alert" hidden>
+      <p id="banner-text"></p>
+      <div class="banner-actions">
+        <button class="btn btn-ghost small" id="banner-retry" type="button" hidden>Try again</button>
+        <button class="icon-btn" id="banner-close" type="button" aria-label="Dismiss">×</button>
+      </div>
+    </div>
+
+    <main class="content">
+      <section id="panel-requests" role="tabpanel" aria-labelledby="tab-requests" tabindex="-1">
+        <div class="panel-head">
+          <h2>Booking requests</h2>
+          <button class="btn btn-ghost small" id="refresh-requests" type="button">Refresh</button>
+        </div>
+        <div id="requests-notice"></div>
+        <div id="requests-list" class="list"></div>
+      </section>
+
+      <section id="panel-calendar" role="tabpanel" aria-labelledby="tab-calendar" tabindex="-1" hidden>
+        <div class="panel-head">
+          <h2>Calendar</h2>
+          <button class="btn btn-ghost small" id="refresh-calendar" type="button">Refresh</button>
+        </div>
+        <div class="month-nav">
+          <button class="icon-btn" id="month-prev" type="button" aria-label="Previous month">‹</button>
+          <h3 id="month-label" aria-live="polite"></h3>
+          <button class="icon-btn" id="month-next" type="button" aria-label="Next month">›</button>
+        </div>
+
+        <details id="add-block" class="add-block">
+          <summary>Add a booking or time off</summary>
+          <form id="block-form" novalidate>
+            <fieldset class="seg">
+              <legend class="legend">Type</legend>
+              <label><input type="radio" name="kind" value="booking" checked><span>Booking</span></label>
+              <label><input type="radio" name="kind" value="closed"><span>Time off</span></label>
+            </fieldset>
+            <div class="field">
+              <label for="block-date">Date</label>
+              <input id="block-date" name="date" type="date" required>
+            </div>
+            <label class="check"><input type="checkbox" id="block-whole" name="whole"> Whole day</label>
+            <div class="row2">
+              <div class="field">
+                <label for="block-start">From</label>
+                <input id="block-start" name="start" type="time" step="300" required>
+              </div>
+              <div class="field">
+                <label for="block-end">To</label>
+                <input id="block-end" name="end" type="time" step="300" required>
+              </div>
+            </div>
+            <div class="field">
+              <label for="block-label">Note <span class="opt">(optional, only you see it)</span></label>
+              <input id="block-label" name="label" type="text" maxlength="80" autocomplete="off" placeholder="Client name, or why you're away">
+            </div>
+            <div id="block-message" class="form-msg" role="alert" hidden></div>
+            <button class="btn btn-primary wide" id="block-submit" type="submit">Add to calendar</button>
+          </form>
+        </details>
+
+        <div id="blocks-list" class="days"></div>
+      </section>
+
+      <section id="panel-reviews" role="tabpanel" aria-labelledby="tab-reviews" tabindex="-1" hidden>
+        <div class="panel-head">
+          <h2>Reviews</h2>
+          <button class="btn btn-ghost small" id="refresh-reviews" type="button">Refresh</button>
+        </div>
+        <p class="hint">Approve genuine reviews, including critical ones. Delete only spam or abuse.</p>
+        <h3 class="sub">Waiting for approval</h3>
+        <div id="reviews-pending" class="list"></div>
+        <h3 class="sub">On the website</h3>
+        <div id="reviews-approved" class="list"></div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<dialog id="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-message">
+  <h2 id="confirm-title"></h2>
+  <p id="confirm-message"></p>
+  <div class="dialog-actions">
+    <button class="btn btn-ghost" id="confirm-cancel" type="button">Cancel</button>
+    <button class="btn btn-danger-solid" id="confirm-ok" type="button">OK</button>
+  </div>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<noscript><p class="noscript">The admin page needs JavaScript switched on.</p></noscript>
+</body>
+</html>
