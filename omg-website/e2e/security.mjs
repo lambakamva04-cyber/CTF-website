@@ -96,7 +96,7 @@ async function check(name, fn) {
 
 const GROUP_IDS = {
   preflight: 1, fixtures: 2, sqli: 3, xss: 4, csrf: 5, input: 6, honeypot: 7, privacy: 8,
-  headers: 9, admin: 10, ratelimit: 11, global: 12, caps: 13, misc: 14, alerts: 15, content: 16,
+  headers: 9, admin: 10, ratelimit: 11, global: 12, caps: 13, misc: 14, alerts: 15, content: 16, calendar: 17,
 };
 
 /** A test address for `groupName`. Third octet carries the run, so reruns differ. */
@@ -1492,6 +1492,11 @@ async function adminAuth() {
     ['POST', '/api/admin/site/photos/1'],
     ['DELETE', '/api/admin/site/photos/1'],
     ['POST', '/api/admin/site/photos-order'],
+    ['GET', '/api/admin/calendar-sync'],
+    ['POST', '/api/admin/calendar-sync/feed-reset'],
+    ['POST', '/api/admin/calendar-sync/import'],
+    ['DELETE', '/api/admin/calendar-sync/import'],
+    ['POST', '/api/admin/calendar-sync/sync'],
   ];
   for (const [method, path] of routes) {
     await check(`${method} ${path} without a session → 401`, async () =>
@@ -1826,6 +1831,112 @@ async function content() {
   await survival('after the content checks');
 }
 
+/** Both ways between the site and OMG's own calendar: the bookings feed, and linking her calendar. */
+async function calendarSync() {
+  group('calendar');
+  let feed = null;
+  const feedPath = () => new URL(feed.https).pathname;
+
+  await check('the bookings feed link is this site\'s own, and nothing is linked yet', async () => {
+    const r = await admin('GET', '/api/admin/calendar-sync');
+    expectStatus(r, 200);
+    feed = r.json?.feed;
+    assert.ok(String(feed?.https).startsWith(`${ORIGIN}/calendar/`), `feed link ${feed?.https}`);
+    assert.match(feedPath(), /^\/calendar\/[a-f0-9]{48}\.ics$/);
+    assert.equal(feed.webcal, feed.https.replace(/^https?:/, 'webcal:'));
+    assert.equal(r.json.import?.connected, false);
+    assert.ok(!('url' in r.json.import), 'a calendar link is never sent back');
+  });
+
+  await check('the feed is a calendar with the confirmed booking and the time off', async () => {
+    const r = await call('GET', feedPath());
+    expectStatus(r, 200);
+    assert.equal(r.headers.get('content-type'), 'text/calendar; charset=utf-8');
+    assert.equal(r.headers.get('cache-control'), 'no-store');
+    assert.match(r.headers.get('x-robots-tag') || '', /noindex/);
+    const text = r.text.replace(/\r\n[ \t]/g, '');
+    assert.ok(text.startsWith('BEGIN:VCALENDAR\r\n') && text.endsWith('END:VCALENDAR\r\n'), 'not a calendar file');
+    assert.ok(text.includes(FX.name1), 'the confirmed booking is missing');
+    assert.ok(text.includes(`Phone: ${FX.phone1}`), 'its phone number is missing');
+    assert.ok(text.includes(FX.label3), 'the time off is missing');
+    assert.ok(!text.includes(FX.name2), 'a request that is still pending is in the feed');
+    return `${(text.match(/^BEGIN:VEVENT\r$/gm) || []).length} events`;
+  });
+
+  await check('the admin page sees that the feed was collected', async () => {
+    const r = await admin('GET', '/api/admin/calendar-sync');
+    assert.ok(Date.parse(r.json?.feed?.seenAt) > Date.now() - 180_000, `seenAt ${r.json?.feed?.seenAt}`);
+  });
+
+  for (const bad of ['/calendar/x.ics', `/calendar/${'0'.repeat(48)}.ics`, "/calendar/'%20OR%201=1--.ics", '/calendar/', `/calendar/${'a'.repeat(48)}`]) {
+    await check(`GET ${bad} → 404`, async () => expectStatus(await call('GET', bad), 404));
+  }
+  await check('POST to the feed → 405', async () => expectStatus(await call('POST', feedPath(), { raw: 'x' }), 405));
+
+  await check('a new feed link from another site → 403', async () =>
+    expectError(await admin('POST', '/api/admin/calendar-sync/feed-reset', { origin: 'https://evil.example', json: {} }), 403, 'forbidden'));
+  await check('a new feed link replaces the old one at once', async () => {
+    const old = feedPath();
+    const r = await admin('POST', '/api/admin/calendar-sync/feed-reset', { json: {} });
+    expectStatus(r, 200);
+    feed = r.json.feed;
+    assert.notEqual(feedPath(), old);
+    assert.equal(feed.seenAt, null);
+    expectStatus(await call('GET', old), 404, 'the old link');
+    expectStatus(await call('GET', feedPath()), 200, 'the new link');
+  });
+
+  const refused = [
+    ['another host', 'https://evil.example/calendar.ics'],
+    ['a look-alike host', 'https://calendar.google.com.evil.example/x.ics'],
+    ['this site', `${ORIGIN}/calendar/x.ics`],
+    ['a local address', 'https://127.0.0.1/x.ics'],
+    ['credentials in it', 'https://user:pw@calendar.google.com/x.ics'],
+    ['a port', 'https://calendar.google.com:8443/x.ics'],
+    ['javascript:', 'javascript:alert(1)'],
+    ['a file path', 'file:///etc/passwd'],
+    ['a number', 42],
+    ['nothing', undefined],
+  ];
+  for (const [label, url] of refused) {
+    await check(`linking a calendar on ${label} → 400`, async () =>
+      expectError(await admin('POST', '/api/admin/calendar-sync/import', { json: { url } }), 400, 'invalid', 'url'));
+  }
+  await check('linking a calendar from another site → 403', async () =>
+    expectError(await admin('POST', '/api/admin/calendar-sync/import', { origin: 'https://evil.example', json: { url: 'https://calendar.google.com/x.ics' } }), 403, 'forbidden'));
+  await check('an iCloud link that can\'t be read → 422 with a plain message, and nothing is saved', async () => {
+    const r = await admin('POST', '/api/admin/calendar-sync/import', { json: { url: `webcal://p01-caldav.icloud.com/published/2/e2e-${NONCE}` }, timeout: 45_000 });
+    expectStatus(r, 422);
+    assert.match(r.json?.error ?? '', /^calendar_/);
+    assert.ok(r.json.message && !/fetch|error:|exception/i.test(r.json.message), `message: ${r.json.message}`);
+    const after = await admin('GET', '/api/admin/calendar-sync');
+    assert.equal(after.json?.import?.connected, false);
+    return r.json.message;
+  });
+  await check('"Check now" with nothing linked → 404', async () =>
+    expectError(await admin('POST', '/api/admin/calendar-sync/sync', { json: {} }), 404, 'not_connected'));
+  await check('unlinking with nothing linked is harmless', async () => {
+    const r = await admin('DELETE', '/api/admin/calendar-sync/import');
+    expectStatus(r, 200);
+    assert.equal(r.json?.import?.connected, false);
+  });
+
+  await check('calendar link actions: 429 after 30 an hour', async () => {
+    const { at, r } = await burstUntil429(() => admin('POST', '/api/admin/calendar-sync/sync', { json: {} }), 40);
+    assert.ok(at && at <= 31, `limited at request ${at} of this burst`);
+    return expectError(r, 429, 'rate_limited');
+  });
+  await check('the feed: 429 after 120 an hour from one address, wrong links included', async () => {
+    const ip = freshIp();
+    const { at, r } = await burstUntil429(() => call('GET', `/calendar/${'1'.repeat(48)}.ics`, { ip }), 130);
+    assert.ok(at && at <= 121, `limited at request ${at}`);
+    assert.ok(Number(r.headers.get('retry-after')) > 0, 'no Retry-After');
+    expectStatus(await call('GET', feedPath(), { ip: freshIp() }), 200, 'another address');
+    return `at ${at}`;
+  });
+  await survival('after the calendar checks');
+}
+
 async function burstUntil429(makeCall, max) {
   for (let i = 1; i <= max; i += 1) {
     const r = await makeCall(i);
@@ -2045,6 +2156,7 @@ async function main() {
     await adminAuth();
     await alerts();
     await content();
+    await calendarSync();
     await rateLimits();
   }
   await runWide();

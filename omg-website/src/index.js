@@ -7,6 +7,7 @@ import { UTC_OFFSET_MINUTES } from '../public/js/catalog.js';
 import { addDays, nowInZone } from '../public/js/slots.js';
 import * as admin from './admin.js';
 import * as bookings from './bookings.js';
+import * as calendar from './calendar.js';
 import * as content from './content.js';
 import { HttpError, checkOrigin, errorResponse, notFound } from './http.js';
 import * as push from './push.js';
@@ -16,6 +17,7 @@ import { withSecurityHeaders } from './security.js';
 
 const ID = '(\\d{1,9})';
 const SERVICE = '([a-z0-9][a-z0-9-]{0,38}[a-z0-9])';
+const FEED = /^\/calendar\/([^/]{1,100})\.ics$/;
 const ROUTES = [
   ['GET', '/api/availability', bookings.availability],
   ['POST', '/api/bookings', bookings.create],
@@ -48,6 +50,11 @@ const ROUTES = [
   ['POST', `/api/admin/site/photos/${ID}`, content.updatePhoto],
   ['DELETE', `/api/admin/site/photos/${ID}`, content.deletePhoto],
   ['POST', '/api/admin/site/photos-order', content.orderPhotos],
+  ['GET', '/api/admin/calendar-sync', calendar.getSync],
+  ['POST', '/api/admin/calendar-sync/feed-reset', calendar.resetFeed],
+  ['POST', '/api/admin/calendar-sync/import', calendar.connectImport],
+  ['DELETE', '/api/admin/calendar-sync/import', calendar.disconnectImport],
+  ['POST', '/api/admin/calendar-sync/sync', calendar.syncNow],
 ].map(([method, path, handler]) => ({ method, pattern: new RegExp(`^${path}$`), handler }));
 
 async function api(request, env, url, ctx) {
@@ -68,6 +75,16 @@ async function api(request, env, url, ctx) {
     return await route.handler({ request, env, url, params, client, waitUntil });
   } catch (error) {
     return errorResponse(error);
+  }
+}
+
+/** The private feed of bookings that OMG's calendar app subscribes to (src/calendar.js). */
+async function calendarFeed(request, env, token) {
+  try {
+    return await calendar.feed(request, env, token, await clientId(env, request));
+  } catch (error) {
+    console.error('calendar_feed_failed', String(error && error.message));
+    return new Response('Try again later', { status: 503, headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', 'retry-after': '300' } });
   }
 }
 
@@ -140,11 +157,20 @@ export default {
     if (url.pathname === '/api' || url.pathname.startsWith('/api/')) response = await api(request, env, url, ctx);
     else if (url.pathname.startsWith('/media/')) response = await content.media(request, env, url.pathname.slice('/media/'.length));
     else if (url.pathname === '/') response = await homePage(request, env, url);
+    else if (FEED.test(url.pathname)) response = await calendarFeed(request, env, url.pathname.match(FEED)[1]);
     else response = absoluteShareImage(await env.ASSETS.fetch(request), url);
     return withSecurityHeaders(response, url);
   },
 
+  // Every 15 minutes: read OMG's own calendar for busy times. Once a day, in
+  // the 01:00 UTC run (03:00 in South Africa), also the clean-up. One schedule
+  // for both: the free plan allows five per account.
   async scheduled(controller, env, ctx) {
-    ctx.waitUntil(purge(env));
+    const at = new Date(controller.scheduledTime);
+    const jobs = [calendar.syncCalendar(env)];
+    if (at.getUTCHours() === 1 && at.getUTCMinutes() < 15) jobs.push(purge(env));
+    ctx.waitUntil(Promise.allSettled(jobs).then((results) => {
+      for (const r of results) if (r.status === 'rejected') console.error('scheduled_job_failed', String(r.reason && r.reason.message));
+    }));
   },
 };

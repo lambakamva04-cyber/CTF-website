@@ -357,7 +357,7 @@ function enterApp(session) {
 
 const loaders = {
   requests: () => loadRequests(),
-  calendar: () => loadCalendar(),
+  calendar: () => { loadCalendar(); loadSync(); },
   reviews: () => loadReviews(),
   website: () => loadWebsite(),
 };
@@ -571,7 +571,7 @@ function requestCard(r) {
 function conflictText(block) {
   const allDay = block?.start === '00:00' && block?.end === '24:00';
   const time = allDay ? 'All day' : `${block?.start ?? ''}–${block?.end ?? ''}`;
-  const kind = block?.kind === 'closed' ? 'Time off' : 'Booking';
+  const kind = { closed: 'Time off', calendar: 'Busy in your own calendar' }[block?.kind] || 'Booking';
   const who = block?.name || block?.label;
   return [time, kind, who].filter(Boolean).join(' · ');
 }
@@ -695,17 +695,30 @@ async function loadCalendar() {
     const data = await api('GET', `/api/admin/blocks?from=${from}&to=${to}`);
     if (seq !== state.seq.calendar) return;
     state.loadedAt.calendar = Date.now();
-    renderBlocks(Array.isArray(data.blocks) ? data.blocks : [], month);
+    renderBlocks(Array.isArray(data.blocks) ? data.blocks : [], month, externalItems(data.external));
   } catch (err) {
     if (seq === state.seq.calendar) loadFailed(list, err, loadCalendar);
   }
 }
 
-function renderBlocks(blocks, month) {
+/** { date: [[start, end]] } busy in her own calendar → read-only list items. */
+function externalItems(external) {
+  const items = [];
+  if (!external || typeof external !== 'object') return items;
+  for (const [date, ranges] of Object.entries(external)) {
+    if (!isDate(date) || !Array.isArray(ranges)) continue;
+    for (const r of ranges) {
+      if (Array.isArray(r) && isTime(r[0]) && isTime(r[1]) && toMinutes(r[1]) > toMinutes(r[0])) items.push({ kind: 'calendar', date, start: r[0], end: r[1] });
+    }
+  }
+  return items;
+}
+
+function renderBlocks(blocks, month, external = []) {
   const list = $('blocks-list');
   const byDate = new Map();
-  for (const b of blocks) {
-    if (!idOf(b) || !isDate(b.date) || monthOf(b.date) !== month) continue;
+  for (const b of [...blocks, ...external]) {
+    if ((b.kind !== 'calendar' && !idOf(b)) || !isDate(b.date) || monthOf(b.date) !== month) continue;
     if (!byDate.has(b.date)) byDate.set(b.date, []);
     byDate.get(b.date).push(b);
   }
@@ -724,7 +737,20 @@ function renderBlocks(blocks, month) {
   }));
 }
 
+/** A time that is busy in her own calendar: shown so the day reads true, changed only in that calendar. */
+function busyRow(b) {
+  const allDay = b.start === '00:00' && b.end === '24:00';
+  return el('li', { class: 'block external' },
+    el('div', { class: 'block-time', text: allDay ? 'All day' : `${b.start}–${b.end}` }),
+    el('div', { class: 'block-body' },
+      el('span', { class: 'pill busy', text: 'Busy' }),
+      el('p', { class: 'block-note', text: 'From your own calendar' }),
+    ),
+  );
+}
+
 function blockRow(b) {
+  if (b.kind === 'calendar') return busyRow(b);
   const allDay = b.start === '00:00' && b.end === '24:00';
   const closed = b.kind === 'closed';
   const service = b.service ? serviceName(b.service, b.serviceName) : '';
@@ -835,6 +861,218 @@ async function addBlock(force) {
         blockFormMessage(el('p', { text: err.message }));
         return;
       }
+      handleError(err);
+    }
+  });
+}
+
+// ---------------------------------------------------------------- phone calendar
+
+// Both ways between the website and OMG's own calendar: confirmed bookings and
+// time off go to her calendar app (a private link it subscribes to), and the
+// busy times in her calendar (a private link she pastes here) can't be booked.
+const sync = { data: null, seq: 0 };
+
+/** "just now", "5 minutes ago", "3 hours ago", "2 days ago" */
+function agoText(iso) {
+  const ms = Date.now() - Date.parse(iso);
+  if (!Number.isFinite(ms)) return '';
+  const minutes = Math.round(ms / 60_000);
+  if (minutes < 2) return 'just now';
+  if (minutes < 60) return `${minutes} minutes ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 36) return hours === 1 ? 'an hour ago' : `${hours} hours ago`;
+  return `${Math.round(hours / 24)} days ago`;
+}
+
+async function loadSync() {
+  const seq = ++sync.seq;
+  try {
+    const data = await api('GET', '/api/admin/calendar-sync');
+    if (seq !== sync.seq) return;
+    renderSync(data);
+  } catch (err) {
+    if (seq !== sync.seq) return;
+    if (err instanceof ApiError && err.status === 401) {
+      sessionEnded();
+      return;
+    }
+    $('sync-body').replaceChildren(el('p', { class: 'bad', text: err instanceof ApiError && err.message ? err.message : "Couldn't load this." }));
+  }
+}
+
+const safeLink = (value, scheme) => (typeof value === 'string' && value.startsWith(`${scheme}://${location.host}/calendar/`) ? value : null);
+
+function renderSync(data) {
+  sync.data = data;
+  const feed = data.feed || {};
+  const imp = data.import || {};
+  const webcal = safeLink(feed.webcal, 'webcal');
+  const https = safeLink(feed.https, location.protocol.slice(0, -1));
+  const linkedOut = Boolean(feed.seenAt);
+  const linkedIn = imp.connected === true;
+  const trouble = linkedIn && imp.ok === false;
+
+  const box = $('sync');
+  box.classList.toggle('is-linked', linkedOut && linkedIn && !trouble);
+  box.classList.toggle('needs-attention', trouble);
+  $('sync-summary').textContent = trouble ? "Your calendar couldn't be read"
+    : linkedOut && linkedIn ? 'Phone calendar linked both ways'
+      : linkedOut || linkedIn ? 'Phone calendar linked one way' : "Link your phone's calendar";
+
+  const out = el('section', { class: 'sync-part', 'aria-labelledby': 'sync-out-head' },
+    el('h4', { id: 'sync-out-head', text: 'Website bookings in your calendar' }),
+    linkedOut
+      ? el('p', { class: 'ok', text: `Your calendar app last collected them ${agoText(feed.seenAt)}.` })
+      : el('p', { text: "Confirmed bookings and time off show in your phone's calendar, next to your other appointments, with each client's number." }),
+    el('div', { class: 'row' },
+      webcal && el('a', { class: `btn ${linkedOut ? 'btn-ghost' : 'btn-primary'} small`, id: 'sync-subscribe', href: webcal, text: 'Add to iPhone Calendar' }),
+      https && el('button', { class: 'btn btn-ghost small', type: 'button', id: 'sync-copy', text: 'Copy link', onclick: (e) => copyFeedLink(e.currentTarget, https) }),
+    ),
+    el('p', { class: 'hint', text: "iPhone: tap Add to iPhone Calendar, then Subscribe. If nothing opens, tap Copy link, then in Settings go to Calendar, Accounts, Add Account, Other, Add Subscribed Calendar, and paste it." }),
+    el('p', { class: 'hint', text: "Google Calendar: tap Copy link, then on a computer open Google Calendar, choose + next to Other calendars, From URL, and paste it." }),
+    el('p', { class: 'hint', text: "Keep the link to yourself: it shows your clients' names and numbers." }),
+    el('button', { class: 'link-btn', type: 'button', id: 'sync-reset', text: 'Make a new link', onclick: (e) => resetFeedLink(e.currentTarget) }),
+  );
+
+  const inn = el('section', { class: 'sync-part', 'aria-labelledby': 'sync-in-head' },
+    el('h4', { id: 'sync-in-head', text: 'Your other appointments on the website' }));
+  if (linkedIn) {
+    const source = typeof imp.source === 'string' ? imp.source : 'calendar';
+    const lines = [];
+    if (imp.ok) {
+      lines.push(el('p', { class: 'ok', text: `Reading your ${source} calendar. Checked ${agoText(imp.checkedAt)}.` }));
+      lines.push(el('p', { text: imp.times ? `Busy times in it can't be booked on the website. Only the times are read, never what your appointments are.` : 'Nothing in it is busy from today on, so nothing is blocked.' }));
+    } else {
+      lines.push(el('p', { class: 'bad', text: `Your ${source} calendar couldn't be read ${agoText(imp.checkedAt)}. ${imp.error || ''}`.trim() }));
+      if (imp.readAt) lines.push(el('p', { text: `The website still blocks the busy times it read ${agoText(imp.readAt)}. It tries again every 15 minutes.` }));
+    }
+    inn.append(...lines, el('div', { class: 'row' },
+      el('button', { class: 'btn btn-ghost small', type: 'button', id: 'sync-now', text: 'Check now', onclick: (e) => syncImportNow(e.currentTarget) }),
+      el('button', { class: 'btn btn-danger small', type: 'button', id: 'sync-unlink', text: 'Unlink', onclick: (e) => unlinkImport(e.currentTarget, source) }),
+    ));
+  } else {
+    const input = el('input', { id: 'sync-url', type: 'url', inputmode: 'url', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', placeholder: 'webcal://… or https://…', 'aria-describedby': 'sync-url-help' });
+    const message = el('div', { id: 'sync-message', class: 'form-msg', role: 'alert', hidden: true });
+    const submit = el('button', { class: 'btn btn-primary small', type: 'submit', id: 'sync-link', text: 'Link my calendar' });
+    const form = el('form', { class: 'sync-form', novalidate: true },
+      el('div', { class: 'field' }, el('label', { for: 'sync-url', text: "Your calendar's private link" }), input),
+      message,
+      el('div', { class: 'row' }, submit),
+    );
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      linkImport(input, submit, message);
+    });
+    inn.append(
+      el('p', { text: "Times that are busy in your own calendar can't be booked on the website, so nobody books you twice. Only the times are read, never what your appointments are. It's checked every 15 minutes." }),
+      form,
+      el('div', { id: 'sync-url-help', class: 'sync-help' },
+        el('p', { class: 'hint', text: 'Where to find the link on iPhone:' }),
+        el('ol', {},
+          el('li', { text: 'Open Calendar and tap Calendars.' }),
+          el('li', { text: 'Tap ⓘ next to the calendar your appointments are in.' }),
+          el('li', { text: 'Turn on Public Calendar, tap Share Link, then Copy.' }),
+          el('li', { text: 'Paste it here.' }),
+        ),
+        el('p', { class: 'hint', text: "Only someone with the link can see that calendar, and the website keeps it private. In Google Calendar, use Settings, your calendar, then Secret address in iCal format. Events marked Free don't block anything." }),
+      ),
+    );
+  }
+  $('sync-body').replaceChildren(out, inn);
+}
+
+async function copyFeedLink(button, link) {
+  try {
+    await navigator.clipboard.writeText(link);
+    toast('Link copied.');
+  } catch {
+    // No clipboard: show the link so it can be copied by hand.
+    const field = el('input', { type: 'text', readonly: true, value: link, 'aria-label': 'Calendar link', onfocus: (e) => e.currentTarget.select() });
+    button.closest('.sync-part').querySelector('input[readonly]')?.remove();
+    button.closest('.row').after(field);
+    field.focus();
+  }
+}
+
+async function resetFeedLink(button) {
+  const ok = await askConfirm({
+    title: 'Make a new link?',
+    message: 'The old link stops working straight away, so any calendar using it stops getting bookings. Add the new link to your calendar again afterwards.',
+    confirmLabel: 'Make a new link',
+  });
+  if (!ok) return;
+  await withBusy([button], async () => {
+    try {
+      const data = await api('POST', '/api/admin/calendar-sync/feed-reset', {});
+      renderSync({ ...sync.data, feed: data.feed });
+      toast('New link made. Add it to your calendar again.');
+    } catch (err) {
+      handleError(err);
+    }
+  });
+}
+
+async function linkImport(input, button, message) {
+  const url = input.value.trim();
+  const say = (text) => {
+    message.textContent = text;
+    message.hidden = !text;
+  };
+  if (!/^(?:webcals?|https?):\/\/\S+$/i.test(url)) {
+    say('Paste the whole link, starting with webcal:// or https://.');
+    input.focus();
+    return;
+  }
+  say('');
+  await withBusy([button, input], async () => {
+    button.textContent = 'Reading your calendar…';
+    try {
+      const data = await api('POST', '/api/admin/calendar-sync/import', { url });
+      renderSync({ ...sync.data, import: data.import });
+      toast('Calendar linked. Its busy times are now blocked on the website.');
+      state.loadedAt.calendar = 0;
+      loadCalendar();
+    } catch (err) {
+      if (err instanceof ApiError && (err.status === 400 || err.status === 422)) {
+        say(err.message);
+        input.focus();
+        return;
+      }
+      handleError(err);
+    } finally {
+      button.textContent = 'Link my calendar';
+    }
+  });
+}
+
+async function syncImportNow(button) {
+  await withBusy([button], async () => {
+    try {
+      const data = await api('POST', '/api/admin/calendar-sync/sync', {});
+      renderSync({ ...sync.data, import: data.import });
+      if (data.import?.ok) toast('Checked. The website is up to date with your calendar.');
+      loadCalendar();
+    } catch (err) {
+      handleError(err);
+    }
+  });
+}
+
+async function unlinkImport(button, source) {
+  const ok = await askConfirm({
+    title: 'Unlink your calendar?',
+    message: `The website stops reading your ${source} calendar, and its busy times are no longer blocked. Bookings still go to your calendar app.`,
+    confirmLabel: 'Unlink',
+  });
+  if (!ok) return;
+  await withBusy([button], async () => {
+    try {
+      const data = await api('DELETE', '/api/admin/calendar-sync/import');
+      renderSync({ ...sync.data, import: data.import });
+      toast('Unlinked.');
+      loadCalendar();
+    } catch (err) {
       handleError(err);
     }
   });
@@ -1521,7 +1759,7 @@ function wire() {
   });
 
   $('refresh-requests').addEventListener('click', () => { $('requests-notice').replaceChildren(); loadRequests(); refreshCounts(); });
-  $('refresh-calendar').addEventListener('click', () => loadCalendar());
+  $('refresh-calendar').addEventListener('click', () => { loadCalendar(); loadSync(); });
   $('refresh-reviews').addEventListener('click', () => { loadReviews(); refreshCounts(); });
   for (const b of document.querySelectorAll('#panel-website .subnav button')) b.addEventListener('click', () => showSiteView(b.dataset.view));
 

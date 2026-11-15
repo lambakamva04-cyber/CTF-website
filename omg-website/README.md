@@ -40,8 +40,10 @@ database. The Worker runs the **booking calendar**, the **reviews** and the
    show as booked on the calendar.
 
 Pending requests never block the calendar, so nobody can fill it with fake
-requests. The calendar shows only booked time ranges: never names, numbers,
-services or notes. If saving fails, the page still offers the WhatsApp
+requests. Once OMG links her phone's calendar (below), the times that are busy
+in it are blocked too, so nobody can book a time she has already given away.
+The calendar shows only busy time ranges: never names, numbers, services or
+notes. If saving fails, the page still offers the WhatsApp
 message, so a booking is never lost.
 
 ## The admin page
@@ -57,7 +59,9 @@ Open `/admin/` and sign in with the admin password. It is made for a phone.
   booking also deletes that client's details. Upcoming bookings have a
   **Remind on WhatsApp** button: it opens WhatsApp with a reminder already
   written to the client (name, service, day and time), asking them to confirm.
-  Send it the day before to cut no-shows.
+  Send it the day before to cut no-shows. At the top, **Link your phone's
+  calendar** connects it to OMG's own calendar, both ways (below). Times busy
+  in her calendar show in the month as "Busy · From your own calendar".
 - **Reviews**: new reviews wait here. **Approve** puts one on the site. Approve
   genuine reviews, critical ones included; delete only spam or abuse.
 - **Website**: change the site itself, no developer needed. Changes show
@@ -93,6 +97,31 @@ and when ("New booking request: Thandi · Full Glam · Sat 12 Dec at 09:00");
 tapping it opens the admin page. Nothing about the client travels through
 Google's or Apple's push service: the push is empty, and the phone fetches the
 details from the site with OMG's sign-in.
+
+### Your phone's calendar
+
+On the **Calendar** tab, open **Link your phone's calendar**. It works both
+ways, and each half can be used alone:
+
+- **Website bookings in your calendar.** Tap **Add to iPhone Calendar**, then
+  **Subscribe**. Confirmed bookings and time off then appear in her phone's
+  calendar next to her other appointments, with the client's name, service,
+  number and ref. For Google Calendar, **Copy link** and add it on a computer
+  under Other calendars > + > From URL. The link is private: anyone who has it
+  can see the bookings, so **Make a new link** if it is ever shared by mistake
+  (the old one stops working at once).
+- **Your other appointments on the website.** Paste her own calendar's private
+  link and tap **Link my calendar**. On iPhone: Calendar > Calendars > ⓘ next
+  to her calendar > **Public Calendar** on > **Share Link** > Copy. (Google:
+  Settings > the calendar > *Secret address in iCal format*.) From then on
+  every busy time in that calendar is blocked on the website: on the public
+  calendar, in the booking checks, and as a clash warning when she confirms a
+  request or adds a booking. Events marked Free don't block anything.
+
+The site reads her calendar every 15 minutes. Only the times are kept, never
+what the appointments are. If a read fails, the last busy times stay in force
+and the card says what went wrong. Only iCloud, Google Calendar and Outlook
+links are accepted.
 
 ## Go live (one time)
 
@@ -200,27 +229,36 @@ clients can book are rules, not content: they are in `public/js/catalog.js`.
   tokens are random and stored only as hashes.
 - **Bots**: a hidden honeypot field and a minimum fill time. Bots get a reply
   that looks normal, and nothing is stored.
+- **Calendar links**: the site only ever fetches calendars from iCloud,
+  Google Calendar or Outlook (redirects included), so a pasted link can't make
+  it reach anywhere else. The bookings feed sits behind a random 192-bit link,
+  is rate limited, and can be replaced at any time.
 - Bodies are capped at 8 KB. Errors never reveal internals. Every response,
   pages included, carries the security headers listed in API.md.
 
 ## Personal data
 
-A daily job deletes requests nobody confirmed, client details 30 days after
-the appointment, calendar entries older than 180 days, and expired sessions
-and counters. The booking form tells clients their details are deleted within
-30 days after the appointment.
+A daily job (03:00 in South Africa) deletes requests nobody confirmed, client
+details 30 days after the appointment, calendar entries older than 180 days,
+and expired sessions and counters. The booking form tells clients their
+details are deleted within 30 days after the appointment. From OMG's own
+calendar the site keeps busy times only: no titles, places, notes or guests.
 
 ## Tests
 
 ```bash
 npm test              # unit tests: validation, slot maths, headers
-bash e2e/run.sh       # ~310 black-box security checks against a local Worker
+bash e2e/run.sh       # ~420 black-box security checks against a local Worker
 ```
 
 `e2e/run.sh` starts a throwaway Worker on a fresh local database, so it never
 touches real data. GitHub runs both on every push.
 
 ## Still to supply
+
+- **Link OMG's phone calendar** (Calendar tab > Link your phone's calendar),
+  both ways. Until her own calendar is linked, the website can't see the
+  appointments she takes by phone or WhatsApp.
 
 - **Service durations.** The starting times are estimates. Set each service's
   real length on the Website tab, or the calendar will book clients too close

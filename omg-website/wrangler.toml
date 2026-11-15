@@ -35,9 +35,12 @@ database_name = "omg-oh-my-glam"
 database_id = "2b9f3a76-bdfc-49d9-8164-fe0683ef64f0"
 migrations_dir = "migrations"
 
-# Daily clean-up: old personal data, expired sessions and rate-limit counters.
+# Every 15 minutes: read OMG's own calendar for busy times (if she linked one).
+# The 01:00 UTC run also does the daily clean-up of old personal data, expired
+# sessions and rate-limit counters. One schedule: the free plan allows five per
+# account, and the account's other Workers use four.
 [triggers]
-crons = ["17 1 * * *"]
+crons = ["*/15 * * * *"]
 
 [observability]
 enabled = true

@@ -5,9 +5,10 @@ import {
   bookingMessage, formatDateLong, serviceLabel, whatsappUrl,
 } from '../public/js/catalog.js';
 import {
-  addDays, addMonths, formatRanges, isMonth, monthOf, notBeforeFor, nowInZone,
+  addDays, addMonths, formatRanges, isDate, isMonth, mergeRanges, monthOf, notBeforeFor, nowInZone,
   overlaps, parseRanges, toHHMM, toMinutes,
 } from '../public/js/slots.js';
+import { busyOn, externalBusy } from './calendar-busy.js';
 import { bookableService, sitePhone } from './content.js';
 import { HttpError, invalid, json, readJson } from './http.js';
 import { alertInBackground } from './push.js';
@@ -28,7 +29,10 @@ export function newRef() {
   return `OMG-${out}`;
 }
 
-/** GET /api/availability?month=YYYY-MM: busy time ranges only, nothing personal. */
+/**
+ * GET /api/availability?month=YYYY-MM: busy time ranges only, nothing
+ * personal. Busy means booked or time off here, or busy in OMG's own calendar.
+ */
 export async function availability({ env, url, client }) {
   await enforce(env, 'read', client);
   const month = url.searchParams.get('month');
@@ -37,16 +41,22 @@ export async function availability({ env, url, client }) {
   if (!isMonth(month) || month < first || month > addMonths(first, 12)) {
     throw invalid('month', 'Pick a month from now to a year ahead.');
   }
-  const { results } = await env.DB.prepare('SELECT date, start, end FROM blocks WHERE date >= ?1 AND date <= ?2')
-    .bind(`${month}-01`, `${month}-31`)
-    .all();
+  const [{ results }, external] = await Promise.all([
+    env.DB.prepare('SELECT date, start, end FROM blocks WHERE date >= ?1 AND date <= ?2').bind(`${month}-01`, `${month}-31`).all(),
+    externalBusy(env),
+  ]);
   const byDate = new Map();
-  for (const row of results) {
-    if (!byDate.has(row.date)) byDate.set(row.date, []);
-    byDate.get(row.date).push([row.start, row.end]);
-  }
+  const add = (date, ranges) => {
+    if (!byDate.has(date)) byDate.set(date, []);
+    byDate.get(date).push(...ranges);
+  };
+  for (const row of results) add(row.date, parseRanges([[row.start, row.end]]));
+  for (const date of Object.keys(external)) if (date.startsWith(`${month}-`) && isDate(date)) add(date, busyOn(external, date));
   const busy = {};
-  for (const date of [...byDate.keys()].sort()) busy[date] = formatRanges(parseRanges(byDate.get(date)));
+  for (const date of [...byDate.keys()].sort()) {
+    const ranges = formatRanges(byDate.get(date));
+    if (ranges.length) busy[date] = ranges;
+  }
   return json({ ok: true, month, today: now.date, now: toHHMM(now.minutes), busy });
 }
 
@@ -100,8 +110,11 @@ export async function create(ctx) {
   // Bots get an answer that looks real, and nothing is stored.
   if (looksAutomated(body)) return created(input, service, newRef(), phone);
 
-  const { results } = await env.DB.prepare('SELECT start, end FROM blocks WHERE date = ?1').bind(input.date).all();
-  const busy = parseRanges(results.map((row) => [row.start, row.end]));
+  const [{ results }, external] = await Promise.all([
+    env.DB.prepare('SELECT start, end FROM blocks WHERE date = ?1').bind(input.date).all(),
+    externalBusy(env),
+  ]);
+  const busy = mergeRanges([...parseRanges(results.map((row) => [row.start, row.end])), ...busyOn(external, input.date)]);
   if (busy.some(([s, e]) => overlaps(start, start + service.minutes, s, e))) {
     throw new HttpError(409, 'taken', 'Sorry, that time has just been booked. Please pick another.');
   }
