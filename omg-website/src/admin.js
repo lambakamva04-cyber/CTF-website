@@ -1,7 +1,8 @@
 // The admin API: sign-in, booking requests, the calendar and reviews.
 
-import { UTC_OFFSET_MINUTES, findService } from '../public/js/catalog.js';
-import { addDays, daysBetween, nowInZone, overlaps, toHHMM, toMinutes } from '../public/js/slots.js';
+import { UTC_OFFSET_MINUTES } from '../public/js/catalog.js';
+import { addDays, daysBetween, formatRanges, isDate, nowInZone, overlaps, toHHMM, toMinutes } from '../public/js/slots.js';
+import { busyOn, externalBusy } from './calendar-busy.js';
 import { HttpError, invalid, json, notFound, readJson } from './http.js';
 import { enforce, hit, peek, sha256Hex } from './ratelimit.js';
 import { blockTime, dateValue, label as noteText } from './validate.js';
@@ -62,14 +63,23 @@ function blockOut(row) {
     name: row.name ?? null,
     phone: row.phone ?? null,
     service: row.service ?? null,
+    serviceName: row.service_name ?? null,
   };
 }
 
+/** What [start, end) on `date` overlaps: bookings and time off here, and busy times in OMG's own calendar. */
 async function conflictsWith(env, date, start, end, exceptId = null) {
-  const { results } = await env.DB.prepare('SELECT id, start, end, kind, label FROM blocks WHERE date = ?1 ORDER BY start').bind(date).all();
-  return results
+  const [{ results }, external] = await Promise.all([
+    env.DB.prepare('SELECT id, start, end, kind, label FROM blocks WHERE date = ?1 ORDER BY start').bind(date).all(),
+    externalBusy(env),
+  ]);
+  const here = results
     .filter((b) => b.id !== exceptId && overlaps(start, end, toMinutes(b.start), toMinutes(b.end)))
     .map((b) => ({ id: b.id, start: b.start, end: b.end, kind: b.kind, label: b.label ?? null }));
+  const theirs = busyOn(external, date)
+    .filter(([s, e]) => overlaps(start, end, s, e))
+    .map(([s, e]) => ({ id: null, start: toHHMM(s), end: toHHMM(e), kind: 'calendar', label: null }));
+  return [...here, ...theirs].sort((a, b) => toMinutes(a.start) - toMinutes(b.start));
 }
 
 const overlapError = (conflicts) =>
@@ -125,21 +135,21 @@ export async function session(ctx) {
 export async function listRequests(ctx) {
   await guard(ctx);
   const { results } = await ctx.env.DB.prepare(
-    "SELECT id, ref, name, phone, service, date, start, minutes, created_at FROM booking_requests WHERE status = 'pending' " +
-      'ORDER BY date, start, id LIMIT 500',
+    'SELECT r.id, r.ref, r.name, r.phone, r.service, s.name AS service_name, s.price AS service_price, r.date, r.start, r.minutes, r.created_at ' +
+      "FROM booking_requests r LEFT JOIN services s ON s.id = r.service WHERE r.status = 'pending' " +
+      'ORDER BY r.date, r.start, r.id LIMIT 500',
   ).all();
   return json({
     ok: true,
     requests: results.map((r) => {
-      const service = findService(r.service);
       return {
         id: r.id,
         ref: r.ref,
         name: r.name,
         phone: r.phone,
         service: r.service,
-        serviceName: service ? service.name : r.service,
-        price: service ? service.price : null,
+        serviceName: r.service_name ?? r.service,
+        price: r.service_price ?? null,
         date: r.date,
         time: r.start,
         minutes: r.minutes,
@@ -198,14 +208,24 @@ export async function listBlocks(ctx) {
   const from = dateValue(ctx.url.searchParams.get('from'), 'from');
   const to = dateValue(ctx.url.searchParams.get('to'), 'to');
   if (to < from || daysBetween(from, to) > 62) throw invalid('to', 'Show at most 62 days at a time.');
-  const { results } = await ctx.env.DB.prepare(
-    'SELECT b.id, b.date, b.start, b.end, b.kind, b.label, r.ref, r.name, r.phone, r.service ' +
-      'FROM blocks b LEFT JOIN booking_requests r ON r.id = b.request_id ' +
-      'WHERE b.date >= ?1 AND b.date <= ?2 ORDER BY b.date, b.start, b.id',
-  )
-    .bind(from, to)
-    .all();
-  return json({ ok: true, blocks: results.map(blockOut) });
+  const [{ results }, external] = await Promise.all([
+    ctx.env.DB.prepare(
+      'SELECT b.id, b.date, b.start, b.end, b.kind, b.label, r.ref, r.name, r.phone, r.service, s.name AS service_name ' +
+        'FROM blocks b LEFT JOIN booking_requests r ON r.id = b.request_id LEFT JOIN services s ON s.id = r.service ' +
+        'WHERE b.date >= ?1 AND b.date <= ?2 ORDER BY b.date, b.start, b.id',
+    )
+      .bind(from, to)
+      .all(),
+    externalBusy(ctx.env),
+  ]);
+  // Busy times from OMG's own calendar, shown alongside but not editable here.
+  const busy = {};
+  for (const date of Object.keys(external).sort()) {
+    if (date < from || date > to || !isDate(date)) continue;
+    const ranges = busyOn(external, date);
+    if (ranges.length) busy[date] = formatRanges(ranges);
+  }
+  return json({ ok: true, blocks: results.map(blockOut), external: busy });
 }
 
 export async function createBlock(ctx) {

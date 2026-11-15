@@ -1,11 +1,14 @@
-// The booking catalogue: what can be booked, how long each service takes, the
-// opening hours, and the WhatsApp message a booking sends.
+// The booking rules: the opening hours, the grid of start times, the notice
+// and how far ahead clients can book, and the WhatsApp message a booking sends.
 //
 // This one file is loaded by the website (to draw the calendar) and bundled
 // into the Worker (to check every booking request), so the two can never
-// disagree. Change a price, a duration or the hours here and both follow.
+// disagree. The services and prices are edited on the admin page.
 
-/** OMG's WhatsApp number, international format without the plus. */
+/**
+ * OMG's WhatsApp number, international format without the plus. Only the
+ * fallback: the number in use is edited on the admin page's Website tab.
+ */
 export const WHATSAPP_NUMBER = '27785767604';
 
 /** South Africa does not change its clocks, so SAST is always UTC+2. */
@@ -31,32 +34,23 @@ export const BOOKING_WINDOW = {
 };
 
 /**
- * Everything a client can book. `minutes` is how long the appointment blocks
- * the calendar. The durations are starting estimates: set them to the real
- * times. Prices match the price list on the page.
+ * The services themselves (names, prices, durations) are edited on the admin
+ * page's Website tab and kept in the database. The page receives them in a
+ * JSON block the Worker writes into it; the Worker checks every booking
+ * against the same rows.
+ *
+ * Where each card of the price list sits in the booking form's groups.
  */
-export const SERVICES = [
-  { id: 'soft-glam', group: 'Makeup', name: 'Soft Glam', price: 750, minutes: 90 },
-  { id: 'full-glam', group: 'Makeup', name: 'Full Glam', price: 850, minutes: 90 },
-  { id: 'bold-dramatic', group: 'Makeup', name: 'Bold / Dramatic', price: 950, minutes: 120 },
-  { id: 'basic-installation', group: 'Hair', name: 'Basic Installation', price: 400, minutes: 90 },
-  { id: 'curling-long-weave', group: 'Hair', name: 'Curling Long Weave', price: 450, minutes: 90 },
-  { id: 'bridal-package', group: 'Bridal', name: 'Bridal Package', price: 4500, minutes: 300 },
-  { id: 'bridal-makeup-leave', group: 'Bridal', name: 'Bridal makeup & leave immediately', price: 1800, minutes: 120 },
-  { id: 'bridal-makeup-install-style', group: 'Bridal', name: 'Bridal makeup, installation + style & leave', price: 2900, minutes: 210 },
-  { id: 'bridal-natural-hairstyle', group: 'Bridal', name: 'Bridal natural hairstyle', price: 850, minutes: 90 },
-  { id: 'bridal-trial', group: 'Bridal', name: 'Bridal trial makeup', price: 750, minutes: 90 },
-  { id: 'bridesmaid-strip-lashes', group: 'Bridesmaid', name: 'Bridesmaid full glam with strip lashes', price: 850, minutes: 90 },
-  { id: 'bridesmaid-cut-crease', group: 'Bridesmaid', name: 'Bridesmaid full glam with cut crease', price: 950, minutes: 120 },
-];
+export const GROUP_OF_CARD = {
+  makeup: 'Makeup',
+  hair: 'Hair',
+  package: 'Bridal',
+  bride: 'Bridal',
+  bridesmaid: 'Bridesmaid',
+};
 
 /** The groups, in the order the booking form lists them. */
 export const SERVICE_GROUPS = ['Makeup', 'Hair', 'Bridal', 'Bridesmaid'];
-
-/** @returns {typeof SERVICES[number] | undefined} */
-export function findService(id) {
-  return SERVICES.find((s) => s.id === id);
-}
 
 /** "Full Glam (R850)" */
 export function serviceLabel(service) {
@@ -106,6 +100,6 @@ export function bookingMessage({ name, phone, service, date, time, ref }) {
 }
 
 /** A wa.me link that opens a chat with OMG with `text` already typed in. */
-export function whatsappUrl(text) {
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
+export function whatsappUrl(text, number = WHATSAPP_NUMBER) {
+  return `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
 }

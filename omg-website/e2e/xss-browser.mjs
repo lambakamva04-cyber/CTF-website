@@ -125,7 +125,7 @@ function inspect(page) {
     pwned: window.__pwned ?? null,
     csp: window.__csp || [],
     injected: [...document.querySelectorAll(
-      'img[src="x"], svg[onload], [onerror], [onload], [onclick], [onmouseover], a[href^="javascript:" i], script:not([src]):not([type="application/ld+json"])',
+      'img[src="x"], svg[onload], [onerror], [onload], [onclick], [onmouseover], a[href^="javascript:" i], script:not([src]):not([type="application/ld+json"]):not([type="application/json"])',
     )].map((el) => el.outerHTML.slice(0, 80)),
     shown: document.body.innerText.includes(shown),
   }), SHOWN);

@@ -7,7 +7,6 @@
 // Apple's push servers, and no payload encryption is needed: only a VAPID key
 // pair, which the Worker creates once and keeps in the settings table.
 
-import { findService } from '../public/js/catalog.js';
 import { isDate, weekday } from '../public/js/slots.js';
 import { guard } from './admin.js';
 import { invalid, json, readJson } from './http.js';
@@ -159,10 +158,9 @@ export function alertText({ booking, review, testAt, pending }, now = Date.now()
   ].filter(Boolean).sort((a, b) => b.at - a.at);
   const newest = events[0];
   if (newest && newest.kind === 'booking') {
-    const service = findService(booking.service);
     return {
       title: 'New booking request',
-      body: `${firstName(booking.name)} · ${service ? service.name : 'a service'} · ${shortDay(booking.date)} at ${booking.start}`,
+      body: `${firstName(booking.name)} · ${booking.service_name || 'a service'} · ${shortDay(booking.date)} at ${booking.start}`,
       tag: `booking-${booking.id}`,
     };
   }
@@ -241,7 +239,10 @@ export async function latest(ctx) {
   await guard(ctx);
   const db = ctx.env.DB;
   const [booking, review, test, counts] = await db.batch([
-    db.prepare("SELECT id, name, service, date, start, created_at FROM booking_requests WHERE status = 'pending' ORDER BY created_at DESC, id DESC LIMIT 1"),
+    db.prepare(
+      'SELECT r.id, r.name, r.service, s.name AS service_name, r.date, r.start, r.created_at FROM booking_requests r '
+      + "LEFT JOIN services s ON s.id = r.service WHERE r.status = 'pending' ORDER BY r.created_at DESC, r.id DESC LIMIT 1",
+    ),
     db.prepare("SELECT id, name, rating, comment, created_at FROM reviews WHERE status = 'pending' ORDER BY created_at DESC, id DESC LIMIT 1"),
     db.prepare("SELECT value FROM settings WHERE key = 'push_test_at'"),
     db.prepare(

@@ -28,9 +28,10 @@ test('phone numbers are 9 to 15 digits', () => {
   for (const bad of ['12345678', '1'.repeat(16), '082 123 4567 ext 2', "082' OR '1'='1", '+', '27+82123456', null]) rejects(() => V.phoneNumber(bad), 'phone');
 });
 
-test('services, dates and times come from fixed sets', () => {
-  assert.equal(V.serviceId('soft-glam'), 'soft-glam');
-  for (const bad of ['SOFT-GLAM', 'soft-glam ', "soft-glam' --", '__proto__', 'constructor', null]) rejects(() => V.serviceId(bad), 'service');
+test('service ids, dates and times come in fixed shapes', () => {
+  // Whether a service exists and is shown is checked against the database.
+  for (const ok of ['soft-glam', 'lash-lift-k3f9', 'a1']) assert.equal(V.serviceId(ok), ok);
+  for (const bad of ['SOFT-GLAM', 'soft-glam ', "soft-glam' --", '__proto__', '-glam', 'glam-', 'a', 'x'.repeat(41), null]) rejects(() => V.serviceId(bad), 'service');
   rejects(() => V.dateValue('2026-02-30'), 'date');
   rejects(() => V.startTime('24:00'), 'time');
   rejects(() => V.startTime('09:30 '), 'time');

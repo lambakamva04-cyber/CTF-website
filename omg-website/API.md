@@ -3,9 +3,12 @@
 The Worker in `src/` serves the static site from `public/` and answers
 `/api/*`. Data lives in one D1 database (binding `DB`).
 
-Shared code: `public/js/catalog.js` (services, durations, hours, the WhatsApp
-message) and `public/js/slots.js` (time and date arithmetic) are loaded by the
-browser **and** bundled into the Worker. Neither side keeps its own copy.
+Shared code: `public/js/catalog.js` (opening hours, the booking rules, the
+WhatsApp message) and `public/js/slots.js` (time and date arithmetic) are
+loaded by the browser **and** bundled into the Worker. The services (names,
+prices, durations) are rows in the `services` table, edited on the admin
+page: the Worker checks bookings against them and writes the same rows into
+the page for the booking calendar. Neither side keeps its own copy.
 
 All times are SAST (UTC+2, no daylight saving). Dates are `YYYY-MM-DD`, times
 `HH:MM`, ranges half-open (`09:00–10:30` then `10:30–12:00` do not overlap).
@@ -57,7 +60,8 @@ month to 12 months ahead; anything else is 400.
 ```
 
 `busy` lists only days that have something booked or blocked, merged and
-sorted. Pending requests are **not** busy (otherwise anyone could fill the
+sorted, including times busy in OMG's own calendar once she has linked it
+(see *Phone calendar*). Pending requests are **not** busy (otherwise anyone could fill the
 calendar with fake requests); only bookings OMG has confirmed and time OMG has
 blocked off. `today`/`now` are SAST, so the page does not trust the visitor's
 clock for minimum notice.
@@ -74,7 +78,7 @@ A visitor asks for a time. Stored as a **pending request** for OMG to confirm.
 - `name`: "Name and Surname". Trimmed, inner whitespace collapsed, 3–80
   characters, at least two words, letters (any script) plus `space ' - .`.
 - `phone`: "Contact Number". Digits, spaces, `+ - ( )`; 9–15 digits in total.
-- `service`: an `id` from `SERVICES` in `catalog.js`.
+- `service`: the `id` of a service that is shown on the site (`services.visible = 1`).
 - `date` + `time`: must pass `isBookable` against confirmed bookings and
   blocks for that date, the opening hours, the 30-minute grid, the minimum
   notice and the booking window, all from `catalog.js`.
@@ -142,7 +146,7 @@ the session cookie, otherwise 401.
 | `GET /api/admin/requests` | | `{ ok, requests: [Request] }` pending only, soonest first |
 | `POST /api/admin/requests/:id/confirm` | `{ "minutes"?, "force"? }` | `{ ok, block }`; 409 `overlap` unless `force` |
 | `POST /api/admin/requests/:id/decline` | none | `{ ok }`, deletes the request |
-| `GET /api/admin/blocks?from=&to=` | | `{ ok, blocks: [Block] }`, range at most 62 days |
+| `GET /api/admin/blocks?from=&to=` | | `{ ok, blocks: [Block], external: { date: [[start, end]] } }`, range at most 62 days; `external` is what is busy in OMG's own calendar |
 | `POST /api/admin/blocks` | `{ date, start, end, kind, label?, force? }` | `201 { ok, block }`; 409 `overlap` unless `force` |
 | `DELETE /api/admin/blocks/:id` | | `{ ok }` |
 | `GET /api/admin/reviews?status=pending\|approved` | | `{ ok, reviews: [AdminReview] }` |
@@ -160,8 +164,10 @@ the session cookie, otherwise 401.
 - `AdminReview`: `{ id, name, rating, comment, status, createdAt }`.
 - Block times: `start` < `end`, both on 5-minute boundaries, `end` may be `24:00`.
   `kind: "closed"` is time off. `label` is a private note, at most 80 characters, never shown publicly.
+- A 409 `overlap` lists `conflicts: [{ id, start, end, kind, label }]`. A time
+  busy in OMG's own calendar appears as `{ id: null, kind: "calendar", label: null }`.
 - Confirming a request creates a `booking` block from its start for `minutes`
-  (default: the service's duration from `catalog.js`), labelled with the client's name.
+  (default: the service's duration when the request was made), labelled with the client's name.
 - `:id` must be a positive integer; anything else is 404.
 
 ### Session
@@ -171,6 +177,48 @@ the session cookie, otherwise 401.
   hash in D1 with a 14-day expiry, and sets
   `__Host-omg_admin=<token>; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=1209600`.
 - Logout deletes the session row and expires the cookie.
+
+### Website content (the Website tab)
+
+| Method and path | Body | Reply |
+| --- | --- | --- |
+| `GET /api/admin/site` | | `{ ok, services: [Service], text: { phone, instagram, facebook_url, facebook_name, tagline, home_calls, bridal_note }, photos: [Photo] }`, hidden services included |
+| `POST /api/admin/site/services` | `ServiceInput` | `201 { ok, service }`, last in its card, id made from the name (`lash-lift-k3f9`) |
+| `POST /api/admin/site/services/:id` | `ServiceInput` | `{ ok, service }`, every field replaced; a new card puts it last there |
+| `DELETE /api/admin/site/services/:id` | | `{ ok }`. Requests already made keep their details |
+| `POST /api/admin/site/services-order` | `{ card, ids }` | `{ ok }`. `ids` must be exactly that card's services |
+| `POST /api/admin/site/text` | any of the text keys | `{ ok, text }` with the stored (normalised) values |
+| `POST /api/admin/site/photos` | multipart: `album`, `alt`, `width`, `height`, `small_width`, `large`, `small` | `201 { ok, photo }`, last in its album |
+| `POST /api/admin/site/photos/:id` | `{ alt }` | `{ ok, photo }` |
+| `DELETE /api/admin/site/photos/:id` | | `{ ok }`, and an uploaded photo's files are deleted |
+| `POST /api/admin/site/photos-order` | `{ album, ids }` | `{ ok }`. `ids` must be exactly that album's photos |
+
+- `ServiceInput`: `{ card, name, price, minutes, note, level, details, visible }`.
+  `card` is `makeup`, `hair`, `package`, `bride` or `bridesmaid`; `name` 2–60
+  characters; `price` a whole number of rand, 0–100000; `minutes` 15–720 in
+  steps of 15; `note` up to 60 characters or `null`; `level` 1–3 (makeup only)
+  or `null`; `details` up to 1000 characters and 30 lines (package only: one
+  item per line, a line ending in `:` is a heading); `visible` a boolean.
+- Text: `phone` is stored as country code and digits (`078 576 7604` →
+  `27785767604`); `instagram` as a username (`@name` or a profile link is
+  accepted); `facebook_url` must be on `facebook.com`, `fb.com` or `fb.me` and is
+  stored as `https`; empty `instagram` or `facebook_url` hides it. `tagline`
+  10–220 characters, `home_calls` and `bridal_note` 5–300.
+- Photos: `album` is `looks` or `before_after`; `alt` 3–160 characters; the
+  admin page shrinks each photo before sending (at most 1440×2200, and a 720px
+  copy). Only JPEG and WebP are accepted, recognised by their first bytes (not
+  the declared type): large at most 3 MB, small 1 MB, the whole upload 6 MB,
+  40 photos per album.
+- `GET /media/<32 hex>-<l|s>.<webp|jpg>` serves an uploaded photo from KV with
+  `Cache-Control: public, max-age=31536000, immutable`. Any other name is 404.
+
+The home page is rewritten as it is served (`HTMLRewriter`): the price lists,
+the bridal package, both photo albums, the contact links, the description
+tags, the JSON-LD and a `<script type="application/json" id="omg-catalog">`
+block the booking calendar reads (`{ phone, services: [{ id, group, name,
+price, minutes }] }`). Each Worker reuses the content for up to 15 seconds.
+The page is sent with `Cache-Control: no-cache` and no ETag, so browsers never
+show an old price list.
 
 ### Phone alerts (Web Push)
 
@@ -192,6 +240,50 @@ counts what is waiting. Phone numbers are never in an alert.
 - A push service answering 404 or 410 means the device is gone: its row is
   deleted.
 
+### Phone calendar
+
+Both ways between the site and OMG's own calendar (`src/calendar.js`).
+
+| Method and path | Body | Reply |
+| --- | --- | --- |
+| `GET /api/admin/calendar-sync` | | `{ ok, feed: { https, webcal, seenAt }, import: Import }` |
+| `POST /api/admin/calendar-sync/feed-reset` | none | `{ ok, feed }`: a new feed link; the old one is 404 at once |
+| `POST /api/admin/calendar-sync/import` | `{ url }` | `{ ok, import }` once the calendar has been read; nothing is saved if it can't be |
+| `POST /api/admin/calendar-sync/sync` | none | `{ ok, import }` after reading it now; 404 `not_connected` if none is linked |
+| `DELETE /api/admin/calendar-sync/import` | | `{ ok, import: { connected: false } }`, and its busy times are forgotten |
+
+- `Import`: `{ connected: false }`, or `{ connected: true, source: "iCloud" | "Google Calendar" | "Outlook", ok, checkedAt, readAt, times, error }`.
+  The link itself is never sent back: it opens her whole calendar.
+- **The feed**, `GET /calendar/<48 hex>.ics` (also `HEAD`): an iCalendar file of
+  confirmed bookings and time off from 60 days ago to 400 days ahead, in UTC,
+  whole days as dates. A booking's title is its service and client; its notes
+  hold the phone number and ref. `text/calendar`, `Cache-Control: no-store`,
+  `X-Robots-Tag: noindex`. The token is compared in constant time; any other
+  is 404. Each fetch records `seenAt` (at most every 10 minutes), so the admin
+  page can tell her calendar app is collecting it.
+- **Her calendar's link** must be `https:` (or `webcal:`, read as `https:`) on
+  `pNN-caldav.icloud.com`, `pNN-calendars.icloud.com`, `calendar.google.com` or
+  `outlook.live.com` / `outlook.office365.com` / `outlook.office.com`, with no
+  credentials or port, at most 2000 characters; anything else is 400 `invalid`
+  (`field: "url"`). Redirects are followed by hand, at most 3, each to one of
+  those hosts. A calendar that can't be read (unreachable, an error answer, not
+  a calendar, over 3 MB, over 20 seconds) is 422 with a message to show.
+- **Reading it**: the cron trigger runs every 15 minutes and reads the linked
+  calendar. It sends back the last `ETag`/`Last-Modified`; a 304, or a file
+  with the same SHA-256 as last time, is not worked out again. Otherwise the
+  file is scanned in one pass for `VEVENT` start, end, duration, repeat rule
+  (`DAILY`, `WEEKLY`, `MONTHLY`, `YEARLY` with `INTERVAL`, `COUNT`, `UNTIL`,
+  `BYDAY`, `BYMONTHDAY`, `BYMONTH`), `EXDATE`, `RECURRENCE-ID`, `STATUS` and
+  `TRANSP`; nothing else in it is read. Cancelled and Free events are skipped.
+  Time zones are converted with `Intl`; unknown ones are read as SAST.
+- **Stored** in `settings`: `calendar_busy` (`{ date: [[startMinute, endMinute]] }`
+  in SAST, from yesterday to 400 days ahead), `calendar_import_url`,
+  `calendar_import_status`, `calendar_feed_token`, `calendar_feed_seen`. A
+  failed read keeps the last busy times and records the error.
+- Busy times count everywhere a booking does: `GET /api/availability`, the
+  overlap check in `POST /api/bookings` (409 `taken`), and the admin overlap
+  check.
+
 ## Rate limits
 
 Every attempt counts against the "any attempt" limits, so nobody can hammer
@@ -212,6 +304,10 @@ created once and kept in the `settings` table.
 | `POST /api/admin/login` | 5 per 15 minutes | 30 failed logins an hour |
 | Other `/api/admin/*` | 300 a minute | |
 | `POST /api/admin/push/test` | 10 an hour | |
+| Website tab edits (services, text, photo descriptions and order, deletes) | 300 an hour | |
+| `POST /api/admin/site/photos` | 60 an hour | |
+| Phone calendar changes (`feed-reset`, `import`, `sync`, unlinking) | 30 an hour | |
+| `GET /calendar/<token>.ics`, wrong tokens included | 120 an hour | |
 
 ## Security headers
 
@@ -236,7 +332,8 @@ script, so it is unaffected.
 
 ## Keeping personal data short-lived
 
-A daily cron (`[triggers]` in `wrangler.toml`) deletes:
+The cron trigger (`[triggers]` in `wrangler.toml`) runs every 15 minutes to
+read OMG's calendar; its 01:00 UTC run (03:00 SAST) also deletes:
 
 - pending requests whose date has passed or that are over 30 days old;
 - confirmed requests, and the client details on their blocks, 30 days after the appointment;
