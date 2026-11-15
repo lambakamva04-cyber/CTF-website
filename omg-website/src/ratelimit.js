@@ -22,6 +22,7 @@ export const RULES = {
   login: { limit: 5, windowMs: 900_000 },
   loginFailAll: { limit: 30, windowMs: 3_600_000 },
   admin: { limit: 300, windowMs: 60_000 },
+  pushTest: { limit: 10, windowMs: 3_600_000 },
 };
 
 const encoder = new TextEncoder();

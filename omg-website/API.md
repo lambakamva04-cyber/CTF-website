@@ -148,6 +148,11 @@ the session cookie, otherwise 401.
 | `GET /api/admin/reviews?status=pending\|approved` | | `{ ok, reviews: [AdminReview] }` |
 | `POST /api/admin/reviews/:id/approve` | none | `{ ok }` |
 | `DELETE /api/admin/reviews/:id` | | `{ ok }` |
+| `GET /api/admin/push/key` | | `{ ok, publicKey }`, the VAPID public key (base64url) |
+| `POST /api/admin/push/subscribe` | `{ endpoint }` | `{ ok }`; keeps the newest 10 devices |
+| `POST /api/admin/push/unsubscribe` | `{ endpoint }` | `{ ok }` |
+| `POST /api/admin/push/test` | none | `{ ok, devices, sent }`: alerts every device now |
+| `GET /api/admin/push/latest` | | `{ ok, title, body, tag }`: what the alert that just arrived should say |
 
 - `Request`: `{ id, ref, name, phone, service, serviceName, price, date, time, minutes, createdAt }`.
 - `Block`: `{ id, date, start, end, kind: "booking" | "closed", label, ref, name, phone, service }`.
@@ -166,6 +171,26 @@ the session cookie, otherwise 401.
   hash in D1 with a 14-day expiry, and sets
   `__Host-omg_admin=<token>; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=1209600`.
 - Logout deletes the session row and expires the cookie.
+
+### Phone alerts (Web Push)
+
+After a booking request or review is saved, the Worker sends a push to every
+subscribed device (`ctx.waitUntil`, so the visitor never waits). The push has
+**no body**: it only wakes the admin page's service worker (`/admin/sw.js`),
+which calls `GET /api/admin/push/latest` with the session cookie and shows the
+result. No personal data passes through the push services, so no payload
+encryption is needed, only VAPID: an ES256 key pair the Worker creates once and
+keeps in `settings` (`vapid`). The newest pending request or review from the
+last 15 minutes is described, or the last test alert; otherwise the alert
+counts what is waiting. Phone numbers are never in an alert.
+
+- `endpoint` must be an `https:` address on a browser push service
+  (`fcm.googleapis.com`, `updates.push.services.mozilla.com`, `*.push.apple.com`,
+  `*.notify.windows.com`), with no credentials or port, at most 1024
+  characters. Anything else is 400 `invalid` (`field: "endpoint"`), so the
+  Worker can never be made to send requests elsewhere.
+- A push service answering 404 or 410 means the device is gone: its row is
+  deleted.
 
 ## Rate limits
 
@@ -186,6 +211,7 @@ created once and kept in the `settings` table.
 | `POST /api/reviews`, reviews saved | 3 a day | 100 a day |
 | `POST /api/admin/login` | 5 per 15 minutes | 30 failed logins an hour |
 | Other `/api/admin/*` | 300 a minute | |
+| `POST /api/admin/push/test` | 10 an hour | |
 
 ## Security headers
 

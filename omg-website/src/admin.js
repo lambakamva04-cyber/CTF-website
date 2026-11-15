@@ -40,7 +40,7 @@ async function sameSecret(a, b) {
 }
 
 /** Every admin route except login: rate limit, then a valid session. */
-async function guard({ env, request, client }) {
+export async function guard({ env, request, client }) {
   await enforce(env, 'admin', client);
   const token = sessionToken(request);
   if (!token) throw unauthorized();

@@ -54,11 +54,31 @@ Open `/admin/` and sign in with the admin password. It is made for a phone.
   so and offers "Confirm anyway".
 - **Calendar**: everything booked in a month. Add a booking taken by phone, or
   time off (tick "Whole day" for a day off), and delete entries. Deleting a
-  booking also deletes that client's details.
+  booking also deletes that client's details. Upcoming bookings have a
+  **Remind on WhatsApp** button: it opens WhatsApp with a reminder already
+  written to the client (name, service, day and time), asking them to confirm.
+  Send it the day before to cut no-shows.
 - **Reviews**: new reviews wait here. **Approve** puts one on the site. Approve
   genuine reviews, critical ones included; delete only spam or abuse.
 
 Sign-in lasts 14 days on a device. Log out on shared devices.
+
+### Phone alerts
+
+The card at the top of **Requests** turns on an alert for every new booking
+request and review, on the device it is opened on. Tap **Turn on alerts**,
+allow notifications, then **Send a test**.
+
+- **iPhone**: Apple only allows alerts for home-screen apps. Open `/admin/` in
+  Safari, tap Share > **Add to Home Screen**, open **OMG Admin** from the home
+  screen, sign in and turn alerts on there.
+- **Android, computers**: works straight from Chrome, Edge, Firefox or Safari.
+
+Turn alerts on on every device OMG uses (up to 10). The alert says who, what
+and when ("New booking request: Thandi · Full Glam · Sat 12 Dec at 09:00");
+tapping it opens the admin page. Nothing about the client travels through
+Google's or Apple's push service: the push is empty, and the phone fetches the
+details from the site with OMG's sign-in.
 
 ## Go live (one time)
 
@@ -89,14 +109,25 @@ page.
 
 ## Deploy changes
 
+The live site deploys itself: the `omg-oh-my-glam` Worker is connected to this
+repository in Cloudflare (Workers & Pages > omg-oh-my-glam > Settings > Build,
+root directory `omg-website`), so every merge to `main` goes live within a
+couple of minutes. There is no separate test site, so review before merging.
+
+**A new file in `migrations/` must reach the live database before the code
+that needs it is merged.** Cloudflare's build does not run migrations. From a
+computer signed in to Cloudflare:
+
 ```bash
-npm run deploy            # from this folder
-npm run deploy:omg        # or from the repo root
+npm run db:migrate
 ```
 
-Run `npm run db:migrate` first whenever a new file appears in `migrations/`.
-`npm run deploy` refuses to run, and says why, until `npm run setup` has been
-done once.
+Write migrations so the old code still works with them (add tables and
+columns, widen checks), then that order is always safe.
+
+To deploy by hand instead: `npm run deploy` here, or `npm run deploy:omg` from
+the repo root. It refuses to run, and says why, until the database id is in
+`wrangler.toml`.
 
 ## Backups
 

@@ -3,6 +3,7 @@
 import { UTC_OFFSET_MINUTES } from '../public/js/catalog.js';
 import { nowInZone } from '../public/js/slots.js';
 import { invalid, json, readJson } from './http.js';
+import { alertInBackground } from './push.js';
 import { enforce } from './ratelimit.js';
 import { looksAutomated, rating, reviewComment, reviewName } from './validate.js';
 
@@ -44,7 +45,8 @@ export async function list({ env, url, client }) {
 }
 
 /** POST /api/reviews: stored pending until OMG approves it. */
-export async function create({ env, request, client }) {
+export async function create(ctx) {
+  const { env, request, client } = ctx;
   await enforce(env, 'reviewTry', client);
   const body = await readJson(request);
   const review = {
@@ -59,5 +61,6 @@ export async function create({ env, request, client }) {
   await env.DB.prepare("INSERT INTO reviews (name, rating, comment, status, created_at) VALUES (?1, ?2, ?3, 'pending', ?4)")
     .bind(review.name, review.rating, review.comment, Date.now())
     .run();
+  alertInBackground(ctx);
   return json({ ok: true }, 201);
 }

@@ -96,7 +96,7 @@ async function check(name, fn) {
 
 const GROUP_IDS = {
   preflight: 1, fixtures: 2, sqli: 3, xss: 4, csrf: 5, input: 6, honeypot: 7, privacy: 8,
-  headers: 9, admin: 10, ratelimit: 11, global: 12, caps: 13, misc: 14,
+  headers: 9, admin: 10, ratelimit: 11, global: 12, caps: 13, misc: 14, alerts: 15,
 };
 
 /** A test address for `groupName`. Third octet carries the run, so reruns differ. */
@@ -1468,6 +1468,11 @@ async function adminAuth() {
     ['GET', '/api/admin/reviews?status=pending'],
     ['POST', `/api/admin/reviews/${FX.pendingReviewId ?? 1}/approve`],
     ['DELETE', `/api/admin/reviews/${FX.pendingReviewId ?? 1}`],
+    ['GET', '/api/admin/push/key'],
+    ['POST', '/api/admin/push/subscribe'],
+    ['POST', '/api/admin/push/unsubscribe'],
+    ['POST', '/api/admin/push/test'],
+    ['GET', '/api/admin/push/latest'],
   ];
   for (const [method, path] of routes) {
     await check(`${method} ${path} without a session → 401`, async () =>
@@ -1592,6 +1597,77 @@ async function adminAuth() {
     }
     return 'all refused';
   });
+}
+
+/**
+ * Phone alerts: only push-service addresses are stored (the Worker must never
+ * be made to send requests anywhere else), the routes need a session and the
+ * site's own Origin, and an alert's text never carries a phone number.
+ */
+async function alerts() {
+  group('alerts');
+  const DEVICE = `https://fcm.googleapis.com/fcm/send/e2e-${NONCE}-${'x'.repeat(20)}`;
+
+  await check('the alert key is a P-256 public key, the same every time', async () => {
+    const a = await admin('GET', '/api/admin/push/key');
+    const b = await admin('GET', '/api/admin/push/key');
+    expectStatus(a, 200);
+    assert.match(a.json?.publicKey ?? '', /^B[A-Za-z0-9_-]{86}$/, 'a 65-byte uncompressed point, base64url');
+    assert.equal(b.json?.publicKey, a.json.publicKey, 'the key changed between calls');
+  });
+
+  const refused = [
+    ['plain http', DEVICE.replace('https:', 'http:')],
+    ['another host', `https://evil.example/fcm/send/${'x'.repeat(30)}`],
+    ['a look-alike host', `https://fcm.googleapis.com.evil.example/fcm/send/${'x'.repeat(20)}`],
+    ['credentials in the address', DEVICE.replace('https://', 'https://user:pw@')],
+    ['a port', DEVICE.replace('fcm.googleapis.com', 'fcm.googleapis.com:8443')],
+    ['this site itself', `${ORIGIN}/api/admin/push/test?${'x'.repeat(20)}`],
+    ['a local address', `https://127.0.0.1/${'x'.repeat(30)}`],
+    ['over 1024 characters', `${DEVICE}${'y'.repeat(1100)}`],
+    ['a number', 12345],
+    ['missing', undefined],
+  ];
+  for (const [label, endpoint] of refused) {
+    await check(`subscribe with ${label} → 400`, async () =>
+      expectError(await admin('POST', '/api/admin/push/subscribe', { json: { endpoint } }), 400, 'invalid', 'endpoint'));
+  }
+
+  await check('subscribe from another site → 403', async () =>
+    expectError(await admin('POST', '/api/admin/push/subscribe', { origin: 'https://evil.example', json: { endpoint: DEVICE } }), 403, 'forbidden'));
+
+  await check('a push-service address is accepted, and removed again', async () => {
+    expectStatus(await admin('POST', '/api/admin/push/subscribe', { json: { endpoint: DEVICE } }), 200);
+    expectStatus(await admin('POST', '/api/admin/push/unsubscribe', { json: { endpoint: DEVICE } }), 200);
+  });
+
+  await check('a test alert with no devices sends nothing', async () => {
+    const r = await admin('POST', '/api/admin/push/test', { json: {} });
+    expectStatus(r, 200);
+    assert.equal(r.json?.devices, 0, `devices: ${r.json?.devices}`);
+    assert.equal(r.json?.sent, 0);
+  });
+
+  await check('the alert text has a title and body, and no phone number', async () => {
+    const r = await admin('GET', '/api/admin/push/latest');
+    expectStatus(r, 200);
+    assert.equal(typeof r.json?.title, 'string');
+    assert.equal(typeof r.json?.body, 'string');
+    assert.ok(!/\d{9,}/.test(`${r.json.title} ${r.json.body}`.replace(/[\s()+-]/g, '')), `a phone number in: ${r.json.body}`);
+    for (const phone of [FX.phone1, FX.phone2].filter(Boolean)) {
+      assert.ok(!r.json.body.includes(phone), 'a fixture phone number in the alert');
+    }
+    return `${r.json.title}: ${r.json.body}`;
+  });
+
+  await check('test alerts: 429 after 10 an hour', async () => {
+    // The check above sent one already.
+    const { at, r } = await burstUntil429(() => admin('POST', '/api/admin/push/test', { json: {} }), 12);
+    // 10 an hour including the one above; 11 allows for a window starting between them.
+    assert.ok(at && at <= 11, `limited at request ${at} of this burst`);
+    return expectError(r, 429, 'rate_limited');
+  });
+  await survival('after the alert checks');
 }
 
 async function burstUntil429(makeCall, max) {
@@ -1811,6 +1887,7 @@ async function main() {
     await privacy();
     await headers();
     await adminAuth();
+    await alerts();
     await rateLimits();
   }
   await runWide();

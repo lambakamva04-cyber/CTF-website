@@ -7,6 +7,13 @@
 <title>OMG Admin</title>
 <meta name="theme-color" content="#2B1512">
 <link rel="icon" type="image/png" href="/favicon.png">
+<!-- Installable, so OMG can add it to the home screen: iPhone only shows
+     web alerts for pages opened from there. -->
+<link rel="manifest" href="/admin/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="OMG Admin">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -194,6 +201,12 @@
   .panel-head h2 { font: 600 30px/1.1 var(--serif); color: var(--gold-100); }
   .sub { margin: 26px 0 12px; font: 600 12px/1.2 var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--gold-200); }
   .hint { color: var(--cream-faint); font-size: 14px; }
+  .alerts { display: grid; gap: 10px; margin-bottom: 16px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(31, 14, 11, .45); }
+  .alerts h3 { font: 700 16px/1.3 var(--sans); color: var(--gold-100); }
+  .alerts p { color: var(--cream-soft); font-size: 14.5px; }
+  .alerts .row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .alerts.is-on { grid-template-columns: minmax(0, 1fr) auto; align-items: center; padding: 10px 12px 10px 16px; }
+  @media (max-width: 420px) { .alerts.is-on { grid-template-columns: 1fr; } }
   .empty { padding: 22px 16px; border: 1px dashed var(--line); border-radius: var(--radius); color: var(--cream-faint); text-align: center; }
   .loading { padding: 22px 0; color: var(--cream-faint); text-align: center; }
   .load-error { display: grid; gap: 12px; justify-items: center; padding: 20px 16px; border-radius: var(--radius); border: 1px solid var(--danger-line); background: var(--danger-bg); text-align: center; }
@@ -215,6 +228,7 @@
   /* The number on its own line, then Call and WhatsApp as two equal buttons a thumb can hit. */
   .contact { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: center; }
   .contact .phone { grid-column: 1 / -1; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .contact .span { grid-column: 1 / -1; }
   .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
   .overlap { display: grid; gap: 10px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--danger-line); background: var(--danger-bg); }
   .overlap ul { margin: 0; padding-left: 20px; }
@@ -374,6 +388,7 @@
           <h2>Booking requests</h2>
           <button class="btn btn-ghost small" id="refresh-requests" type="button">Refresh</button>
         </div>
+        <div id="alerts" class="alerts" hidden></div>
         <div id="requests-notice"></div>
         <div id="requests-list" class="list"></div>
       </section>

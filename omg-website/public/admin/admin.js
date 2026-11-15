@@ -5,7 +5,7 @@
 // textContent and the el() helper below, never as HTML. Links are built only
 // from digits we have checked (tel: and wa.me), never from raw input.
 
-import { toMinutes, toHHMM, addMonths, daysInMonth, monthOf, nowInZone, isDate, isTime, weekday } from '../js/slots.js';
+import { toMinutes, toHHMM, addDays, addMonths, daysInMonth, monthOf, nowInZone, isDate, isTime, weekday } from '../js/slots.js';
 import { findService, formatDateLong, formatMonth, formatDuration, UTC_OFFSET_MINUTES } from '../js/catalog.js';
 
 const TABS = ['requests', 'calendar', 'reviews'];
@@ -138,13 +138,15 @@ function waHref(phone, text) {
   return `https://wa.me/${number}${text ? `?text=${encodeURIComponent(text)}` : ''}`;
 }
 
-function contactRow(phone, waText) {
+function contactRow(phone, waText, waLabel = 'WhatsApp') {
   const tel = telHref(phone);
   const wa = waHref(phone, waText);
+  // A longer label gets each button a row of its own, so it never wraps.
+  const cls = `btn btn-ghost small${waLabel.length > 10 ? ' span' : ''}`;
   return el('div', { class: 'contact' },
     el('span', { class: 'phone', text: phone }),
-    tel && el('a', { class: 'btn btn-ghost small', href: tel, text: 'Call' }),
-    wa && el('a', { class: 'btn btn-ghost small', href: wa, target: '_blank', rel: 'noopener noreferrer', text: 'WhatsApp' }),
+    tel && el('a', { class: cls, href: tel, text: 'Call' }),
+    wa && el('a', { class: cls, href: wa, target: '_blank', rel: 'noopener noreferrer', text: waLabel }),
   );
 }
 
@@ -349,6 +351,7 @@ function enterApp(session) {
   setCounts(session?.pending);
   show('app');
   selectTab(state.tab, { focus: true });
+  setUpAlerts();
 }
 
 const loaders = {
@@ -371,6 +374,145 @@ function selectTab(name, { focus = false } = {}) {
   $('toast').hidden = true;
   loaders[name]();
   if (focus) $(`panel-${name}`).focus({ preventScroll: true });
+}
+
+// ---------------------------------------------------------------- alerts
+
+// Phone alerts for new booking requests and reviews (Web Push). sw.js shows
+// them; this card turns them on and off for the device it is opened on.
+const alerts = { registration: null, subscription: null, started: false };
+
+function standalone() {
+  return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+}
+
+function isIos() {
+  return /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function fromBase64url(value) {
+  const base64 = value.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (value.length % 4)) % 4);
+  return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+}
+
+async function setUpAlerts() {
+  if (alerts.started) return;
+  alerts.started = true;
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+    renderAlerts(isIos() && !standalone() ? 'ios-home-screen' : 'unsupported');
+    return;
+  }
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'refresh') {
+      refreshCounts();
+      loaders[state.tab]();
+    }
+  });
+  try {
+    alerts.registration = await navigator.serviceWorker.register('/admin/sw.js', { scope: '/admin/' });
+    alerts.subscription = await alerts.registration.pushManager.getSubscription();
+  } catch {
+    renderAlerts('unsupported');
+    return;
+  }
+  if (alerts.subscription && Notification.permission === 'granted') {
+    // Sent again on every visit: harmless if the server has it, and it brings
+    // back one the server dropped.
+    api('POST', '/api/admin/push/subscribe', { endpoint: alerts.subscription.endpoint }).catch(() => {});
+  }
+  renderAlerts(currentAlertMode());
+}
+
+function currentAlertMode() {
+  if (Notification.permission === 'denied') return 'blocked';
+  return alerts.subscription && Notification.permission === 'granted' ? 'on' : 'off';
+}
+
+function renderAlerts(mode) {
+  const box = $('alerts');
+  const views = {
+    off: () => [
+      el('h3', { text: 'Get an alert for every booking' }),
+      el('p', { text: 'Turn on alerts and this device tells you the moment someone requests a time or leaves a review.' }),
+      el('div', { class: 'row' },
+        el('button', { class: 'btn btn-primary small', type: 'button', id: 'alerts-on', text: 'Turn on alerts', onclick: (e) => turnOnAlerts(e.currentTarget) })),
+    ],
+    on: () => [
+      el('p', { text: 'Alerts are on for this device.' }),
+      el('div', { class: 'row' },
+        el('button', { class: 'btn btn-ghost small', type: 'button', id: 'alerts-test', text: 'Send a test', onclick: (e) => sendTestAlert(e.currentTarget) }),
+        el('button', { class: 'btn btn-ghost small', type: 'button', id: 'alerts-off', text: 'Turn off', onclick: (e) => turnOffAlerts(e.currentTarget) })),
+    ],
+    blocked: () => [
+      el('h3', { text: 'Alerts are blocked on this device' }),
+      el('p', { text: "This browser is set to block alerts from this site. Allow notifications for it in the browser's settings, then reload this page." }),
+    ],
+    'ios-home-screen': () => [
+      el('h3', { text: 'Get an alert for every booking' }),
+      el('p', { text: 'On iPhone, alerts work from the home screen. Tap Share, then Add to Home Screen. Open OMG Admin from your home screen and turn alerts on there.' }),
+    ],
+    unsupported: () => [
+      el('p', { text: "This browser can't show alerts. To get them, open this page in Chrome, Safari, Edge or Firefox." }),
+    ],
+  };
+  box.className = `alerts${mode === 'on' ? ' is-on' : ''}`;
+  box.dataset.mode = mode;
+  box.replaceChildren(...views[mode]());
+  box.hidden = false;
+}
+
+async function turnOnAlerts(button) {
+  await withBusy([button], async () => {
+    // Asked straight from the tap: browsers only allow the question then.
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      renderAlerts(permission === 'denied' ? 'blocked' : 'off');
+      return;
+    }
+    try {
+      const { publicKey } = await api('GET', '/api/admin/push/key');
+      alerts.subscription = await alerts.registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: fromBase64url(publicKey),
+      });
+      await api('POST', '/api/admin/push/subscribe', { endpoint: alerts.subscription.endpoint });
+      renderAlerts('on');
+      toast('Alerts are on. Tap "Send a test" to try one.');
+    } catch (err) {
+      if (err instanceof ApiError) handleError(err);
+      else showBanner("Alerts couldn't be turned on in this browser. Check that it is up to date, then try again.");
+    }
+  });
+}
+
+async function sendTestAlert(button) {
+  await withBusy([button], async () => {
+    try {
+      const result = await api('POST', '/api/admin/push/test');
+      toast(result.sent
+        ? `Test alert sent to ${result.sent === 1 ? 'your device' : `${result.sent} devices`}. It should arrive in a few seconds.`
+        : "The test didn't reach any device. Turn alerts off and on again on this device.");
+    } catch (err) {
+      handleError(err);
+    }
+  });
+}
+
+async function turnOffAlerts(button) {
+  await withBusy([button], async () => {
+    const subscription = alerts.subscription;
+    try {
+      if (subscription) {
+        await api('POST', '/api/admin/push/unsubscribe', { endpoint: subscription.endpoint });
+        await subscription.unsubscribe().catch(() => {});
+      }
+      alerts.subscription = null;
+      renderAlerts('off');
+      toast('Alerts are off for this device.');
+    } catch (err) {
+      handleError(err);
+    }
+  });
 }
 
 // ---------------------------------------------------------------- requests
@@ -509,6 +651,13 @@ function confirmMessage(r) {
   return `Hi ${firstName(r.name)}, your ${serviceName(r.service, r.serviceName)} on ${dayLong(r.date)} at ${r.time} is confirmed. See you then!\n\n${SIGN_OFF}`;
 }
 
+/** A reminder for an upcoming booking: cuts no-shows, and frees the slot early if plans changed. */
+function reminderMessage(b) {
+  const when = b.date === addDays(today(), 1) ? `tomorrow, ${dayLong(b.date)},` : b.date === today() ? 'today' : `on ${dayLong(b.date)}`;
+  const service = b.service ? `${serviceName(b.service)} appointment` : 'appointment';
+  return `Hi ${firstName(b.name)}, a friendly reminder of your ${service} ${when} at ${b.start}. Please reply to confirm you're still coming, or let us know if you need to change it. See you then!\n\n${SIGN_OFF}`;
+}
+
 function declineMessage(r) {
   return `Hi ${firstName(r.name)}, thank you for your booking request for ${serviceName(r.service, r.serviceName)} on ${dayLong(r.date)} at ${r.time}. Unfortunately that time is not available. Would another time suit you?\n\n${SIGN_OFF}`;
 }
@@ -584,7 +733,9 @@ function blockRow(b) {
       el('span', { class: `pill ${closed ? 'off' : 'booked'}`, text: closed ? 'Time off' : 'Booking' }),
       b.name && el('p', { class: 'block-who', text: b.name }),
       b.label && b.label !== b.name && el('p', { class: 'block-note', text: b.label }),
-      b.phone && contactRow(b.phone),
+      b.phone && (!closed && b.date >= today()
+        ? contactRow(b.phone, reminderMessage(b), 'Remind on WhatsApp')
+        : contactRow(b.phone)),
       (b.ref || service) && el('p', { class: 'meta', text: [service, b.ref && `Ref ${b.ref}`].filter(Boolean).join(' · ') }),
     ),
     del,
