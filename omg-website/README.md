@@ -1,15 +1,16 @@
 # OMG – Oh! My Glam
 
 Single-page site for OMG – Oh! My Glam (makeup and hair). The prices, the fine
-print and the contact details come from the 2026 price-list poster.
+print and the contact details come from OMG's price-list poster. The prices
+are not tied to a year, so the site never says one.
 
 Two hair services have been renamed since the poster was printed, at the
 same prices: "Installation" is now **Basic Installation** (R400) and "Styling
 Long Weave" is now **Curling Long Weave** (R450). The poster is no longer
 offered as a download for that reason.
 
-The **Bridal** section is not on the poster. Its prices come from OMG's 2026
-bridal price list: the Bridal Package (R4500), the two makeup-and-leave options
+The **Bridal** section is not on the poster. Its prices come from OMG's bridal
+price list: the Bridal Package (R4500), the two makeup-and-leave options
 (R1800 and R2900), bridal natural hairstyles (R850), the optional trial (R750)
 and bridesmaid full glam (R850 with strip lashes, R950 with cut crease). Return
 transport and accommodation to the bride's location are excluded.

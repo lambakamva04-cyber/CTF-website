@@ -109,7 +109,7 @@ Approved reviews, newest first, six per page. Not cached, so an approval shows a
 ```
 
 `average` is over all approved reviews, rounded to 2 decimals, `null` when
-there are none. Ratings are out of **4**.
+there are none. Ratings are out of **5**.
 
 ### `POST /api/reviews`
 
@@ -118,7 +118,7 @@ there are none. Ratings are out of **4**.
 ```
 
 - `name`: 2–40 characters after trimming, letters, spaces, `' - .`.
-- `rating`: the integer 1, 2, 3 or 4 (not `"4"`, not `3.5`).
+- `rating`: the integer 1, 2, 3, 4 or 5 (not `"5"`, not `4.5`).
 - `comment`: 10–500 characters after trimming. Links are refused (`http://`,
   `https://`, `www.`), so spam cannot advertise through it.
 - `company` / `elapsed`: as for bookings.

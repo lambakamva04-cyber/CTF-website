@@ -717,11 +717,11 @@ function renderReviews(container, reviews, pending) {
 }
 
 function reviewCard(r, pending) {
-  const rating = Math.min(4, Math.max(1, Math.round(Number(r.rating) || 1)));
+  const rating = Math.min(5, Math.max(1, Math.round(Number(r.rating) || 1)));
   const created = localStamp(r.createdAt);
   const card = el('article', { class: 'card', 'aria-label': `Review by ${r.name}` },
     el('div', { class: 'review-head' },
-      el('span', { class: 'stars', role: 'img', 'aria-label': `${rating} out of 4 stars`, text: '★'.repeat(rating) + '☆'.repeat(4 - rating) }),
+      el('span', { class: 'stars', role: 'img', 'aria-label': `${rating} out of 5 stars`, text: '★'.repeat(rating) + '☆'.repeat(5 - rating) }),
       created && el('span', { class: 'meta', text: dateMedium(created.date) }),
     ),
     el('p', { class: 'review-name', text: r.name }),

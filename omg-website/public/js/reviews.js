@@ -1,9 +1,12 @@
-// Reviews: the approved list with the average out of 4, and the form for a
+// Reviews: the approved list with the average out of 5, and the form for a
 // new one. New reviews wait for OMG's approval before they show.
 //
 // Every name and comment is put on the page as text, never as HTML.
 
 import { formatMonth } from './catalog.js';
+
+/** Reviews are rated out of this many stars (the Worker checks the same). */
+const MAX_STARS = 5;
 
 const section = document.getElementById('reviews');
 if (section) setUp(section);
@@ -27,7 +30,7 @@ function setUp(section) {
     row.className = 'rv-starrow';
     row.setAttribute('role', 'img');
     row.setAttribute('aria-label', label);
-    for (let i = 1; i <= 4; i += 1) {
+    for (let i = 1; i <= MAX_STARS; i += 1) {
       const fill = Math.max(0, Math.min(1, value - (i - 1)));
       const star = document.createElementNS(SVG, 'svg');
       star.setAttribute('class', 'rv-star');
@@ -70,8 +73,8 @@ function setUp(section) {
     score.textContent = data.average.toFixed(1);
     const out = document.createElement('span');
     out.className = 'rv-outof';
-    out.textContent = `out of 4 · ${data.count} ${data.count === 1 ? 'review' : 'reviews'}`;
-    el.summary.append(score, starRow(data.average, `Average ${data.average.toFixed(1)} out of 4 stars`), out);
+    out.textContent = `out of ${MAX_STARS} · ${data.count} ${data.count === 1 ? 'review' : 'reviews'}`;
+    el.summary.append(score, starRow(data.average, `Average ${data.average.toFixed(1)} out of ${MAX_STARS} stars`), out);
   }
 
   function card(review) {
@@ -88,7 +91,7 @@ function setUp(section) {
     const comment = document.createElement('p');
     comment.className = 'rv-comment';
     comment.textContent = review.comment;
-    item.append(head, starRow(review.rating, `${review.rating} out of 4 stars`), comment);
+    item.append(head, starRow(review.rating, `${review.rating} out of ${MAX_STARS} stars`), comment);
     return item;
   }
 
@@ -179,7 +182,7 @@ function setUp(section) {
     const name = tidy(el.name.value, false);
     const comment = tidy(el.comment.value, true);
     const errors = {
-      rating: rating ? '' : 'Please choose 1 to 4 stars.',
+      rating: rating ? '' : `Please choose 1 to ${MAX_STARS} stars.`,
       name: [...name].length >= 2 && [...name].length <= 40 && NAME_RE.test(name) ? '' : 'Please enter your name (letters only, up to 40 characters).',
       comment: [...comment].length < 10 || [...comment].length > 500
         ? 'Please write between 10 and 500 characters.'

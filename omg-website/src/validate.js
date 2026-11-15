@@ -79,8 +79,8 @@ export function reviewName(value) {
 }
 
 export function rating(value) {
-  if (typeof value !== 'number' || !Number.isInteger(value) || value < 1 || value > 4) {
-    throw invalid('rating', 'Please choose a rating from 1 to 4 stars.');
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 1 || value > 5) {
+    throw invalid('rating', 'Please choose a rating from 1 to 5 stars.');
   }
   return value;
 }
