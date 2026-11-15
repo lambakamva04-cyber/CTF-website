@@ -3,43 +3,8 @@
 // SQLite database built from migrations/, through a small D1-style wrapper.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync } from 'node:fs';
-import { DatabaseSync } from 'node:sqlite';
 import { ALERT_WINDOW_MS, alertText, base64url, notifyAdmins, pushEndpoint, vapidJwt, vapidKeys } from '../src/push.js';
-
-/** The parts of the D1 API the Worker uses, over node:sqlite. */
-function d1(db) {
-  const exec = (sql, args) => (/^\s*SELECT/i.test(sql) ? { results: db.prepare(sql).all(...args) } : (db.prepare(sql).run(...args), { results: [] }));
-  const statement = (sql, args = []) => ({
-    sql,
-    args,
-    bind: (...values) => statement(sql, values),
-    first: async () => db.prepare(sql).get(...args) ?? null,
-    all: async () => ({ results: db.prepare(sql).all(...args) }),
-    run: async () => ({ meta: { changes: Number(db.prepare(sql).run(...args).changes) } }),
-  });
-  return {
-    prepare: (sql) => statement(sql),
-    batch: async (statements) => {
-      db.exec('BEGIN');
-      try {
-        const out = statements.map((s) => exec(s.sql, s.args));
-        db.exec('COMMIT');
-        return out;
-      } catch (error) {
-        db.exec('ROLLBACK');
-        throw error;
-      }
-    },
-  };
-}
-
-function freshDb() {
-  const db = new DatabaseSync(':memory:');
-  const dir = new URL('../migrations/', import.meta.url);
-  for (const file of readdirSync(dir).filter((f) => f.endsWith('.sql')).sort()) db.exec(readFileSync(new URL(file, dir), 'utf8'));
-  return { db, env: { DB: d1(db) } };
-}
+import { d1, freshDb } from './d1.js';
 
 const fromB64url = (s) => Uint8Array.from(Buffer.from(s, 'base64url'));
 const json64 = (s) => JSON.parse(Buffer.from(s, 'base64url').toString('utf8'));
@@ -136,7 +101,7 @@ test('with no devices nothing is sent and no key pair is made', async () => {
 
 test('what an alert says', () => {
   const now = Date.UTC(2026, 11, 10, 8, 0, 0);
-  const booking = { id: 7, name: 'Thandi Mokoena', phone: '082 123 4567', service: 'full-glam', date: '2026-12-12', start: '09:00', created_at: now - 60_000 };
+  const booking = { id: 7, name: 'Thandi Mokoena', phone: '082 123 4567', service: 'full-glam', service_name: 'Full Glam', date: '2026-12-12', start: '09:00', created_at: now - 60_000 };
   const review = { id: 3, name: 'Lerato M.', rating: 4, comment: `Lovely service, ${'so good '.repeat(20)}`, created_at: now - 120_000 };
 
   const b = alertText({ booking, review, pending: { requests: 2, reviews: 1 } }, now);

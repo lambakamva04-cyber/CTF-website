@@ -1,6 +1,6 @@
 // The admin API: sign-in, booking requests, the calendar and reviews.
 
-import { UTC_OFFSET_MINUTES, findService } from '../public/js/catalog.js';
+import { UTC_OFFSET_MINUTES } from '../public/js/catalog.js';
 import { addDays, daysBetween, nowInZone, overlaps, toHHMM, toMinutes } from '../public/js/slots.js';
 import { HttpError, invalid, json, notFound, readJson } from './http.js';
 import { enforce, hit, peek, sha256Hex } from './ratelimit.js';
@@ -62,6 +62,7 @@ function blockOut(row) {
     name: row.name ?? null,
     phone: row.phone ?? null,
     service: row.service ?? null,
+    serviceName: row.service_name ?? null,
   };
 }
 
@@ -125,21 +126,21 @@ export async function session(ctx) {
 export async function listRequests(ctx) {
   await guard(ctx);
   const { results } = await ctx.env.DB.prepare(
-    "SELECT id, ref, name, phone, service, date, start, minutes, created_at FROM booking_requests WHERE status = 'pending' " +
-      'ORDER BY date, start, id LIMIT 500',
+    'SELECT r.id, r.ref, r.name, r.phone, r.service, s.name AS service_name, s.price AS service_price, r.date, r.start, r.minutes, r.created_at ' +
+      "FROM booking_requests r LEFT JOIN services s ON s.id = r.service WHERE r.status = 'pending' " +
+      'ORDER BY r.date, r.start, r.id LIMIT 500',
   ).all();
   return json({
     ok: true,
     requests: results.map((r) => {
-      const service = findService(r.service);
       return {
         id: r.id,
         ref: r.ref,
         name: r.name,
         phone: r.phone,
         service: r.service,
-        serviceName: service ? service.name : r.service,
-        price: service ? service.price : null,
+        serviceName: r.service_name ?? r.service,
+        price: r.service_price ?? null,
         date: r.date,
         time: r.start,
         minutes: r.minutes,
@@ -199,8 +200,8 @@ export async function listBlocks(ctx) {
   const to = dateValue(ctx.url.searchParams.get('to'), 'to');
   if (to < from || daysBetween(from, to) > 62) throw invalid('to', 'Show at most 62 days at a time.');
   const { results } = await ctx.env.DB.prepare(
-    'SELECT b.id, b.date, b.start, b.end, b.kind, b.label, r.ref, r.name, r.phone, r.service ' +
-      'FROM blocks b LEFT JOIN booking_requests r ON r.id = b.request_id ' +
+    'SELECT b.id, b.date, b.start, b.end, b.kind, b.label, r.ref, r.name, r.phone, r.service, s.name AS service_name ' +
+      'FROM blocks b LEFT JOIN booking_requests r ON r.id = b.request_id LEFT JOIN services s ON s.id = r.service ' +
       'WHERE b.date >= ?1 AND b.date <= ?2 ORDER BY b.date, b.start, b.id',
   )
     .bind(from, to)

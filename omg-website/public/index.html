@@ -4,19 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OMG – Oh! My Glam | Makeup &amp; Hair Price List</title>
-<meta name="description" content="OMG – Oh! My Glam price list: Soft Glam R750, Full Glam R850, Bold/Dramatic R950, Basic Installation R400 and Curling Long Weave R450. Bridal Package R4500, bridesmaids from R850. Home calls available on request. Book online or on WhatsApp: +27 78 576 7604.">
+<meta name="description" content="OMG – Oh! My Glam price list: Soft Glam R750, Full Glam R850, Bold / Dramatic R950, Basic Installation R400, Curling Long Weave R450. Bridal Package R4500, bridesmaids from R850. Home calls available on request. Book online or on WhatsApp: +27 78 576 7604.">
 <meta name="theme-color" content="#3A1D18">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="OMG – Oh! My Glam">
 <meta property="og:locale" content="en_ZA">
 <meta property="og:title" content="OMG – Oh! My Glam | Makeup &amp; Hair Price List">
-<meta property="og:description" content="Soft Glam R750 · Full Glam R850 · Bold/Dramatic R950 · Hair from R400. Book online or on WhatsApp: +27 78 576 7604.">
+<meta property="og:description" content="Soft Glam R750 · Full Glam R850 · Bold / Dramatic R950 · Hair from R400. Book online or on WhatsApp: +27 78 576 7604.">
 <!-- Share previews need an absolute image URL; the Worker rewrites this one
      for whichever domain served the page (src/index.js). -->
 <meta property="og:image" content="/og.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="OMG – Oh! My Glam: makeup and hair price list">
+<meta property="og:image:alt" content="OMG – Oh! My Glam: makeup, hair and bridal glam, booked online">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -385,6 +385,8 @@
   .pkg-tag { font: 600 11px/1 var(--sans); letter-spacing: .24em; text-transform: uppercase; color: var(--cream-faint); }
   .pkg h3 { margin: 10px 0 0; font: 600 clamp(36px, 8vw, 44px)/1 var(--serif); }
   .pkg-price { margin: 10px 0 22px; font: 700 clamp(40px, 10vw, 52px)/1 var(--sans); letter-spacing: -.01em; }
+  .pkg-list { display: grid; gap: 24px; }
+  .pkg-note { margin: -12px 0 20px; font: 500 14px/1.35 var(--sans); color: var(--cream-faint); }
   .pkg-incl { display: grid; gap: 22px; }
   @media (min-width: 640px) { .pkg-incl { grid-template-columns: repeat(3, 1fr); gap: 28px; } }
   @media (min-width: 900px) { .pkg-incl { padding-left: 56px; border-left: 1px solid var(--line); } }
@@ -496,41 +498,19 @@
   .looks-step .icon { width: 14px; height: 14px; }
   .looks-step.is-back .icon { transform: scaleX(-1); }
 
-  /* The photos are different shapes, so the grid is laid out by hand: every
-     cell is sized to its photo's own proportions, and nothing gets trimmed.
-     Row and column sizes are the pixel sizes at the design width; as "fr"
-     units, with the grid's aspect-ratio, they scale together on any screen.
-     Phones: updo + waves side by side, the wide close-up full width, then the
-     two portraits, then the booking band. */
+  /* Photos keep their own shapes: two columns on phones and three on wider
+     screens, each photo as tall as it needs, nothing trimmed. Any number and
+     mix of shapes lays out well, so OMG can add and remove photos freely. */
   .grid {
-    display: grid; gap: min(12px, 3.35vw);
-    grid-template-columns: minmax(0, 173fr) minmax(0, 6.6fr) minmax(0, 154.4fr);
-    grid-template-rows: minmax(0, 177.1fr) minmax(0, 265.8fr) minmax(0, 216.2fr) minmax(0, 112fr);
-    aspect-ratio: 358 / 807.1;
     list-style: none; margin: 0; padding: 0;
+    columns: 2; column-gap: min(12px, 3.35vw);
   }
-  .grid li { margin: 0; min-width: 0; min-height: 0; }
-  .g-updo  { grid-area: 1 / 1 / 2 / 3; }
-  .g-waves { grid-area: 1 / 3 / 2 / 4; }
-  .g-wide  { grid-area: 2 / 1 / 3 / 4; }
-  .g-tall1 { grid-area: 3 / 1 / 4 / 2; }
-  .g-tall2 { grid-area: 3 / 2 / 4 / 4; }
-  .g-cta   { grid-area: 4 / 1 / 5 / 4; }
-  /* Wider screens: three equal columns, each a photo stacked on a tile, with
-     the top and bottom edges of all three columns lined up. */
+  .grid li { break-inside: avoid; margin: 0 0 min(12px, 3.35vw); }
+  .grid .shot { height: auto; }
+  .grid .cta-tile { min-height: 132px; }
   @media (min-width: 700px) {
-    .grid {
-      gap: min(20px, 1.9vw);
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      grid-template-rows: minmax(0, 267.3fr) minmax(0, 45.4fr) minmax(0, 60.3fr) minmax(0, 369.7fr);
-      aspect-ratio: 1120 / 802.7;
-    }
-    .g-updo  { grid-area: 1 / 1 / 3 / 2; }
-    .g-wide  { grid-area: 1 / 2 / 2 / 3; }
-    .g-waves { grid-area: 1 / 3 / 4 / 4; }
-    .g-tall1 { grid-area: 3 / 1 / 5 / 2; }
-    .g-tall2 { grid-area: 2 / 2 / 5 / 3; }
-    .g-cta   { grid-area: 4 / 3 / 5 / 4; }
+    .grid { columns: 3; column-gap: min(20px, 1.9vw); }
+    .grid li { margin-bottom: min(20px, 1.9vw); }
   }
   .shot {
     width: 100%; height: 100%;
@@ -540,7 +520,6 @@
     box-shadow: 0 16px 34px -18px rgba(0,0,0,.85);
     background: var(--cocoa-700);
   }
-  .g-tall2 .shot { object-position: 50% 40%; }
   .cta-tile {
     height: 100%;
     display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 10px;
@@ -893,7 +872,7 @@
         </span>
       </h1>
       <p class="kicker">Makeup &amp; Hair <b>Price List</b></p>
-      <p class="lede">Glam made for your moment, from soft and subtle to bold and dramatic. Home calls available on request.</p>
+      <p class="lede" data-cms-text="tagline">Glam made for your moment, from soft and subtle to bold and dramatic. Home calls available on request.</p>
       <div class="hero-cta">
         <a class="btn btn-gold" href="#book">
           <svg class="icon" aria-hidden="true"><use href="#i-cal"/></svg>Book an appointment
@@ -918,62 +897,27 @@
       </div>
 
       <div class="menu">
-        <article class="card" aria-labelledby="makeup-title">
+        <article class="card" aria-labelledby="makeup-title" data-cms-card="makeup">
           <div class="card-head">
             <h3 id="makeup-title" class="gold-text">Makeup</h3>
             <span>Soft to bold</span>
           </div>
-          <ul class="svc-list">
-            <li class="svc">
-              <div class="svc-line"><span class="svc-name">Soft Glam</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R750</span></div>
-              <div class="svc-meta">
-                <span class="meter" aria-label="Glam level 1 of 3"><i class="on"></i><i></i><i></i></span>
-                <a data-service="soft-glam" class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20Soft%20Glam%20%28R750%29.%0A%0ADate%3A%0ATime%3A%0AHome%20call%3F%20%28yes%2Fno%2C%20and%20your%20area%29%3A" target="_blank" rel="noopener" aria-label="Book Soft Glam, R750, on WhatsApp">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-              </div>
-            </li>
-            <li class="svc">
-              <div class="svc-line"><span class="svc-name">Full Glam</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R850</span></div>
-              <div class="svc-meta">
-                <span class="meter" aria-label="Glam level 2 of 3"><i class="on"></i><i class="on"></i><i></i></span>
-                <a data-service="full-glam" class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20Full%20Glam%20%28R850%29.%0A%0ADate%3A%0ATime%3A%0AHome%20call%3F%20%28yes%2Fno%2C%20and%20your%20area%29%3A" target="_blank" rel="noopener" aria-label="Book Full Glam, R850, on WhatsApp">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-              </div>
-            </li>
-            <li class="svc">
-              <div class="svc-line"><span class="svc-name">Bold / Dramatic</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R950</span></div>
-              <div class="svc-meta">
-                <span class="meter" aria-label="Glam level 3 of 3"><i class="on"></i><i class="on"></i><i class="on"></i></span>
-                <a data-service="bold-dramatic" class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20Bold%2FDramatic%20%28R950%29.%0A%0ADate%3A%0ATime%3A%0AHome%20call%3F%20%28yes%2Fno%2C%20and%20your%20area%29%3A" target="_blank" rel="noopener" aria-label="Book Bold / Dramatic, R950, on WhatsApp">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-              </div>
-            </li>
-          </ul>
+          <ul class="svc-list" data-cms-list="makeup"><li class="svc"><div class="svc-line"><span class="svc-name">Soft Glam</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R750</span></div><div class="svc-meta"><span class="meter" aria-label="Glam level 1 of 3"><i class="on"></i><i></i><i></i></span><a data-service="soft-glam" class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG!%20I&#39;d%20like%20to%20book%20Soft%20Glam%20(R750).%0A%0ADate%3A%0ATime%3A%0AHome%20call%3F%20(yes%2Fno%2C%20and%20your%20area)%3A" target="_blank" rel="noopener" aria-label="Book Soft Glam, R750">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></div></li><li class="svc"><div class="svc-line"><span class="svc-name">Full Glam</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R850</span></div><div class="svc-meta"><span class="meter" aria-label="Glam level 2 of 3"><i class="on"></i><i class="on"></i><i></i></span><a data-service="full-glam" class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG!%20I&#39;d%20like%20to%20book%20Full%20Glam%20(R850).%0A%0ADate%3A%0ATime%3A%0AHome%20call%3F%20(yes%2Fno%2C%20and%20your%20area)%3A" target="_blank" rel="noopener" aria-label="Book Full Glam, R850">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></div></li><li class="svc"><div class="svc-line"><span class="svc-name">Bold / Dramatic</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R950</span></div><div class="svc-meta"><span class="meter" aria-label="Glam level 3 of 3"><i class="on"></i><i class="on"></i><i class="on"></i></span><a data-service="bold-dramatic" class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG!%20I&#39;d%20like%20to%20book%20Bold%20%2F%20Dramatic%20(R950).%0A%0ADate%3A%0ATime%3A%0AHome%20call%3F%20(yes%2Fno%2C%20and%20your%20area)%3A" target="_blank" rel="noopener" aria-label="Book Bold / Dramatic, R950">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></div></li></ul>
         </article>
 
-        <article class="card" aria-labelledby="hair-title">
+        <article class="card" aria-labelledby="hair-title" data-cms-card="hair">
           <div class="card-head">
             <h3 id="hair-title" class="gold-text">Hair</h3>
             <span>Install &amp; curl</span>
           </div>
-          <ul class="svc-list">
-            <li class="svc">
-              <div class="svc-line"><span class="svc-name">Basic Installation</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R400</span></div>
-              <div class="svc-meta">
-                <a data-service="basic-installation" class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20Basic%20Installation%20%28R400%29.%0A%0ADate%3A%0ATime%3A%0AHome%20call%3F%20%28yes%2Fno%2C%20and%20your%20area%29%3A" target="_blank" rel="noopener" aria-label="Book Basic Installation, R400, on WhatsApp">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-              </div>
-            </li>
-            <li class="svc">
-              <div class="svc-line"><span class="svc-name">Curling Long Weave</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R450</span></div>
-              <div class="svc-meta">
-                <a data-service="curling-long-weave" class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20Curling%20Long%20Weave%20%28R450%29.%0A%0ADate%3A%0ATime%3A%0AHome%20call%3F%20%28yes%2Fno%2C%20and%20your%20area%29%3A" target="_blank" rel="noopener" aria-label="Book Curling Long Weave, R450, on WhatsApp">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-              </div>
-            </li>
-          </ul>
+          <ul class="svc-list" data-cms-list="hair"><li class="svc"><div class="svc-line"><span class="svc-name">Basic Installation</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R400</span></div><div class="svc-meta"><a data-service="basic-installation" class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG!%20I&#39;d%20like%20to%20book%20Basic%20Installation%20(R400).%0A%0ADate%3A%0ATime%3A%0AHome%20call%3F%20(yes%2Fno%2C%20and%20your%20area)%3A" target="_blank" rel="noopener" aria-label="Book Basic Installation, R400">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></div></li><li class="svc"><div class="svc-line"><span class="svc-name">Curling Long Weave</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R450</span></div><div class="svc-meta"><a data-service="curling-long-weave" class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG!%20I&#39;d%20like%20to%20book%20Curling%20Long%20Weave%20(R450).%0A%0ADate%3A%0ATime%3A%0AHome%20call%3F%20(yes%2Fno%2C%20and%20your%20area)%3A" target="_blank" rel="noopener" aria-label="Book Curling Long Weave, R450">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></div></li></ul>
           <p class="card-note"><b>Hair and makeup on the same day?</b> Ask for both in one WhatsApp and we’ll plan your timing.</p>
         </article>
       </div>
 
       <div class="fine-print" role="note">
         <svg class="icon" aria-hidden="true"><use href="#i-home"/></svg>
-        <p><strong>Home calls are available upon request</strong> – transportation fee is excluded from the above price list and is subject to change per client’s location.</p>
+        <p data-cms-text="home_calls">Home calls are available upon request. The transport fee is not included in the prices above and depends on where you are.</p>
       </div>
     </div>
   </section>
@@ -986,100 +930,30 @@
         <p>Hair and makeup for the bride and her bridesmaids. Tap Book on any option to choose a time.</p>
       </div>
 
-      <article class="pkg" aria-labelledby="pkg-title">
-        <div class="pkg-main">
-          <span class="pkg-tag">For the bride</span>
-          <h3 id="pkg-title" class="gold-text">Bridal Package</h3>
-          <p class="pkg-price gold-text">R4500</p>
-          <a data-service="bridal-package" class="btn btn-gold" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20the%20Bridal%20Package%20%28R4500%29.%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A%0ABridesmaids%20needing%20makeup%3A%0ATrial%20makeup%3F%20%28yes%2Fno%29%3A" target="_blank" rel="noopener" aria-label="Book the Bridal Package, R4500, on WhatsApp">
-            <svg class="icon" aria-hidden="true"><use href="#i-wa"/></svg>Book the package
-          </a>
-        </div>
-        <div class="pkg-incl">
-          <div>
-            <h4>Hair</h4>
-            <ul>
-              <li>Weave installation (your hair)</li>
-              <li>Bridal hairstyle of your choice</li>
-            </ul>
-          </div>
-          <div>
-            <h4>Makeup</h4>
-            <ul>
-              <li>Skin prep</li>
-              <li>Full bridal coverage makeup</li>
-              <li>Strip lashes</li>
-            </ul>
-          </div>
-          <div>
-            <h4>On the day</h4>
-            <ul>
-              <li>Touch-ups for the photoshoot hour</li>
-            </ul>
-          </div>
-        </div>
-      </article>
+      <div class="pkg-list" data-cms-list="package"><article class="pkg" aria-labelledby="pkg-bridal-package"><div class="pkg-main"><span class="pkg-tag">For the bride</span><h3 id="pkg-bridal-package" class="gold-text">Bridal Package</h3><p class="pkg-price gold-text">R4500</p><a data-service="bridal-package" class="btn btn-gold" href="https://wa.me/27785767604?text=Hi%20OMG!%20I&#39;d%20like%20to%20book%20Bridal%20Package%20(R4500).%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A%0ABridesmaids%20needing%20makeup%3A" target="_blank" rel="noopener" aria-label="Book the Bridal Package, R4500"><svg class="icon" aria-hidden="true"><use href="#i-wa"/></svg>Book the package</a></div><div class="pkg-incl"><div><h4>Hair</h4><ul><li>Weave installation (your hair)</li><li>Bridal hairstyle of your choice</li></ul></div><div><h4>Makeup</h4><ul><li>Skin prep</li><li>Full bridal coverage makeup</li><li>Strip lashes</li></ul></div><div><h4>On the day</h4><ul><li>Touch-ups for the photoshoot hour</li></ul></div></div></article></div>
 
       <div class="menu bridal-menu">
-        <article class="card" aria-labelledby="bride-title">
+        <article class="card" aria-labelledby="bride-title" data-cms-card="bride">
           <div class="card-head">
             <h3 id="bride-title" class="gold-text">Bride</h3>
             <span>More options</span>
           </div>
-          <ul class="svc-list">
-            <li class="svc">
-              <div class="svc-line"><span class="svc-name">Makeup &amp; leave immediately</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R1800</span></div>
-              <div class="svc-meta">
-                <a data-service="bridal-makeup-leave" class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20bridal%20Makeup%20%26%20leave%20immediately%20%28R1800%29.%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A%0ABridesmaids%20needing%20makeup%3A" target="_blank" rel="noopener" aria-label="Book bridal Makeup and leave immediately, R1800, on WhatsApp">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-              </div>
-            </li>
-            <li class="svc">
-              <div class="svc-line"><span class="svc-name">Makeup, installation + style &amp; leave</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R2900</span></div>
-              <div class="svc-meta">
-                <a data-service="bridal-makeup-install-style" class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20bridal%20Makeup%2C%20installation%20%2B%20style%20%26%20leave%20%28R2900%29.%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A%0ABridesmaids%20needing%20makeup%3A" target="_blank" rel="noopener" aria-label="Book bridal Makeup, installation, style and leave, R2900, on WhatsApp">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-              </div>
-            </li>
-            <li class="svc">
-              <div class="svc-line"><span class="svc-name">All bridal natural hairstyles</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R850</span></div>
-              <div class="svc-meta">
-                <span class="svc-note">We bring everything</span><a data-service="bridal-natural-hairstyle" class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20a%20bridal%20natural%20hairstyle%20%28R850%29.%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A" target="_blank" rel="noopener" aria-label="Book a bridal natural hairstyle, R850, on WhatsApp">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-              </div>
-            </li>
-            <li class="svc">
-              <div class="svc-line"><span class="svc-name">Trial makeup</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R750</span></div>
-              <div class="svc-meta">
-                <span class="svc-note">Not compulsory</span><a data-service="bridal-trial" class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20a%20bridal%20Trial%20Makeup%20%28R750%29.%0A%0AWedding%20date%3A%0APreferred%20trial%20date%3A" target="_blank" rel="noopener" aria-label="Book bridal Trial makeup, R750, on WhatsApp">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-              </div>
-            </li>
-          </ul>
+          <ul class="svc-list" data-cms-list="bride"><li class="svc"><div class="svc-line"><span class="svc-name">Bridal makeup &amp; leave immediately</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R1800</span></div><div class="svc-meta"><a data-service="bridal-makeup-leave" class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG!%20I&#39;d%20like%20to%20book%20Bridal%20makeup%20%26%20leave%20immediately%20(R1800).%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A%0ABridesmaids%20needing%20makeup%3A" target="_blank" rel="noopener" aria-label="Book Bridal makeup &amp; leave immediately, R1800">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></div></li><li class="svc"><div class="svc-line"><span class="svc-name">Bridal makeup, installation + style &amp; leave</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R2900</span></div><div class="svc-meta"><a data-service="bridal-makeup-install-style" class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG!%20I&#39;d%20like%20to%20book%20Bridal%20makeup%2C%20installation%20%2B%20style%20%26%20leave%20(R2900).%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A%0ABridesmaids%20needing%20makeup%3A" target="_blank" rel="noopener" aria-label="Book Bridal makeup, installation + style &amp; leave, R2900">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></div></li><li class="svc"><div class="svc-line"><span class="svc-name">Bridal natural hairstyle</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R850</span></div><div class="svc-meta"><span class="svc-note">We bring everything</span><a data-service="bridal-natural-hairstyle" class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG!%20I&#39;d%20like%20to%20book%20Bridal%20natural%20hairstyle%20(R850).%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A%0ABridesmaids%20needing%20makeup%3A" target="_blank" rel="noopener" aria-label="Book Bridal natural hairstyle, R850">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></div></li><li class="svc"><div class="svc-line"><span class="svc-name">Bridal trial makeup</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R750</span></div><div class="svc-meta"><span class="svc-note">Not compulsory</span><a data-service="bridal-trial" class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG!%20I&#39;d%20like%20to%20book%20Bridal%20trial%20makeup%20(R750).%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A%0ABridesmaids%20needing%20makeup%3A" target="_blank" rel="noopener" aria-label="Book Bridal trial makeup, R750">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></div></li></ul>
         </article>
 
-        <article class="card" aria-labelledby="maids-title">
+        <article class="card" aria-labelledby="maids-title" data-cms-card="bridesmaid">
           <div class="card-head">
             <h3 id="maids-title" class="gold-text">Bridesmaid</h3>
             <span>Full glam</span>
           </div>
-          <ul class="svc-list">
-            <li class="svc">
-              <div class="svc-line"><span class="svc-name">Full glam with strip lashes</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R850</span></div>
-              <div class="svc-meta">
-                <a data-service="bridesmaid-strip-lashes" class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20bridesmaid%20Full%20glam%20with%20strip%20lashes%20%28R850%29.%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A%0ANumber%20of%20bridesmaids%3A" target="_blank" rel="noopener" aria-label="Book bridesmaid Full glam with strip lashes, R850, on WhatsApp">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-              </div>
-            </li>
-            <li class="svc">
-              <div class="svc-line"><span class="svc-name">Full glam with cut crease</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R950</span></div>
-              <div class="svc-meta">
-                <a data-service="bridesmaid-cut-crease" class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20bridesmaid%20Full%20glam%20with%20cut%20crease%20%28R950%29.%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A%0ANumber%20of%20bridesmaids%3A" target="_blank" rel="noopener" aria-label="Book bridesmaid Full glam with cut crease, R950, on WhatsApp">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-              </div>
-            </li>
-          </ul>
+          <ul class="svc-list" data-cms-list="bridesmaid"><li class="svc"><div class="svc-line"><span class="svc-name">Bridesmaid full glam with strip lashes</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R850</span></div><div class="svc-meta"><a data-service="bridesmaid-strip-lashes" class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG!%20I&#39;d%20like%20to%20book%20Bridesmaid%20full%20glam%20with%20strip%20lashes%20(R850).%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A%0ANumber%20of%20bridesmaids%3A" target="_blank" rel="noopener" aria-label="Book Bridesmaid full glam with strip lashes, R850">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></div></li><li class="svc"><div class="svc-line"><span class="svc-name">Bridesmaid full glam with cut crease</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R950</span></div><div class="svc-meta"><a data-service="bridesmaid-cut-crease" class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG!%20I&#39;d%20like%20to%20book%20Bridesmaid%20full%20glam%20with%20cut%20crease%20(R950).%0A%0AWedding%20date%3A%0AVenue%20%2F%20area%3A%0ANumber%20of%20bridesmaids%3A" target="_blank" rel="noopener" aria-label="Book Bridesmaid full glam with cut crease, R950">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></div></li></ul>
           <p class="card-note"><b>Booking the whole bridal party?</b> Send the bride’s option and the number of bridesmaids in one WhatsApp.</p>
         </article>
       </div>
 
       <div class="bridal-note" role="note">
         <svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>
-        <p><strong>Return transport &amp; accommodation</strong> to the bride’s location is excluded from the package.</p>
+        <p data-cms-text="bridal_note">Return transport and accommodation to the bride’s location are not included in the package.</p>
       </div>
 
       <p class="bridal-cta">
@@ -1099,36 +973,12 @@
         <div class="looks-track">
           <div class="looks-panel" id="photos">
             <h3 class="looks-heading">Photos</h3>
-            <ul class="grid">
-              <li class="g-updo"><img class="shot" src="/img/gallery/glam-1.webp" srcset="/img/gallery/glam-1-360.webp 360w, /img/gallery/glam-1.webp 720w" sizes="(max-width: 699px) 54vw, 350px" width="720" height="665" loading="lazy" decoding="async" alt="Soft glam makeup with a mauve lip, worn with a braided updo"></li>
-              <li class="g-wide"><img class="shot" src="/img/gallery/glam-2.webp" srcset="/img/gallery/glam-2-360.webp 360w, /img/gallery/glam-2.webp 720w" sizes="(max-width: 699px) 92vw, 350px" width="720" height="535" loading="lazy" decoding="async" alt="Copper cut-crease eyeshadow with full lashes and a nude lip"></li>
-              <li class="g-waves"><img class="shot" src="/img/gallery/glam-3.webp" srcset="/img/gallery/glam-3-360.webp 360w, /img/gallery/glam-3.webp 720w" sizes="(max-width: 699px) 44vw, 350px" width="720" height="826" loading="lazy" decoding="async" alt="Glam makeup with blue liner and a nude lip, worn with long brown waves"></li>
-              <li class="g-tall1"><img class="shot" src="/img/gallery/glam-4.webp" srcset="/img/gallery/glam-4-360.webp 360w, /img/gallery/glam-4.webp 720w" sizes="(max-width: 699px) 46vw, 350px" width="720" height="900" loading="lazy" decoding="async" alt="Bronze shimmer eyeshadow with full lashes and a nude lip"></li>
-              <li class="g-tall2"><img class="shot" src="/img/gallery/glam-5.webp" srcset="/img/gallery/glam-5-360.webp 360w, /img/gallery/glam-5.webp 720w" sizes="(max-width: 699px) 46vw, 350px" width="720" height="1031" loading="lazy" decoding="async" alt="Copper and gold eyeshadow with dramatic lashes and a nude lip"></li>
-              <li class="g-cta">
-                <a class="cta-tile" href="#book">
-                  <strong>Your turn.</strong>
-                  <span>Book your glam on WhatsApp <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span>
-                </a>
-              </li>
-            </ul>
+            <ul class="grid" data-cms-photos="looks"><li><img class="shot" src="/img/gallery/glam-1-360.webp" srcset="/img/gallery/glam-1-360.webp 360w, /img/gallery/glam-1.webp 720w" sizes="(max-width: 699px) 46vw, 350px" width="720" height="665" loading="lazy" decoding="async" alt="Soft glam makeup with a mauve lip, worn with a braided updo"></li><li><img class="shot" src="/img/gallery/glam-2-360.webp" srcset="/img/gallery/glam-2-360.webp 360w, /img/gallery/glam-2.webp 720w" sizes="(max-width: 699px) 46vw, 350px" width="720" height="535" loading="lazy" decoding="async" alt="Copper cut-crease eyeshadow with full lashes and a nude lip"></li><li><img class="shot" src="/img/gallery/glam-3-360.webp" srcset="/img/gallery/glam-3-360.webp 360w, /img/gallery/glam-3.webp 720w" sizes="(max-width: 699px) 46vw, 350px" width="720" height="826" loading="lazy" decoding="async" alt="Glam makeup with blue liner and a nude lip, worn with long brown waves"></li><li><img class="shot" src="/img/gallery/glam-4-360.webp" srcset="/img/gallery/glam-4-360.webp 360w, /img/gallery/glam-4.webp 720w" sizes="(max-width: 699px) 46vw, 350px" width="720" height="900" loading="lazy" decoding="async" alt="Bronze shimmer eyeshadow with full lashes and a nude lip"></li><li><img class="shot" src="/img/gallery/glam-5-360.webp" srcset="/img/gallery/glam-5-360.webp 360w, /img/gallery/glam-5.webp 720w" sizes="(max-width: 699px) 46vw, 350px" width="720" height="1031" loading="lazy" decoding="async" alt="Copper and gold eyeshadow with dramatic lashes and a nude lip"></li><li class="g-cta"><a class="cta-tile" href="#book"><strong>Your turn.</strong><span>Book your glam <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span></a></li></ul>
           </div>
 
           <div class="looks-panel" id="before-after">
             <h3 class="looks-heading">Before &amp; after</h3>
-            <ul class="ba-grid">
-              <li><img class="shot" src="/img/before-after/ba-1.webp" srcset="/img/before-after/ba-1.webp 720w, /img/before-after/ba-1-lg.webp 828w" sizes="(max-width: 559px) 92vw, (max-width: 899px) 46vw, 350px" width="720" height="901" loading="lazy" decoding="async" alt="Before and after: bare skin, then soft glam with smoky eyes and a glossy nude lip"></li>
-              <li><img class="shot" src="/img/before-after/ba-2.webp" srcset="/img/before-after/ba-2.webp 720w, /img/before-after/ba-2-lg.webp 828w" sizes="(max-width: 559px) 92vw, (max-width: 899px) 46vw, 350px" width="720" height="886" loading="lazy" decoding="async" alt="Before and after: bare skin, then glam with a soft gold eye, full lashes and a nude lip"></li>
-              <li><img class="shot" src="/img/before-after/ba-3.webp" srcset="/img/before-after/ba-3.webp 720w, /img/before-after/ba-3-lg.webp 1024w" sizes="(max-width: 559px) 92vw, (max-width: 899px) 46vw, 350px" width="720" height="900" loading="lazy" decoding="async" alt="Before and after: bare skin, then full glam with dark smoky eyes, dramatic lashes and a rosy nude lip"></li>
-              <li><img class="shot" src="/img/before-after/ba-4.webp" srcset="/img/before-after/ba-4.webp 720w, /img/before-after/ba-4-lg.webp 828w" sizes="(max-width: 559px) 92vw, (max-width: 899px) 46vw, 350px" width="720" height="887" loading="lazy" decoding="async" alt="Before and after: bare skin, then glam with a gold eye, full lashes and a nude lip"></li>
-              <li><img class="shot" src="/img/before-after/ba-5.webp" srcset="/img/before-after/ba-5.webp 720w, /img/before-after/ba-5-lg.webp 1080w" sizes="(max-width: 559px) 92vw, (max-width: 899px) 46vw, 350px" width="720" height="900" loading="lazy" decoding="async" alt="Before and after: bare skin, then glam with pink eyeshadow and full lashes, hair in a side-swept curled updo"></li>
-              <li>
-                <a class="cta-tile" href="#book">
-                  <strong>Ready for your after?</strong>
-                  <span>Book your glam on WhatsApp <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span>
-                </a>
-              </li>
-            </ul>
+            <ul class="ba-grid" data-cms-photos="before_after"><li><img class="shot" src="/img/before-after/ba-1.webp" srcset="/img/before-after/ba-1.webp 720w, /img/before-after/ba-1-lg.webp 828w" sizes="(max-width: 559px) 92vw, (max-width: 899px) 46vw, 350px" width="828" height="1036" loading="lazy" decoding="async" alt="Before and after: bare skin, then soft glam with smoky eyes and a glossy nude lip"></li><li><img class="shot" src="/img/before-after/ba-2.webp" srcset="/img/before-after/ba-2.webp 720w, /img/before-after/ba-2-lg.webp 828w" sizes="(max-width: 559px) 92vw, (max-width: 899px) 46vw, 350px" width="828" height="1019" loading="lazy" decoding="async" alt="Before and after: bare skin, then glam with a soft gold eye, full lashes and a nude lip"></li><li><img class="shot" src="/img/before-after/ba-3.webp" srcset="/img/before-after/ba-3.webp 720w, /img/before-after/ba-3-lg.webp 1024w" sizes="(max-width: 559px) 92vw, (max-width: 899px) 46vw, 350px" width="1024" height="1280" loading="lazy" decoding="async" alt="Before and after: bare skin, then full glam with dark smoky eyes, dramatic lashes and a rosy nude lip"></li><li><img class="shot" src="/img/before-after/ba-4.webp" srcset="/img/before-after/ba-4.webp 720w, /img/before-after/ba-4-lg.webp 828w" sizes="(max-width: 559px) 92vw, (max-width: 899px) 46vw, 350px" width="828" height="1020" loading="lazy" decoding="async" alt="Before and after: bare skin, then glam with a gold eye, full lashes and a nude lip"></li><li><img class="shot" src="/img/before-after/ba-5.webp" srcset="/img/before-after/ba-5.webp 720w, /img/before-after/ba-5-lg.webp 1080w" sizes="(max-width: 559px) 92vw, (max-width: 899px) 46vw, 350px" width="1080" height="1350" loading="lazy" decoding="async" alt="Before and after: bare skin, then glam with pink eyeshadow and full lashes, hair in a side-swept curled updo"></li><li><a class="cta-tile" href="#book"><strong>Ready for your after?</strong><span>Book your glam <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span></a></li></ul>
           </div>
 
           <div class="looks-panel" id="videos">
@@ -1255,12 +1105,12 @@
           <div class="bk-done" id="bk-done" hidden></div>
           <p class="sr-only" id="bk-status" role="status" aria-live="polite"></p>
         </div>
-        <noscript><p class="bk-noscript">The booking calendar needs JavaScript. You can <a href="https://wa.me/27785767604">book on WhatsApp</a> instead.</p></noscript>
+        <noscript><p class="bk-noscript">The booking calendar needs JavaScript. Use the WhatsApp or Call buttons below to book instead.</p></noscript>
 
         <div class="contact">
           <h3>WhatsApp or call</h3>
           <a class="phone" href="https://wa.me/27785767604" target="_blank" rel="noopener" aria-label="WhatsApp +27 78 576 7604">
-            <svg class="icon" aria-hidden="true"><use href="#i-wa"/></svg>+27 78 576 7604
+            <svg class="icon" aria-hidden="true"><use href="#i-wa"/></svg><span data-cms-text="phone">+27 78 576 7604</span>
           </a>
           <div class="contact-cta">
             <a class="btn btn-cocoa" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20a%20glam%20session.%0A%0AService%3A%0ADate%3A%0ATime%3A%0AHome%20call%3F%20%28yes%2Fno%2C%20and%20your%20area%29%3A" target="_blank" rel="noopener">
@@ -1271,14 +1121,14 @@
             </a>
           </div>
           <ul class="socials" aria-label="Social media">
-            <li>
-              <a href="https://www.facebook.com/search/top?q=Asanda%20Tiwani" target="_blank" rel="noopener">
-                <svg class="icon" aria-hidden="true"><use href="#i-fb"/></svg><span><span class="sr-only">Facebook: </span>Asanda Tiwani</span>
+            <li data-cms-social="facebook">
+              <a data-cms-href="facebook" href="https://www.facebook.com/search/top?q=Asanda%20Tiwani" target="_blank" rel="noopener">
+                <svg class="icon" aria-hidden="true"><use href="#i-fb"/></svg><span><span class="sr-only">Facebook: </span><span data-cms-text="facebook_name">Asanda Tiwani</span></span>
               </a>
             </li>
-            <li>
-              <a href="https://www.instagram.com/asanda_tiwani/" target="_blank" rel="noopener">
-                <svg class="icon" aria-hidden="true"><use href="#i-ig"/></svg><span><span class="sr-only">Instagram: </span>@asanda_tiwani</span>
+            <li data-cms-social="instagram">
+              <a data-cms-href="instagram" href="https://www.instagram.com/asanda_tiwani/" target="_blank" rel="noopener">
+                <svg class="icon" aria-hidden="true"><use href="#i-ig"/></svg><span><span class="sr-only">Instagram: </span><span data-cms-text="instagram_handle">@asanda_tiwani</span></span>
               </a>
             </li>
           </ul>
@@ -1292,7 +1142,7 @@
   <div class="wrap">
     <img src="/img/logo.webp" srcset="/img/logo-240.webp 240w, /img/logo.webp 560w" sizes="150px" width="150" height="94" loading="lazy" alt="OMG – Oh! My Glam">
     <p>Makeup &amp; hair · Bridal · Home calls on request</p>
-    <p><a href="https://wa.me/27785767604" target="_blank" rel="noopener">WhatsApp +27 78 576 7604</a></p>
+    <p><a href="https://wa.me/27785767604" target="_blank" rel="noopener">WhatsApp <span data-cms-text="phone">+27 78 576 7604</span></a></p>
     <p>Home call transport fees are quoted separately.</p>
     <p>© OMG – Oh! My Glam</p>
   </div>
@@ -1301,6 +1151,8 @@
 <a class="fab" href="https://wa.me/27785767604?text=Hi%20OMG%21%20I%27d%20like%20to%20book%20a%20glam%20session.%0A%0AService%3A%0ADate%3A%0ATime%3A%0AHome%20call%3F%20%28yes%2Fno%2C%20and%20your%20area%29%3A" target="_blank" rel="noopener" aria-label="Book on WhatsApp">
   <svg class="icon" aria-hidden="true"><use href="#i-wa"/></svg>
 </a>
+<!-- The services the booking calendar offers and the WhatsApp number, written in by the Worker (src/content.js). -->
+<script type="application/json" id="omg-catalog">{"phone":"27785767604","services":[{"id":"soft-glam","group":"Makeup","name":"Soft Glam","price":750,"minutes":90},{"id":"full-glam","group":"Makeup","name":"Full Glam","price":850,"minutes":90},{"id":"bold-dramatic","group":"Makeup","name":"Bold / Dramatic","price":950,"minutes":120},{"id":"basic-installation","group":"Hair","name":"Basic Installation","price":400,"minutes":90},{"id":"curling-long-weave","group":"Hair","name":"Curling Long Weave","price":450,"minutes":90},{"id":"bridal-package","group":"Bridal","name":"Bridal Package","price":4500,"minutes":300},{"id":"bridal-makeup-leave","group":"Bridal","name":"Bridal makeup \u0026 leave immediately","price":1800,"minutes":120},{"id":"bridal-makeup-install-style","group":"Bridal","name":"Bridal makeup, installation + style \u0026 leave","price":2900,"minutes":210},{"id":"bridal-natural-hairstyle","group":"Bridal","name":"Bridal natural hairstyle","price":850,"minutes":90},{"id":"bridal-trial","group":"Bridal","name":"Bridal trial makeup","price":750,"minutes":90},{"id":"bridesmaid-strip-lashes","group":"Bridesmaid","name":"Bridesmaid full glam with strip lashes","price":850,"minutes":90},{"id":"bridesmaid-cut-crease","group":"Bridesmaid","name":"Bridesmaid full glam with cut crease","price":950,"minutes":120}]}</script>
 <script type="module" src="/js/booking.js"></script>
 <script type="module" src="/js/reviews.js"></script>
 </body>

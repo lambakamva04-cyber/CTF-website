@@ -1,7 +1,6 @@
 // Checks for everything a visitor or the admin sends. Each check either
 // returns a clean value or throws a 400 that names the field.
 
-import { findService } from '../public/js/catalog.js';
 import { isDate, isTime, toMinutes } from '../public/js/slots.js';
 import { invalid } from './http.js';
 
@@ -48,8 +47,9 @@ export function phoneNumber(value) {
   return phone;
 }
 
+/** A service id's shape. Whether it exists, and is shown, is checked against the database. */
 export function serviceId(value) {
-  if (typeof value !== 'string' || !findService(value)) throw invalid('service', 'Please pick a service.');
+  if (typeof value !== 'string' || !/^[a-z0-9][a-z0-9-]{0,38}[a-z0-9]$/.test(value)) throw invalid('service', 'Please pick a service.');
   return value;
 }
 

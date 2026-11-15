@@ -2,12 +2,13 @@
 
 import {
   BOOKING_WINDOW, HOURS, UTC_OFFSET_MINUTES,
-  bookingMessage, findService, formatDateLong, serviceLabel, whatsappUrl,
+  bookingMessage, formatDateLong, serviceLabel, whatsappUrl,
 } from '../public/js/catalog.js';
 import {
   addDays, addMonths, formatRanges, isMonth, monthOf, notBeforeFor, nowInZone,
   overlaps, parseRanges, toHHMM, toMinutes,
 } from '../public/js/slots.js';
+import { bookableService, sitePhone } from './content.js';
 import { HttpError, invalid, json, readJson } from './http.js';
 import { alertInBackground } from './push.js';
 import { enforce } from './ratelimit.js';
@@ -49,12 +50,12 @@ export async function availability({ env, url, client }) {
   return json({ ok: true, month, today: now.date, now: toHHMM(now.minutes), busy });
 }
 
-function created(input, service, ref) {
+function created(input, service, ref, phone) {
   return json(
     {
       ok: true,
       ref,
-      whatsappUrl: whatsappUrl(bookingMessage({ ...input, service, ref })),
+      whatsappUrl: whatsappUrl(bookingMessage({ ...input, service, ref }), phone),
       summary: {
         name: input.name,
         phone: input.phone,
@@ -78,7 +79,9 @@ export async function create(ctx) {
     date: dateValue(body.date),
     time: startTime(body.time),
   };
-  const service = findService(input.service);
+  const service = await bookableService(env, input.service);
+  if (!service) throw invalid('service', 'Please pick a service.');
+  const phone = await sitePhone(env);
 
   const now = nowInZone(UTC_OFFSET_MINUTES);
   if (input.date < now.date || input.date > addDays(now.date, BOOKING_WINDOW.maxDaysAhead)) {
@@ -95,7 +98,7 @@ export async function create(ctx) {
   }
 
   // Bots get an answer that looks real, and nothing is stored.
-  if (looksAutomated(body)) return created(input, service, newRef());
+  if (looksAutomated(body)) return created(input, service, newRef(), phone);
 
   const { results } = await env.DB.prepare('SELECT start, end FROM blocks WHERE date = ?1').bind(input.date).all();
   const busy = parseRanges(results.map((row) => [row.start, row.end]));
@@ -109,7 +112,7 @@ export async function create(ctx) {
   )
     .bind(input.phone, input.date, input.time, Date.now() - 600_000)
     .first();
-  if (recent) return created(input, service, recent.ref);
+  if (recent) return created(input, service, recent.ref, phone);
 
   await enforce(env, 'booking', client, 'You have sent a few booking requests already. Please wait a while, or message us on WhatsApp.');
   await enforce(env, 'bookingAll', 'all', 'We are receiving a lot of requests right now. Please message us on WhatsApp instead.');
@@ -124,7 +127,7 @@ export async function create(ctx) {
         .bind(ref, input.name, input.phone, input.service, input.date, input.time, service.minutes, Date.now())
         .run();
       alertInBackground(ctx);
-      return created(input, service, ref);
+      return created(input, service, ref, phone);
     } catch (error) {
       if (!String(error && error.message).includes('UNIQUE')) throw error;
     }

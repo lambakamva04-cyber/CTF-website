@@ -23,6 +23,12 @@ not_found_handling = "404-page"
 # Bookings, reviews, admin sessions and rate-limit counters.
 # `npm run setup` creates it and writes its id here; commit that change.
 # Until then the placeholder below stops `npm run deploy` with a clear message.
+# Photos OMG uploads on the admin page's Website tab, served at /media/.
+# (R2 would need a payment card on the Cloudflare account; KV does not.)
+[[kv_namespaces]]
+binding = "MEDIA"
+id = "47faf88d90d14769a41d9e993cbd99d0"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "omg-oh-my-glam"

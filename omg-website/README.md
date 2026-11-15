@@ -60,6 +60,20 @@ Open `/admin/` and sign in with the admin password. It is made for a phone.
   Send it the day before to cut no-shows.
 - **Reviews**: new reviews wait here. **Approve** puts one on the site. Approve
   genuine reviews, critical ones included; delete only spam or abuse.
+- **Website**: change the site itself, no developer needed. Changes show
+  within a few seconds.
+  - **Services**: every service on the price lists, by card (Makeup, Hair,
+    Bridal package, Bride, Bridesmaid): name, price, how long it takes (the
+    booking calendar blocks exactly that long), a small note, the makeup glam
+    level, and what the bridal package includes. Add, reorder, hide (untick
+    "Shown on the website": off the page and not bookable) or delete.
+  - **Photos**: the gallery and the before-and-afters. **Add photos** picks
+    from the phone; each is shrunk on the phone to a sharp website size before
+    it is sent. Tap a photo to describe it (read out to people who can't see
+    it, and used by Google), move it, or delete it.
+  - **Contact & text**: the WhatsApp/phone number (every WhatsApp and Call
+    link on the site follows it), Instagram, the Facebook page, the welcome
+    line, the home-calls note and the bridal note.
 
 Sign-in lasts 14 days on a device. Log out on shared devices.
 
@@ -151,13 +165,22 @@ npm run db:migrate:local
 npm run dev                        # http://localhost:8787
 ```
 
-## Change prices, durations or opening hours
+## How the editable content works
 
-Everything bookable is in `public/js/catalog.js`: the services with their
-prices and how long each takes, the opening hours, the 30-minute grid of start
-times, the 3 hours' minimum notice and how far ahead clients can book. The page
-and the Worker both read this one file, so a change there is a change
-everywhere. **The durations are estimates: set them to the real times.**
+Services, photos, contact details and texts live in the database (migration
+`0004_site_content.sql` added them, seeded with what the site showed before).
+Uploaded photos are stored in the `omg-oh-my-glam-media` KV namespace (binding
+`MEDIA`; R2 would need a payment card on the account) and served at
+`/media/...`. The Worker writes the content into the home page as it is served
+(`src/content.js`): the price lists, the bridal package, both photo albums, the
+contact links, the page description, Google's listing data and the booking
+calendar's list of services all come from the same rows the booking checks use.
+Everything typed on the admin page is escaped, so it always shows as text.
+
+`public/index.html` still contains the starting content, so if the database
+could not be read the page would still be complete. The opening hours, the
+30-minute grid of start times, the 3 hours' minimum notice and how far ahead
+clients can book are rules, not content: they are in `public/js/catalog.js`.
 
 ## Security
 
@@ -199,20 +222,21 @@ touches real data. GitHub runs both on every push.
 
 ## Still to supply
 
-- **Service durations.** The times in `public/js/catalog.js` are estimates.
-  Set them to how long each service really takes, or the calendar will book
-  clients too close together (or too far apart).
+- **Service durations.** The starting times are estimates. Set each service's
+  real length on the Website tab, or the calendar will book clients too close
+  together (or too far apart).
 - **Facebook link.** The poster gives only the name "Asanda Tiwani", so the
-  Facebook link is a search for that name. Replace it with the page's real URL.
+  Facebook link is a search for that name. Put the page's real link in on the
+  Website tab (Contact & text).
 
 ## Images
 
 | File | What it is |
 | --- | --- |
 | `img/logo-240.webp`, `img/logo.webp`, `img/logo-840.webp`, `img/logo@2x.webp`, `img/logo.png` | The OMG logo at four widths (240, 560, 840 and 1120px) plus a PNG copy. It is OMG's own logo artwork, cut out of its brown satin background so it sits on any of the site's backgrounds |
-| `img/gallery/glam-*.webp` | Five looks supplied by OMG, 720px wide, each with a 360px copy for phones. `glam-1` to `glam-3` are used exactly as OMG cropped them |
-| `img/before-after/ba-*.webp` | Five before-and-after pictures supplied by OMG, used whole. 720px wide, each with a larger `-lg` copy for sharp phone screens |
-| `og.jpg` | 1200×630 link-preview card |
+| `img/gallery/glam-*.webp` | The five starting looks supplied by OMG, 720px wide, each with a 360px copy for phones. Photos added on the Website tab are stored in KV instead |
+| `img/before-after/ba-*.webp` | The five starting before-and-after pictures supplied by OMG, used whole. 720px wide, each with a larger `-lg` copy for sharp phone screens |
+| `og.jpg` | 1200×630 link-preview card. It names no prices or number, so it stays true whatever is changed on the Website tab |
 | `favicon.png`, `apple-touch-icon.png`, `img/icon-*.png` | The swirled "O" from the logo |
 | `img/contours.svg` | The swirled background pattern, redrawn as vector |
 
@@ -245,16 +269,13 @@ which is useful for a WhatsApp status or an Instagram bio.
 With scripts switched off the three slides simply stack, each under its own
 heading, so nothing is ever hidden.
 
-**Photos.** The photos are different shapes, so this grid is laid out by hand:
-each cell is sized to its photo's own proportions and nothing is trimmed.
-Swapping a photo for one of the same shape needs no code change. A photo of a
-different shape, or adding or removing one, means updating the row and column
-sizes in the `.grid` rules in `index.html`; the comment there explains how they
-work.
+**Photos.** Two columns on phones and three on wider screens, each photo at
+its own shape, nothing trimmed, so any number and mix of shapes lays out well.
+Add, remove, reorder and describe them on the admin page's Website tab.
 
-**Before & after.** An ordinary grid: one picture per row on phones, two and
-then three across on wider screens. To add one, copy an `<li>` in the
-`ba-grid` list and point it at the new files.
+**Before & after.** One picture per row on phones, two and then three across on
+wider screens. Also managed on the Website tab. A slide with no photos is
+hidden.
 
 **Videos.** The slide and its tab are built but stay hidden while the list is
 empty, so visitors never land on an empty tab. Adding the first video switches

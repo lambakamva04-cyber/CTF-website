@@ -7,6 +7,7 @@ import { UTC_OFFSET_MINUTES } from '../public/js/catalog.js';
 import { addDays, nowInZone } from '../public/js/slots.js';
 import * as admin from './admin.js';
 import * as bookings from './bookings.js';
+import * as content from './content.js';
 import { HttpError, checkOrigin, errorResponse, notFound } from './http.js';
 import * as push from './push.js';
 import { clientId } from './ratelimit.js';
@@ -14,6 +15,7 @@ import * as reviews from './reviews.js';
 import { withSecurityHeaders } from './security.js';
 
 const ID = '(\\d{1,9})';
+const SERVICE = '([a-z0-9][a-z0-9-]{0,38}[a-z0-9])';
 const ROUTES = [
   ['GET', '/api/availability', bookings.availability],
   ['POST', '/api/bookings', bookings.create],
@@ -36,6 +38,16 @@ const ROUTES = [
   ['POST', '/api/admin/push/unsubscribe', push.unsubscribe],
   ['POST', '/api/admin/push/test', push.test],
   ['GET', '/api/admin/push/latest', push.latest],
+  ['GET', '/api/admin/site', content.getSite],
+  ['POST', '/api/admin/site/services', content.createService],
+  ['POST', `/api/admin/site/services/${SERVICE}`, content.updateService],
+  ['DELETE', `/api/admin/site/services/${SERVICE}`, content.deleteService],
+  ['POST', '/api/admin/site/services-order', content.orderServices],
+  ['POST', '/api/admin/site/text', content.updateText],
+  ['POST', '/api/admin/site/photos', content.uploadPhoto],
+  ['POST', `/api/admin/site/photos/${ID}`, content.updatePhoto],
+  ['DELETE', `/api/admin/site/photos/${ID}`, content.deletePhoto],
+  ['POST', '/api/admin/site/photos-order', content.orderPhotos],
 ].map(([method, path, handler]) => ({ method, pattern: new RegExp(`^${path}$`), handler }));
 
 async function api(request, env, url, ctx) {
@@ -98,11 +110,37 @@ function absoluteShareImage(response, url) {
     .transform(response);
 }
 
+/**
+ * The home page, with the current services, prices, photos and contact
+ * details written in (src/content.js). If they can't be read, the file's own
+ * content is served, which is complete but may be older.
+ */
+async function homePage(request, env, url) {
+  // The page is rewritten as it is served, so a stored copy's validators say
+  // nothing about it: always fetch the file whole.
+  const headers = new Headers(request.headers);
+  headers.delete('if-none-match');
+  headers.delete('if-modified-since');
+  const asset = await env.ASSETS.fetch(new Request(request, { headers }));
+  if (asset.status !== 200 || !asset.body || !(asset.headers.get('content-type') || '').startsWith('text/html')) {
+    return absoluteShareImage(asset, url);
+  }
+  try {
+    return content.renderPage(asset, await content.loadSite(env), url);
+  } catch (error) {
+    console.error('site_content_unavailable', String(error && error.message));
+    return absoluteShareImage(asset, url);
+  }
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    const isApi = url.pathname === '/api' || url.pathname.startsWith('/api/');
-    const response = isApi ? await api(request, env, url, ctx) : absoluteShareImage(await env.ASSETS.fetch(request), url);
+    let response;
+    if (url.pathname === '/api' || url.pathname.startsWith('/api/')) response = await api(request, env, url, ctx);
+    else if (url.pathname.startsWith('/media/')) response = await content.media(request, env, url.pathname.slice('/media/'.length));
+    else if (url.pathname === '/') response = await homePage(request, env, url);
+    else response = absoluteShareImage(await env.ASSETS.fetch(request), url);
     return withSecurityHeaders(response, url);
   },
 

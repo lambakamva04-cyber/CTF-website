@@ -3,9 +3,12 @@
 The Worker in `src/` serves the static site from `public/` and answers
 `/api/*`. Data lives in one D1 database (binding `DB`).
 
-Shared code: `public/js/catalog.js` (services, durations, hours, the WhatsApp
-message) and `public/js/slots.js` (time and date arithmetic) are loaded by the
-browser **and** bundled into the Worker. Neither side keeps its own copy.
+Shared code: `public/js/catalog.js` (opening hours, the booking rules, the
+WhatsApp message) and `public/js/slots.js` (time and date arithmetic) are
+loaded by the browser **and** bundled into the Worker. The services (names,
+prices, durations) are rows in the `services` table, edited on the admin
+page: the Worker checks bookings against them and writes the same rows into
+the page for the booking calendar. Neither side keeps its own copy.
 
 All times are SAST (UTC+2, no daylight saving). Dates are `YYYY-MM-DD`, times
 `HH:MM`, ranges half-open (`09:00–10:30` then `10:30–12:00` do not overlap).
@@ -74,7 +77,7 @@ A visitor asks for a time. Stored as a **pending request** for OMG to confirm.
 - `name`: "Name and Surname". Trimmed, inner whitespace collapsed, 3–80
   characters, at least two words, letters (any script) plus `space ' - .`.
 - `phone`: "Contact Number". Digits, spaces, `+ - ( )`; 9–15 digits in total.
-- `service`: an `id` from `SERVICES` in `catalog.js`.
+- `service`: the `id` of a service that is shown on the site (`services.visible = 1`).
 - `date` + `time`: must pass `isBookable` against confirmed bookings and
   blocks for that date, the opening hours, the 30-minute grid, the minimum
   notice and the booking window, all from `catalog.js`.
@@ -161,7 +164,7 @@ the session cookie, otherwise 401.
 - Block times: `start` < `end`, both on 5-minute boundaries, `end` may be `24:00`.
   `kind: "closed"` is time off. `label` is a private note, at most 80 characters, never shown publicly.
 - Confirming a request creates a `booking` block from its start for `minutes`
-  (default: the service's duration from `catalog.js`), labelled with the client's name.
+  (default: the service's duration when the request was made), labelled with the client's name.
 - `:id` must be a positive integer; anything else is 404.
 
 ### Session
@@ -171,6 +174,48 @@ the session cookie, otherwise 401.
   hash in D1 with a 14-day expiry, and sets
   `__Host-omg_admin=<token>; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=1209600`.
 - Logout deletes the session row and expires the cookie.
+
+### Website content (the Website tab)
+
+| Method and path | Body | Reply |
+| --- | --- | --- |
+| `GET /api/admin/site` | | `{ ok, services: [Service], text: { phone, instagram, facebook_url, facebook_name, tagline, home_calls, bridal_note }, photos: [Photo] }`, hidden services included |
+| `POST /api/admin/site/services` | `ServiceInput` | `201 { ok, service }`, last in its card, id made from the name (`lash-lift-k3f9`) |
+| `POST /api/admin/site/services/:id` | `ServiceInput` | `{ ok, service }`, every field replaced; a new card puts it last there |
+| `DELETE /api/admin/site/services/:id` | | `{ ok }`. Requests already made keep their details |
+| `POST /api/admin/site/services-order` | `{ card, ids }` | `{ ok }`. `ids` must be exactly that card's services |
+| `POST /api/admin/site/text` | any of the text keys | `{ ok, text }` with the stored (normalised) values |
+| `POST /api/admin/site/photos` | multipart: `album`, `alt`, `width`, `height`, `small_width`, `large`, `small` | `201 { ok, photo }`, last in its album |
+| `POST /api/admin/site/photos/:id` | `{ alt }` | `{ ok, photo }` |
+| `DELETE /api/admin/site/photos/:id` | | `{ ok }`, and an uploaded photo's files are deleted |
+| `POST /api/admin/site/photos-order` | `{ album, ids }` | `{ ok }`. `ids` must be exactly that album's photos |
+
+- `ServiceInput`: `{ card, name, price, minutes, note, level, details, visible }`.
+  `card` is `makeup`, `hair`, `package`, `bride` or `bridesmaid`; `name` 2–60
+  characters; `price` a whole number of rand, 0–100000; `minutes` 15–720 in
+  steps of 15; `note` up to 60 characters or `null`; `level` 1–3 (makeup only)
+  or `null`; `details` up to 1000 characters and 30 lines (package only: one
+  item per line, a line ending in `:` is a heading); `visible` a boolean.
+- Text: `phone` is stored as country code and digits (`078 576 7604` →
+  `27785767604`); `instagram` as a username (`@name` or a profile link is
+  accepted); `facebook_url` must be on `facebook.com`, `fb.com` or `fb.me` and is
+  stored as `https`; empty `instagram` or `facebook_url` hides it. `tagline`
+  10–220 characters, `home_calls` and `bridal_note` 5–300.
+- Photos: `album` is `looks` or `before_after`; `alt` 3–160 characters; the
+  admin page shrinks each photo before sending (at most 1440×2200, and a 720px
+  copy). Only JPEG and WebP are accepted, recognised by their first bytes (not
+  the declared type): large at most 3 MB, small 1 MB, the whole upload 6 MB,
+  40 photos per album.
+- `GET /media/<32 hex>-<l|s>.<webp|jpg>` serves an uploaded photo from KV with
+  `Cache-Control: public, max-age=31536000, immutable`. Any other name is 404.
+
+The home page is rewritten as it is served (`HTMLRewriter`): the price lists,
+the bridal package, both photo albums, the contact links, the description
+tags, the JSON-LD and a `<script type="application/json" id="omg-catalog">`
+block the booking calendar reads (`{ phone, services: [{ id, group, name,
+price, minutes }] }`). Each Worker reuses the content for up to 15 seconds.
+The page is sent with `Cache-Control: no-cache` and no ETag, so browsers never
+show an old price list.
 
 ### Phone alerts (Web Push)
 
@@ -212,6 +257,8 @@ created once and kept in the `settings` table.
 | `POST /api/admin/login` | 5 per 15 minutes | 30 failed logins an hour |
 | Other `/api/admin/*` | 300 a minute | |
 | `POST /api/admin/push/test` | 10 an hour | |
+| Website tab edits (services, text, photo descriptions and order, deletes) | 300 an hour | |
+| `POST /api/admin/site/photos` | 60 an hour | |
 
 ## Security headers
 

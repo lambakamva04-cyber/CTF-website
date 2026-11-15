@@ -2,22 +2,43 @@
 // request. It is saved for OMG to confirm on the admin page and goes to her on
 // WhatsApp with the four details she asked for.
 //
-// Slot maths and the catalogue come from the same modules the Worker uses, so
-// the page can never offer a time the server would refuse.
+// Slot maths and the booking rules come from the same modules the Worker
+// uses, and the services from the same rows it checks bookings against (a
+// JSON block it writes into the page), so the page can never offer a time
+// the server would refuse.
 
 import {
-  BOOKING_WINDOW, HOURS, SERVICES, SERVICE_GROUPS, UTC_OFFSET_MINUTES,
-  bookingMessage, findService, formatDateLong, formatDuration, formatMonth, whatsappUrl,
+  BOOKING_WINDOW, HOURS, SERVICE_GROUPS, UTC_OFFSET_MINUTES, WHATSAPP_NUMBER,
+  bookingMessage, formatDateLong, formatDuration, formatMonth, whatsappUrl,
 } from './catalog.js';
 import {
   addDays, addMonths, datesInMonth, monthOf, notBeforeFor, nowInZone,
   parseRanges, startTimes, toHHMM, toMinutes, weekday,
 } from './slots.js';
 
+/** The services on offer and OMG's WhatsApp number, as the Worker wrote them. */
+function readCatalog() {
+  try {
+    const data = JSON.parse(document.getElementById('omg-catalog')?.textContent || '{}');
+    const services = Array.isArray(data.services) ? data.services.filter((s) =>
+      s && typeof s.id === 'string' && typeof s.name === 'string' && SERVICE_GROUPS.includes(s.group)
+      && Number.isInteger(s.price) && Number.isInteger(s.minutes) && s.minutes > 0) : [];
+    const phone = typeof data.phone === 'string' && /^\d{9,15}$/.test(data.phone) ? data.phone : WHATSAPP_NUMBER;
+    return { services, phone };
+  } catch {
+    return { services: [], phone: WHATSAPP_NUMBER };
+  }
+}
+
 const root = document.getElementById('booker');
-if (root) setUp(root);
+const CATALOG = readCatalog();
+// With nothing bookable (or the block missing), the calendar stays hidden and
+// the WhatsApp links on the page do the booking.
+if (root && CATALOG.services.length) setUp(root);
 
 function setUp(root) {
+  const SERVICES = CATALOG.services;
+  const findService = (id) => SERVICES.find((s) => s.id === id);
   root.hidden = false;
   const $ = (id) => document.getElementById(id);
   const el = {
@@ -46,9 +67,11 @@ function setUp(root) {
 
   // ---- service picker ---------------------------------------------------------
   for (const group of SERVICE_GROUPS) {
+    const inGroup = SERVICES.filter((x) => x.group === group);
+    if (!inGroup.length) continue;
     const optgroup = document.createElement('optgroup');
     optgroup.label = group;
-    for (const s of SERVICES.filter((x) => x.group === group)) optgroup.append(new Option(`${s.name} · R${s.price}`, s.id));
+    for (const s of inGroup) optgroup.append(new Option(`${s.name} · R${s.price}`, s.id));
     el.service.append(optgroup);
   }
   el.service.addEventListener('change', () => chooseService(el.service.value));
@@ -341,7 +364,7 @@ function setUp(root) {
   function whatsappLink(text, message) {
     const link = document.createElement('a');
     link.className = 'btn btn-gold';
-    link.href = whatsappUrl(message);
+    link.href = whatsappUrl(message, CATALOG.phone);
     link.target = '_blank';
     link.rel = 'noopener';
     link.textContent = text;

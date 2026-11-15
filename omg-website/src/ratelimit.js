@@ -23,6 +23,8 @@ export const RULES = {
   loginFailAll: { limit: 30, windowMs: 3_600_000 },
   admin: { limit: 300, windowMs: 60_000 },
   pushTest: { limit: 10, windowMs: 3_600_000 },
+  siteEdit: { limit: 300, windowMs: 3_600_000 },
+  upload: { limit: 60, windowMs: 3_600_000 },
 };
 
 const encoder = new TextEncoder();

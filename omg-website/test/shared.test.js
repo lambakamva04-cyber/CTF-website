@@ -57,28 +57,24 @@ test('start times respect bookings, hours, the grid and notice', () => {
   assert.ok(!S.isBookable({ ...opts, start: 420, notBefore: 450 })); // too soon
 });
 
-test('the catalogue is consistent', () => {
-  assert.equal(new Set(C.SERVICES.map((s) => s.id)).size, C.SERVICES.length);
-  for (const s of C.SERVICES) {
-    assert.ok(C.SERVICE_GROUPS.includes(s.group), s.id);
-    assert.ok(Number.isInteger(s.minutes) && s.minutes % C.HOURS.step === 0, s.id);
-    assert.ok(Number.isInteger(s.price) && s.price > 0, s.id);
-  }
-  assert.equal(C.findService('full-glam').price, 850);
-  assert.equal(C.findService('nope'), undefined);
+test('every price-list card belongs to a booking group', () => {
+  for (const [card, group] of Object.entries(C.GROUP_OF_CARD)) assert.ok(C.SERVICE_GROUPS.includes(group), card);
+  assert.deepEqual(Object.keys(C.GROUP_OF_CARD).sort(), ['bride', 'bridesmaid', 'hair', 'makeup', 'package']);
   assert.equal(C.formatDuration(90), '1 h 30 min');
   assert.equal(C.formatDuration(120), '2 h');
 });
 
 test('the WhatsApp message carries the four details, labelled as OMG asked', () => {
-  const msg = C.bookingMessage({ name: 'Thandi Mokoena', phone: '082 123 4567', service: C.findService('full-glam'), date: '2026-12-12', time: '09:00', ref: 'OMG-7K2P' });
+  const fullGlam = { id: 'full-glam', name: 'Full Glam', price: 850, minutes: 90 };
+  const msg = C.bookingMessage({ name: 'Thandi Mokoena', phone: '082 123 4567', service: fullGlam, date: '2026-12-12', time: '09:00', ref: 'OMG-7K2P' });
   assert.match(msg, /^Name and Surname: Thandi Mokoena$/m);
   assert.match(msg, /^Contact Number: 082 123 4567$/m);
   assert.match(msg, /^Service: Full Glam \(R850\)$/m);
   assert.match(msg, /^Date and Time: Saturday 12 December 2026 at 09:00$/m);
   assert.match(msg, /^Ref: OMG-7K2P$/m);
-  assert.ok(!C.bookingMessage({ name: 'A B', phone: '1', service: C.findService('soft-glam'), date: '2026-12-12', time: '09:00' }).includes('Ref:'));
+  assert.ok(!C.bookingMessage({ name: 'A B', phone: '1', service: fullGlam, date: '2026-12-12', time: '09:00' }).includes('Ref:'));
   const url = new URL(C.whatsappUrl(msg));
   assert.equal(url.origin + url.pathname, 'https://wa.me/27785767604');
   assert.equal(url.searchParams.get('text'), msg);
+  assert.equal(new URL(C.whatsappUrl(msg, '27821234567')).pathname, '/27821234567', 'the number set on the admin page');
 });

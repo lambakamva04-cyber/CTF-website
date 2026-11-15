@@ -6,9 +6,9 @@
 // from digits we have checked (tel: and wa.me), never from raw input.
 
 import { toMinutes, toHHMM, addDays, addMonths, daysInMonth, monthOf, nowInZone, isDate, isTime, weekday } from '../js/slots.js';
-import { findService, formatDateLong, formatMonth, formatDuration, UTC_OFFSET_MINUTES } from '../js/catalog.js';
+import { formatDateLong, formatMonth, formatDuration, UTC_OFFSET_MINUTES } from '../js/catalog.js';
 
-const TABS = ['requests', 'calendar', 'reviews'];
+const TABS = ['requests', 'calendar', 'reviews', 'website'];
 const WEEKDAYS_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -19,8 +19,8 @@ const $ = (id) => document.getElementById(id);
 const state = {
   tab: 'requests',
   month: monthOf(today()),
-  loadedAt: { requests: 0, calendar: 0, reviews: 0 },
-  seq: { requests: 0, calendar: 0, reviews: 0 },
+  loadedAt: { requests: 0, calendar: 0, reviews: 0, website: 0 },
+  seq: { requests: 0, calendar: 0, reviews: 0, website: 0 },
 };
 
 // ---------------------------------------------------------------- DOM helpers
@@ -92,8 +92,9 @@ function endTime(start, minutes) {
   return toHHMM(Math.min(1440, s + minutes));
 }
 
+/** The service's name as the server sent it (it reads the current services), or its id. */
 function serviceName(id, fallback) {
-  return fallback || findService(id)?.name || String(id ?? '');
+  return fallback || String(id ?? '');
 }
 
 function firstName(name) {
@@ -358,6 +359,7 @@ const loaders = {
   requests: () => loadRequests(),
   calendar: () => loadCalendar(),
   reviews: () => loadReviews(),
+  website: () => loadWebsite(),
 };
 
 function selectTab(name, { focus = false } = {}) {
@@ -654,7 +656,7 @@ function confirmMessage(r) {
 /** A reminder for an upcoming booking: cuts no-shows, and frees the slot early if plans changed. */
 function reminderMessage(b) {
   const when = b.date === addDays(today(), 1) ? `tomorrow, ${dayLong(b.date)},` : b.date === today() ? 'today' : `on ${dayLong(b.date)}`;
-  const service = b.service ? `${serviceName(b.service)} appointment` : 'appointment';
+  const service = b.service ? `${serviceName(b.service, b.serviceName)} appointment` : 'appointment';
   return `Hi ${firstName(b.name)}, a friendly reminder of your ${service} ${when} at ${b.start}. Please reply to confirm you're still coming, or let us know if you need to change it. See you then!\n\n${SIGN_OFF}`;
 }
 
@@ -725,7 +727,7 @@ function renderBlocks(blocks, month) {
 function blockRow(b) {
   const allDay = b.start === '00:00' && b.end === '24:00';
   const closed = b.kind === 'closed';
-  const service = b.service ? serviceName(b.service) : '';
+  const service = b.service ? serviceName(b.service, b.serviceName) : '';
   const del = el('button', { class: 'btn btn-danger small block-del', type: 'button', text: 'Delete' });
   const row = el('li', { class: `block${closed ? ' closed' : ''}` },
     el('div', { class: 'block-time', text: allDay ? 'All day' : `${b.start}–${b.end}` }),
@@ -987,6 +989,513 @@ async function logout() {
   });
 }
 
+// ---------------------------------------------------------------- website
+
+// The Website tab: services and prices, photos, contact details and text.
+// Each change is saved straight to the site, which shows it within seconds
+// (src/content.js). An open form is never thrown away by a refresh.
+
+const CARD_ORDER = ['makeup', 'hair', 'package', 'bride', 'bridesmaid'];
+const CARD_LABELS = { makeup: 'Makeup', hair: 'Hair', package: 'Bridal package', bride: 'Bride', bridesmaid: 'Bridesmaid' };
+const ALBUM_ORDER = ['looks', 'before_after'];
+const ALBUM_LABELS = { looks: 'Photos', before_after: 'Before & after' };
+const DEFAULT_ALT = { looks: 'Makeup by OMG – Oh! My Glam', before_after: 'Before and after: makeup by OMG – Oh! My Glam' };
+const TEXT_FIELDS = ['phone', 'instagram', 'facebook_url', 'facebook_name', 'tagline', 'home_calls', 'bridal_note'];
+const DURATIONS = Array.from({ length: 48 }, (_, i) => (i + 1) * 15);
+const site = { data: null, view: 'services', editing: null, describing: null, selected: null, uploading: 0 };
+
+const byOrder = (a, b) => a.sort - b.sort || String(a.id).localeCompare(String(b.id));
+const servicesIn = (card) => site.data.services.filter((s) => s.card === card).sort(byOrder);
+const photosIn = (album) => site.data.photos.filter((p) => p.album === album).sort(byOrder);
+
+async function loadWebsite() {
+  if (site.editing || site.describing || site.uploading) return;
+  const seq = ++state.seq.website;
+  const body = $('site-body');
+  if (!site.data) loading(body);
+  try {
+    const data = await api('GET', '/api/admin/site');
+    if (seq !== state.seq.website) return;
+    site.data = { services: data.services || [], photos: data.photos || [], text: data.text || {} };
+    state.loadedAt.website = Date.now();
+    renderWebsite();
+  } catch (err) {
+    if (seq === state.seq.website) loadFailed(body, err, loadWebsite);
+  }
+}
+
+function showSiteView(view) {
+  if (site.uploading) return;
+  site.view = view;
+  site.editing = null;
+  site.describing = null;
+  site.selected = null;
+  renderWebsite();
+  if (Date.now() - state.loadedAt.website > 30_000) loadWebsite();
+}
+
+function renderWebsite() {
+  for (const b of document.querySelectorAll('#panel-website .subnav button')) b.setAttribute('aria-pressed', String(b.dataset.view === site.view));
+  if (!site.data) return;
+  const body = $('site-body');
+  if (site.view === 'photos') body.replaceChildren(...ALBUM_ORDER.map(albumSection));
+  else if (site.view === 'text') body.replaceChildren(textForm());
+  else body.replaceChildren(...CARD_ORDER.map(cardSection));
+}
+
+function siteField(id, label, control, hint) {
+  return el('div', { class: 'field' },
+    el('label', { for: id, text: label }),
+    control,
+    hint ? el('p', { class: 'hint', text: hint }) : null,
+    el('p', { class: 'field-error', id: `${id}-error`, hidden: true }));
+}
+
+function clearFieldErrors(form) {
+  for (const node of form.querySelectorAll('.field-error')) {
+    node.textContent = '';
+    node.hidden = true;
+  }
+}
+
+/** Shows the server's message next to its field; false when there is no such field. */
+function showFieldError(prefix, field, message) {
+  const node = $(`${prefix}-${field}-error`);
+  if (!node) return false;
+  node.textContent = message;
+  node.hidden = false;
+  $(`${prefix}-${field}`)?.focus();
+  return true;
+}
+
+function focusLabelled(label) {
+  const target = [...$('site-body').querySelectorAll('button')].find((b) => b.getAttribute('aria-label') === label && !b.disabled);
+  target?.focus();
+}
+
+// ---- services
+
+function cardSection(card) {
+  const list = servicesIn(card);
+  const rows = list.map((s, i) => (site.editing === s.id ? el('li', {}, serviceForm(s)) : serviceRow(s, i, list)));
+  if (site.editing === `new:${card}`) {
+    rows.push(el('li', {}, serviceForm({ id: null, card, name: '', price: null, minutes: 60, note: null, level: null, details: null, visible: 1 })));
+  }
+  return el('section', { class: 'site-card', 'aria-labelledby': `card-${card}` },
+    el('div', { class: 'site-card-head' },
+      el('h3', { class: 'sub', id: `card-${card}`, text: CARD_LABELS[card] }),
+      el('button', {
+        class: 'btn btn-ghost small', type: 'button', text: 'Add', 'aria-label': `Add a service to ${CARD_LABELS[card]}`,
+        disabled: Boolean(site.editing), onclick: () => openServiceForm(`new:${card}`),
+      })),
+    rows.length
+      ? el('ul', { class: 'svc-rows' }, rows)
+      : el('p', { class: 'empty', text: 'Nothing here, so this part of the price list is hidden on the website.' }));
+}
+
+function serviceRow(s, i, list) {
+  const busy = Boolean(site.editing);
+  return el('li', { class: `svc-row${s.visible ? '' : ' is-hidden'}` },
+    el('div', { class: 'svc-row-main' },
+      el('p', { class: 'svc-row-name', text: s.name }),
+      el('p', { class: 'meta', text: [`R${s.price}`, formatDuration(s.minutes), s.visible ? null : 'Hidden'].filter(Boolean).join(' · ') })),
+    el('div', { class: 'svc-row-actions' },
+      el('button', { class: 'icon-btn', type: 'button', text: '↑', 'aria-label': `Move ${s.name} up`, disabled: busy || i === 0, onclick: (e) => moveService(s, -1, e.currentTarget) }),
+      el('button', { class: 'icon-btn', type: 'button', text: '↓', 'aria-label': `Move ${s.name} down`, disabled: busy || i === list.length - 1, onclick: (e) => moveService(s, 1, e.currentTarget) }),
+      el('button', { class: 'btn btn-ghost small', type: 'button', text: 'Edit', 'aria-label': `Edit ${s.name}`, disabled: busy, onclick: () => openServiceForm(s.id) })));
+}
+
+function openServiceForm(key) {
+  site.editing = key;
+  renderWebsite();
+  $('sf-name')?.focus();
+}
+
+function serviceForm(s) {
+  const isNew = !s.id;
+  const name = el('input', { id: 'sf-name', type: 'text', maxlength: 60, autocomplete: 'off', value: s.name });
+  const price = el('input', { id: 'sf-price', type: 'number', inputmode: 'numeric', min: 0, max: 100000, step: 1, value: s.price ?? '' });
+  const minutes = el('select', { id: 'sf-minutes' }, DURATIONS.map((m) => el('option', { value: m, text: formatDuration(m), selected: m === s.minutes })));
+  const note = el('input', { id: 'sf-note', type: 'text', maxlength: 60, autocomplete: 'off', value: s.note ?? '' });
+  const level = el('select', { id: 'sf-level' },
+    el('option', { value: '', text: 'None' }),
+    [1, 2, 3].map((n) => el('option', { value: n, text: `${n} of 3`, selected: s.level === n })));
+  const details = el('textarea', { id: 'sf-details', rows: 8, maxlength: 1000 });
+  details.value = s.details ?? '';
+  const card = el('select', { id: 'sf-card' }, CARD_ORDER.map((c) => el('option', { value: c, text: CARD_LABELS[c], selected: c === s.card })));
+  const visible = el('input', { id: 'sf-visible', type: 'checkbox', checked: Boolean(s.visible) });
+  const levelField = siteField('sf-level', 'Glam level', level, 'The small 1-to-3 meter beside makeup services.');
+  const detailsField = siteField('sf-details', "What's included", details, 'One item per line. A line ending with a colon starts a heading, e.g. "Makeup:".');
+  const showFor = () => {
+    levelField.hidden = card.value !== 'makeup';
+    detailsField.hidden = card.value !== 'package';
+  };
+  card.addEventListener('change', showFor);
+  showFor();
+  const save = el('button', { class: 'btn btn-primary', type: 'submit', text: isNew ? 'Add service' : 'Save' });
+  const cancel = el('button', { class: 'btn btn-ghost', type: 'button', text: 'Cancel', onclick: () => { site.editing = null; renderWebsite(); } });
+  const del = isNew ? null : el('button', { class: 'btn btn-danger', type: 'button', text: 'Delete' });
+  if (del) del.addEventListener('click', () => deleteService(s, del));
+  const form = el('form', { class: 'edit-form', novalidate: true, 'aria-label': isNew ? `New service in ${CARD_LABELS[s.card]}` : `Edit ${s.name}` },
+    siteField('sf-name', 'Name', name),
+    el('div', { class: 'row2' }, siteField('sf-price', 'Price (R)', price), siteField('sf-minutes', 'Takes about', minutes)),
+    siteField('sf-note', 'Small note (optional)', note, 'Shown under the service, e.g. "Not compulsory".'),
+    levelField,
+    detailsField,
+    siteField('sf-card', 'Listed under', card),
+    el('label', { class: 'check' }, visible, 'Shown on the website and bookable'),
+    el('div', { class: 'form-buttons' }, save, cancel, del));
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    saveService(s, form, save);
+  });
+  return form;
+}
+
+async function saveService(s, form, button) {
+  clearFieldErrors(form);
+  const card = $('sf-card').value;
+  const priceText = $('sf-price').value.trim();
+  const body = {
+    card,
+    name: $('sf-name').value,
+    price: /^\d+$/.test(priceText) ? Number(priceText) : -1,
+    minutes: Number($('sf-minutes').value),
+    note: $('sf-note').value.trim() || null,
+    level: card === 'makeup' && $('sf-level').value ? Number($('sf-level').value) : null,
+    details: card === 'package' ? $('sf-details').value : null,
+    visible: $('sf-visible').checked,
+  };
+  await withBusy([button], async () => {
+    try {
+      const data = s.id
+        ? await api('POST', `/api/admin/site/services/${encodeURIComponent(s.id)}`, body)
+        : await api('POST', '/api/admin/site/services', body);
+      site.data.services = [...site.data.services.filter((x) => x.id !== data.service.id), data.service];
+      site.editing = null;
+      renderWebsite();
+      focusLabelled(`Edit ${data.service.name}`);
+      toast(s.id ? 'Saved. The website shows it now.' : 'Added. It is on the website now.');
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 400 && err.body.field && showFieldError('sf', err.body.field, err.message)) return;
+      if (err instanceof ApiError && err.status === 404) {
+        site.editing = null;
+        loadWebsite();
+      }
+      handleError(err);
+    }
+  });
+}
+
+async function deleteService(s, button) {
+  const ok = await askConfirm({
+    title: `Delete ${s.name}?`,
+    message: 'It disappears from the website and can no longer be booked. Requests already made keep their details. To take it off for a while instead, untick "Shown on the website".',
+    confirmLabel: 'Delete',
+  });
+  if (!ok) return;
+  await withBusy([button], async () => {
+    try {
+      await api('DELETE', `/api/admin/site/services/${encodeURIComponent(s.id)}`);
+      site.data.services = site.data.services.filter((x) => x.id !== s.id);
+      site.editing = null;
+      renderWebsite();
+      toast(`${s.name} deleted.`);
+    } catch (err) {
+      handleError(err);
+    }
+  });
+}
+
+async function moveService(s, step, button) {
+  const list = servicesIn(s.card);
+  const i = list.findIndex((x) => x.id === s.id);
+  const j = i + step;
+  if (i < 0 || j < 0 || j >= list.length) return;
+  [list[i], list[j]] = [list[j], list[i]];
+  await withBusy([button], async () => {
+    try {
+      await api('POST', '/api/admin/site/services-order', { card: s.card, ids: list.map((x) => x.id) });
+      list.forEach((x, k) => { x.sort = k + 1; });
+      renderWebsite();
+      focusLabelled(`Move ${s.name} ${step < 0 ? 'up' : 'down'}`);
+    } catch (err) {
+      handleError(err);
+      loadWebsite();
+    }
+  });
+}
+
+// ---- photos
+
+function albumSection(album) {
+  const photos = photosIn(album);
+  const busy = site.uploading > 0 || Boolean(site.describing);
+  const picker = el('input', { type: 'file', accept: 'image/*', multiple: true, hidden: true, id: `pick-${album}` });
+  picker.addEventListener('change', () => {
+    const files = [...picker.files];
+    picker.value = '';
+    addPhotos(album, files);
+  });
+  const index = photos.findIndex((p) => p.id === site.selected);
+  return el('section', { class: 'site-card', 'aria-labelledby': `album-${album}` },
+    el('div', { class: 'site-card-head' },
+      el('h3', { class: 'sub', id: `album-${album}`, text: ALBUM_LABELS[album] }),
+      el('button', {
+        class: 'btn btn-primary small', type: 'button', text: 'Add photos', 'aria-label': `Add photos to ${ALBUM_LABELS[album]}`,
+        disabled: busy, onclick: () => picker.click(),
+      })),
+    picker,
+    el('p', { class: 'upload-status', id: `upload-status-${album}`, role: 'status', hidden: true }),
+    photos.length
+      ? el('ul', { class: 'photo-grid' }, photos.map((p, i) => el('li', {},
+        el('button', {
+          class: 'photo-thumb', type: 'button', 'aria-pressed': String(p.id === site.selected),
+          'aria-label': `Photo ${i + 1}: ${p.alt}`, disabled: busy, onclick: () => selectPhoto(p),
+        }, el('img', { src: p.src_small, alt: '', width: p.small_width, height: Math.max(1, Math.round((p.height * p.small_width) / p.width)), loading: 'lazy', decoding: 'async' })))))
+      : el('p', { class: 'empty', text: 'No photos yet, so this part of "the glam" is hidden on the website.' }),
+    index >= 0
+      ? photoPanel(photos[index], index, photos)
+      : (photos.length ? el('p', { class: 'hint', text: 'Tap a photo to describe, move or delete it.' }) : null));
+}
+
+function selectPhoto(p) {
+  site.selected = site.selected === p.id ? null : p.id;
+  site.describing = null;
+  renderWebsite();
+  if (site.selected) $('site-body').querySelector('.photo-panel button')?.focus();
+}
+
+function photoPanel(p, i, list) {
+  if (site.describing === p.id) return el('div', { class: 'photo-panel' }, describeForm(p));
+  const del = el('button', { class: 'btn btn-danger small', type: 'button', text: 'Delete', 'aria-label': `Delete photo: ${p.alt}` });
+  del.addEventListener('click', () => deletePhoto(p, del));
+  return el('div', { class: 'photo-panel', role: 'group', 'aria-label': `Photo ${i + 1} of ${list.length}` },
+    el('p', { class: 'photo-alt', text: p.alt }),
+    el('div', { class: 'form-buttons' },
+      el('button', { class: 'btn btn-ghost small', type: 'button', text: '← Earlier', 'aria-label': `Move earlier: ${p.alt}`, disabled: i === 0, onclick: (e) => movePhoto(p, -1, e.currentTarget) }),
+      el('button', { class: 'btn btn-ghost small', type: 'button', text: 'Later →', 'aria-label': `Move later: ${p.alt}`, disabled: i === list.length - 1, onclick: (e) => movePhoto(p, 1, e.currentTarget) }),
+      el('button', {
+        class: 'btn btn-ghost small', type: 'button', text: 'Describe', 'aria-label': `Describe photo: ${p.alt}`,
+        onclick: () => { site.describing = p.id; renderWebsite(); $('pf-alt')?.focus(); },
+      }),
+      del));
+}
+
+function describeForm(p) {
+  const input = el('textarea', { id: 'pf-alt', rows: 3, maxlength: 160 });
+  input.value = p.alt;
+  const save = el('button', { class: 'btn btn-primary small', type: 'submit', text: 'Save' });
+  const form = el('form', { class: 'edit-form', novalidate: true },
+    siteField('pf-alt', 'What the photo shows', input, 'Read out to people who can’t see it, and used by Google. E.g. "Soft glam with a nude lip".'),
+    el('div', { class: 'form-buttons' }, save,
+      el('button', { class: 'btn btn-ghost small', type: 'button', text: 'Cancel', onclick: () => { site.describing = null; renderWebsite(); } })));
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearFieldErrors(form);
+    await withBusy([save], async () => {
+      try {
+        const data = await api('POST', `/api/admin/site/photos/${p.id}`, { alt: input.value });
+        Object.assign(p, data.photo);
+        site.describing = null;
+        renderWebsite();
+        toast('Description saved.');
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 400 && err.body.field && showFieldError('pf', err.body.field, err.message)) return;
+        handleError(err);
+      }
+    });
+  });
+  return form;
+}
+
+async function deletePhoto(p, button) {
+  const ok = await askConfirm({ title: 'Delete this photo?', message: 'It disappears from the website.', confirmLabel: 'Delete' });
+  if (!ok) return;
+  await withBusy([button], async () => {
+    try {
+      await api('DELETE', `/api/admin/site/photos/${p.id}`);
+      site.data.photos = site.data.photos.filter((x) => x.id !== p.id);
+      site.selected = null;
+      renderWebsite();
+      toast('Photo deleted.');
+    } catch (err) {
+      handleError(err);
+    }
+  });
+}
+
+async function movePhoto(p, step, button) {
+  const list = photosIn(p.album);
+  const i = list.findIndex((x) => x.id === p.id);
+  const j = i + step;
+  if (i < 0 || j < 0 || j >= list.length) return;
+  [list[i], list[j]] = [list[j], list[i]];
+  await withBusy([button], async () => {
+    try {
+      await api('POST', '/api/admin/site/photos-order', { album: p.album, ids: list.map((x) => x.id) });
+      list.forEach((x, k) => { x.sort = k + 1; });
+      renderWebsite();
+      focusLabelled(`Move ${step < 0 ? 'earlier' : 'later'}: ${p.alt}`);
+    } catch (err) {
+      handleError(err);
+      loadWebsite();
+    }
+  });
+}
+
+function readAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+/** One copy of the photo, no larger than the box, as WebP (or JPEG where WebP can't be made). */
+async function encodePhoto(img, maxWidth, maxHeight) {
+  const scale = Math.min(1, maxWidth / img.naturalWidth, maxHeight / img.naturalHeight);
+  const width = Math.max(1, Math.round(img.naturalWidth * scale));
+  const height = Math.max(1, Math.round(img.naturalHeight * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, 0, 0, width, height);
+  const toBlob = (type, quality) => new Promise((resolve) => canvas.toBlob(resolve, type, quality));
+  let blob = await toBlob('image/webp', 0.82);
+  if (!blob || blob.type !== 'image/webp') blob = await toBlob('image/jpeg', 0.85);
+  if (!blob) throw new Error('encode');
+  return { blob, width, height, ext: blob.type === 'image/webp' ? 'webp' : 'jpg' };
+}
+
+/**
+ * Phone photos are big: they are shrunk here, on the phone, to a sharp
+ * website size and a small copy for phones, before anything is uploaded.
+ * (Read as a data: URL, which the admin page's Content-Security-Policy allows.)
+ */
+async function preparePhoto(file) {
+  if (file.size > 40 * 1024 * 1024) throw new ApiError(413, { message: 'That file is too large. Choose a photo from your gallery.' });
+  const img = new Image();
+  img.src = await readAsDataUrl(file);
+  await img.decode();
+  if (img.naturalWidth < 300 || img.naturalHeight < 300) throw new ApiError(400, { message: 'That photo is too small. Choose one at least 300 pixels across.' });
+  return { large: await encodePhoto(img, 1440, 2200), small: await encodePhoto(img, 720, 1100) };
+}
+
+async function sendPhoto(album, prepared, alt) {
+  const form = new FormData();
+  form.append('album', album);
+  form.append('alt', alt);
+  form.append('width', String(prepared.large.width));
+  form.append('height', String(prepared.large.height));
+  form.append('small_width', String(prepared.small.width));
+  form.append('large', prepared.large.blob, `large.${prepared.large.ext}`);
+  form.append('small', prepared.small.blob, `small.${prepared.small.ext}`);
+  let res;
+  try {
+    res = await fetch('/api/admin/site/photos', { method: 'POST', body: form, credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } });
+  } catch {
+    throw new ApiError(0, { error: 'network', message: "Couldn't reach the server. Check your connection and try again." });
+  }
+  let data = null;
+  try {
+    data = await res.json();
+  } catch {
+    data = null;
+  }
+  if (!res.ok || !data || data.ok === false) {
+    throw new ApiError(res.status, { ...(data || {}), retryAfter: Number(res.headers.get('retry-after')) || Number(data && data.retryAfter) || 0 });
+  }
+  return data.photo;
+}
+
+async function addPhotos(album, files) {
+  if (!files.length) return;
+  site.uploading += 1;
+  renderWebsite();
+  let added = 0;
+  try {
+    for (const [i, file] of files.entries()) {
+      const status = $(`upload-status-${album}`);
+      if (status) {
+        status.hidden = false;
+        status.textContent = files.length > 1 ? `Adding photo ${i + 1} of ${files.length}…` : 'Adding the photo…';
+      }
+      try {
+        const photo = await sendPhoto(album, await preparePhoto(file), DEFAULT_ALT[album]);
+        site.data.photos.push(photo);
+        added += 1;
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 401) {
+          sessionEnded();
+          return;
+        }
+        const what = files.length > 1 ? `Photo ${i + 1}: ` : '';
+        if (err instanceof ApiError && err.status === 429) showBanner(what + rateLimitText(err));
+        else if (err instanceof ApiError) showBanner(what + (err.message || 'That photo could not be added.'));
+        else showBanner(`${what}That photo couldn’t be read here. Try a JPEG photo from your gallery.`);
+      }
+    }
+  } finally {
+    site.uploading -= 1;
+    renderWebsite();
+    if (added) toast(added === 1 ? 'Photo added. Tap Describe to say what it shows.' : `${added} photos added. Tap Describe on each to say what it shows.`);
+  }
+}
+
+// ---- contact and text
+
+function formatPhoneForInput(digits) {
+  const d = String(digits || '');
+  if (!d) return '';
+  return /^27\d{9}$/.test(d) ? `+27 ${d.slice(2, 4)} ${d.slice(4, 7)} ${d.slice(7)}` : `+${d}`;
+}
+
+function textForm() {
+  const t = site.data.text;
+  const input = (id, type, value, attrs = {}) => el('input', { id, type, value: value ?? '', autocomplete: 'off', ...attrs });
+  const area = (id, value, max) => {
+    const node = el('textarea', { id, rows: 3, maxlength: max });
+    node.value = value ?? '';
+    return node;
+  };
+  const save = el('button', { class: 'btn btn-primary', type: 'submit', text: 'Save' });
+  const form = el('form', { class: 'edit-form', novalidate: true, 'aria-label': 'Contact details and text' },
+    el('h3', { class: 'sub', text: 'Contact' }),
+    siteField('tf-phone', 'WhatsApp and phone number', input('tf-phone', 'tel', formatPhoneForInput(t.phone), { inputmode: 'tel' }), 'Clients book, chat and call on this number.'),
+    siteField('tf-instagram', 'Instagram username', input('tf-instagram', 'text', t.instagram ? `@${t.instagram}` : '', { autocapitalize: 'off', spellcheck: 'false' }), 'Leave empty to hide Instagram.'),
+    siteField('tf-facebook_url', 'Facebook page link', input('tf-facebook_url', 'url', t.facebook_url, { autocapitalize: 'off', spellcheck: 'false' }), 'Leave empty to hide Facebook.'),
+    siteField('tf-facebook_name', 'Name shown for Facebook', input('tf-facebook_name', 'text', t.facebook_name, { maxlength: 60 })),
+    el('h3', { class: 'sub', text: 'Text' }),
+    siteField('tf-tagline', 'Welcome line (top of the page)', area('tf-tagline', t.tagline, 220)),
+    siteField('tf-home_calls', 'Home calls note (under the price list)', area('tf-home_calls', t.home_calls, 300)),
+    siteField('tf-bridal_note', 'Bridal note (under the bridal prices)', area('tf-bridal_note', t.bridal_note, 300)),
+    el('div', { class: 'form-buttons' }, save));
+  form.addEventListener('input', () => { site.editing = 'text'; });
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearFieldErrors(form);
+    const body = Object.fromEntries(TEXT_FIELDS.map((k) => [k, $(`tf-${k}`).value]));
+    await withBusy([save], async () => {
+      try {
+        const data = await api('POST', '/api/admin/site/text', body);
+        Object.assign(site.data.text, data.text);
+        site.editing = null;
+        renderWebsite();
+        toast('Saved. The website shows it now.');
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 400 && err.body.field && showFieldError('tf', err.body.field, err.message)) return;
+        handleError(err);
+      }
+    });
+  });
+  return form;
+}
+
 // ---------------------------------------------------------------- wiring
 
 function wire() {
@@ -1014,6 +1523,7 @@ function wire() {
   $('refresh-requests').addEventListener('click', () => { $('requests-notice').replaceChildren(); loadRequests(); refreshCounts(); });
   $('refresh-calendar').addEventListener('click', () => loadCalendar());
   $('refresh-reviews').addEventListener('click', () => { loadReviews(); refreshCounts(); });
+  for (const b of document.querySelectorAll('#panel-website .subnav button')) b.addEventListener('click', () => showSiteView(b.dataset.view));
 
   $('month-prev').addEventListener('click', () => { state.month = addMonths(state.month, -1); loadCalendar(); });
   $('month-next').addEventListener('click', () => { state.month = addMonths(state.month, 1); loadCalendar(); });

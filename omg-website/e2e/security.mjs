@@ -96,7 +96,7 @@ async function check(name, fn) {
 
 const GROUP_IDS = {
   preflight: 1, fixtures: 2, sqli: 3, xss: 4, csrf: 5, input: 6, honeypot: 7, privacy: 8,
-  headers: 9, admin: 10, ratelimit: 11, global: 12, caps: 13, misc: 14, alerts: 15,
+  headers: 9, admin: 10, ratelimit: 11, global: 12, caps: 13, misc: 14, alerts: 15, content: 16,
 };
 
 /** A test address for `groupName`. Third octet carries the run, so reruns differ. */
@@ -708,7 +708,16 @@ function htmlScriptProblems(html) {
     const attrs = m[1];
     const type = /\btype\s*=\s*["']?([^"'\s>]+)/i.exec(attrs)?.[1]?.toLowerCase();
     const src = /\bsrc\s*=\s*["']?([^"'\s>]+)/i.exec(attrs)?.[1];
-    if (type === 'application/ld+json') continue;
+    // Data blocks (Google's listing data, the booking calendar's services) never run;
+    // each must still be well-formed JSON, so nothing was spliced into it.
+    if (type === 'application/ld+json' || type === 'application/json') {
+      try {
+        JSON.parse(m[2]);
+      } catch {
+        problems.push(`a ${type} block that is not valid JSON: ${snip(m[2], 50)}`);
+      }
+      continue;
+    }
     if (src) {
       if (m[2].trim()) problems.push('a <script src> with inline code too');
       if (/^(?:[a-z][a-z0-9+.-]*:)?\/\//i.test(src) && !src.startsWith(ORIGIN)) problems.push(`a script from ${src}`);
@@ -1473,6 +1482,16 @@ async function adminAuth() {
     ['POST', '/api/admin/push/unsubscribe'],
     ['POST', '/api/admin/push/test'],
     ['GET', '/api/admin/push/latest'],
+    ['GET', '/api/admin/site'],
+    ['POST', '/api/admin/site/services'],
+    ['POST', '/api/admin/site/services/soft-glam'],
+    ['DELETE', '/api/admin/site/services/soft-glam'],
+    ['POST', '/api/admin/site/services-order'],
+    ['POST', '/api/admin/site/text'],
+    ['POST', '/api/admin/site/photos'],
+    ['POST', '/api/admin/site/photos/1'],
+    ['DELETE', '/api/admin/site/photos/1'],
+    ['POST', '/api/admin/site/photos-order'],
   ];
   for (const [method, path] of routes) {
     await check(`${method} ${path} without a session → 401`, async () =>
@@ -1668,6 +1687,143 @@ async function alerts() {
     return expectError(r, 429, 'rate_limited');
   });
   await survival('after the alert checks');
+}
+
+/** A photo upload (multipart) as the admin page sends it. */
+async function uploadPhoto(fields, files, { origin = ORIGIN, cookie = ADMIN.cookie } = {}) {
+  const form = new FormData();
+  for (const [k, v] of Object.entries(fields)) form.append(k, String(v));
+  for (const [k, { bytes, type, name }] of Object.entries(files)) form.append(k, new Blob([bytes], { type }), name);
+  const headers = { 'cf-connecting-ip': ADMIN.ip };
+  if (origin) headers.origin = origin;
+  if (cookie) headers.cookie = cookie;
+  const res = await fetch(new URL('/api/admin/site/photos', BASE), { method: 'POST', headers, body: form, redirect: 'manual', signal: AbortSignal.timeout(20_000) });
+  const text = await res.text();
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    json = undefined;
+  }
+  remember('POST', '/api/admin/site/photos', res.status, res.headers.get('content-type'), text);
+  return { status: res.status, headers: res.headers, text, json, method: 'POST', path: '/api/admin/site/photos' };
+}
+
+/**
+ * The Website tab: what OMG types reaches the public page only as text, the
+ * checks hold, uploads take only real JPEG/WebP photos, and /media serves
+ * only keys the Worker made.
+ */
+async function content() {
+  group('content');
+  const page = async () => {
+    const r = await call('GET', '/');
+    expectStatus(r, 200, 'GET /');
+    return r.text;
+  };
+  const jsonBlocks = (html) => [...html.matchAll(/<script type="application\/(?:ld\+)?json"[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+  const outsideAttributes = (html) => html.replace(/="[^"]*"/g, '=""');
+  const EVIL = `Glam "q" <img src=x onerror=alert(1)> ${NONCE}`;
+  let created = null;
+
+  await check('a service named with markup is created', async () => {
+    const r = await admin('POST', '/api/admin/site/services', { json: { card: 'makeup', name: EVIL, price: 999, minutes: 60, note: '<b>note</b>', level: null, details: null, visible: true } });
+    expectStatus(r, 201);
+    created = r.json.service;
+    assert.match(created.id, /^[a-z0-9][a-z0-9-]{0,38}[a-z0-9]$/, `id ${created.id}`);
+    return created.id;
+  });
+
+  await check('…and reaches the public page only as text', async () => {
+    const html = await page();
+    assert.ok(html.includes('Glam &quot;q&quot; &lt;img src=x onerror=alert(1)&gt;'), 'the escaped name is not on the page');
+    assert.ok(!/<img src=x onerror/.test(outsideAttributes(html)), 'a raw <img> outside attribute values');
+    assert.ok(!html.includes('<b>note</b>'), 'the note was not escaped');
+    for (const block of jsonBlocks(html)) assert.ok(!/[<>]/.test(block), 'a raw < or > inside a JSON block');
+    assert.ok(html.includes('aria-label="Book Glam &quot;q&quot; &lt;img'), 'quotes not escaped in the Book button label');
+    assert.ok(/<meta name="description" content="[^"]*Glam &quot;q&quot;/.test(html), 'quotes not escaped in the page description');
+  });
+
+  const badServices = [
+    ['price as text', { price: '999' }, 'price'],
+    ['a negative price', { price: -5 }, 'price'],
+    ['50 minutes', { minutes: 50 }, 'minutes'],
+    ['an unknown card', { card: 'nails' }, 'card'],
+    ['a 61-character name', { name: 'n'.repeat(61) }, 'name'],
+    ['visible as text', { visible: 'yes' }, 'visible'],
+  ];
+  for (const [label, change, field] of badServices) {
+    await check(`service with ${label} → 400 ${field}`, async () =>
+      expectError(await admin('POST', '/api/admin/site/services', { json: { card: 'bride', name: 'Test service', price: 100, minutes: 60, visible: true, ...change } }), 400, 'invalid', field));
+  }
+
+  for (const path of ["/api/admin/site/services/soft-glam'%20OR%201%3D1", '/api/admin/site/services/..%2F..', '/api/admin/site/services/SOFT-GLAM', '/api/admin/site/photos/1%20OR%201%3D1']) {
+    await check(`POST ${path} → 404`, async () =>
+      expectError(await admin('POST', path, { json: { card: 'makeup', name: 'x', price: 1, minutes: 60, visible: true, alt: 'xyz' } }), 404, 'not_found'));
+  }
+
+  const badText = [
+    ['a javascript: Facebook link', { facebook_url: 'javascript:alert(1)' }, 'facebook_url'],
+    ['a look-alike Facebook host', { facebook_url: 'https://facebook.com.evil.example/x' }, 'facebook_url'],
+    ['a phone number with letters', { phone: '082 ABC 4567' }, 'phone'],
+    ['an Instagram link elsewhere', { instagram: 'https://evil.example/omg' }, 'instagram'],
+    ['a 3-character welcome line', { tagline: 'Hi!' }, 'tagline'],
+  ];
+  for (const [label, body, field] of badText) {
+    await check(`text with ${label} → 400 ${field}`, async () => expectError(await admin('POST', '/api/admin/site/text', { json: body }), 400, 'invalid', field));
+  }
+
+  await check('editing the site from another site → 403', async () =>
+    expectError(await admin('POST', '/api/admin/site/text', { origin: 'https://evil.example', json: { tagline: 'Hijacked tagline text' } }), 403, 'forbidden'));
+
+  const jpeg = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, ...new Array(200).fill(7)]);
+  const fields = { album: 'looks', alt: `Test photo ${NONCE}`, width: 1440, height: 1800, small_width: 720 };
+  const refusedFiles = [
+    ['plain text', new TextEncoder().encode('just some text, not a photo at all'), 'text/plain', 'large'],
+    ['an SVG with a script', new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'), 'image/svg+xml', 'large'],
+    ['a PNG', Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, ...new Array(64).fill(0)]), 'image/png', 'large'],
+    ['an HTML page named .jpg', new TextEncoder().encode('<html><script>alert(1)</script></html>'), 'image/jpeg', 'large'],
+  ];
+  for (const [label, bytes, type, field] of refusedFiles) {
+    await check(`upload of ${label} → 400 ${field}`, async () =>
+      expectError(await uploadPhoto(fields, { large: { bytes, type, name: 'x.jpg' }, small: { bytes: jpeg, type: 'image/jpeg', name: 's.jpg' } }), 400, 'invalid', field));
+  }
+  await check('upload sent as JSON → 415', async () =>
+    expectError(await admin('POST', '/api/admin/site/photos', { json: fields }), 415, 'unsupported_media_type'));
+  await check('upload from another site → 403', async () =>
+    expectError(await uploadPhoto(fields, { large: { bytes: jpeg, type: 'image/jpeg', name: 'l.jpg' }, small: { bytes: jpeg, type: 'image/jpeg', name: 's.jpg' } }, { origin: 'https://evil.example' }), 403, 'forbidden'));
+  await check('upload with an impossible size → 400', async () =>
+    expectError(await uploadPhoto({ ...fields, width: 99999 }, { large: { bytes: jpeg, type: 'image/jpeg', name: 'l.jpg' }, small: { bytes: jpeg, type: 'image/jpeg', name: 's.jpg' } }), 400, 'invalid', 'width'));
+
+  let photo = null;
+  await check('a JPEG is accepted and served from /media, as an image only', async () => {
+    const r = await uploadPhoto(fields, { large: { bytes: jpeg, type: 'image/jpeg', name: 'l.jpg' }, small: { bytes: jpeg, type: 'image/jpeg', name: 's.jpg' } });
+    expectStatus(r, 201);
+    photo = r.json.photo;
+    assert.match(photo.src, /^\/media\/[a-f0-9]{32}-l\.jpg$/);
+    const m = await call('GET', photo.src);
+    expectStatus(m, 200, photo.src);
+    assert.equal(m.headers.get('content-type'), 'image/jpeg');
+    assert.equal(m.headers.get('x-content-type-options'), 'nosniff');
+    assert.match(m.headers.get('cache-control') || '', /immutable/);
+    assert.ok((await page()).includes(photo.src), 'the photo is not on the page');
+  });
+
+  for (const path of ['/media/..%2F..%2Fwrangler.toml', '/media/%2e%2e/src/index.js', `/media/${'a'.repeat(32)}-l.jpg`, '/media/abc.svg', '/media/']) {
+    await check(`GET ${path} → 404`, async () => expectStatus(await call('GET', path), 404));
+  }
+  await check('POST /media/… → 405', async () => expectStatus(await call('POST', photo ? photo.src : '/media/x', { raw: 'x' }), 405));
+
+  await check('the test photo and service are removed again', async () => {
+    if (photo) {
+      expectStatus(await admin('DELETE', `/api/admin/site/photos/${photo.id}`), 200);
+      expectStatus(await call('GET', photo.src), 404, 'deleted photo file');
+    }
+    if (created) expectStatus(await admin('DELETE', `/api/admin/site/services/${created.id}`), 200);
+    const html = await page();
+    assert.ok(!html.includes(NONCE), 'test content is still on the page');
+  });
+  await survival('after the content checks');
 }
 
 async function burstUntil429(makeCall, max) {
@@ -1888,6 +2044,7 @@ async function main() {
     await headers();
     await adminAuth();
     await alerts();
+    await content();
     await rateLimits();
   }
   await runWide();

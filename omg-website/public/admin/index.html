@@ -102,13 +102,19 @@
     color: var(--cream-faint);
   }
   .opt { text-transform: none; letter-spacing: 0; font-weight: 500; }
-  input[type="text"], input[type="password"], input[type="date"], input[type="time"] {
+  input[type="text"], input[type="password"], input[type="date"], input[type="time"],
+  input[type="number"], input[type="tel"], input[type="url"], select, textarea {
     width: 100%; min-width: 0; min-height: 48px; padding: 0 14px;
     border-radius: 12px; border: 1.5px solid var(--line);
     background: rgba(31, 14, 11, .6); color: var(--cream);
     font-size: 16px;
   }
-  input:focus { outline: none; border-color: var(--gold-300); box-shadow: 0 0 0 3px rgba(230, 194, 122, .22); }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--gold-300); box-shadow: 0 0 0 3px rgba(230, 194, 122, .22); }
+  textarea { min-height: 104px; padding: 12px 14px; line-height: 1.45; resize: vertical; font-family: inherit; }
+  select {
+    -webkit-appearance: none; appearance: none; padding-right: 38px;
+    background: rgba(31, 14, 11, .6) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23F1D99A' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 14px center / 12px;
+  }
   input:disabled { opacity: .45; }
   .check { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; font-weight: 500; }
   .check input { width: 20px; height: 20px; accent-color: #E3BD6C; margin: 0; }
@@ -149,8 +155,8 @@
   /* Tabs: a bar along the bottom on phones, where a thumb reaches; a pill under the header on wider screens. */
   .tabs {
     position: fixed; z-index: 15; left: 0; right: 0; bottom: 0;
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
-    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
     background: rgba(31, 14, 11, .97);
     border-top: 1px solid var(--line);
   }
@@ -207,6 +213,41 @@
   .alerts .row { display: flex; flex-wrap: wrap; gap: 8px; }
   .alerts.is-on { grid-template-columns: minmax(0, 1fr) auto; align-items: center; padding: 10px 12px 10px 16px; }
   @media (max-width: 420px) { .alerts.is-on { grid-template-columns: 1fr; } }
+  /* ===== Website tab ===== */
+  .subnav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 4px 0 20px; }
+  .subnav button {
+    -webkit-appearance: none; appearance: none; min-height: 44px; padding: 0 8px;
+    border-radius: 12px; border: 1.5px solid var(--line); background: none; cursor: pointer;
+    font: 600 14px/1.15 var(--sans); color: var(--cream-soft);
+  }
+  .subnav button[aria-pressed="true"] { background: rgba(241, 217, 154, .16); border-color: var(--gold-300); color: var(--gold-100); }
+  .site-card { display: grid; gap: 10px; margin-bottom: 26px; }
+  .site-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .site-card .sub { margin: 0; }
+  .edit-form > .sub:first-child { margin-top: 0; }
+  .svc-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .svc-row { display: flex; align-items: center; gap: 8px; padding: 10px 6px 10px 14px; border-radius: 14px; border: 1px solid var(--line); background: rgba(31, 14, 11, .45); }
+  .svc-row.is-hidden { opacity: .6; }
+  .svc-row-main { flex: 1; min-width: 0; }
+  .svc-row-name { font-weight: 600; overflow-wrap: anywhere; }
+  .svc-row-actions { display: flex; align-items: center; gap: 2px; flex: none; }
+  .edit-form { display: grid; gap: 14px; padding: 16px; border-radius: 14px; border: 1.5px solid var(--gold-300); background: rgba(31, 14, 11, .6); }
+  .form-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+  .form-buttons .btn-danger { margin-left: auto; }
+  .field-error { color: var(--danger); font-size: 14px; }
+  .photo-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  @media (min-width: 560px) { .photo-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  .photo-grid li { min-width: 0; }
+  .photo-thumb {
+    -webkit-appearance: none; appearance: none; display: block; width: 100%; padding: 0; cursor: pointer;
+    border: 2px solid transparent; border-radius: 12px; background: var(--cocoa-800); overflow: hidden;
+  }
+  .photo-thumb img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; }
+  .photo-thumb[aria-pressed="true"] { border-color: var(--gold-300); box-shadow: 0 0 0 3px rgba(230, 194, 122, .28); }
+  .photo-thumb:disabled { cursor: default; opacity: .6; }
+  .photo-panel { display: grid; gap: 12px; padding: 14px; border-radius: 14px; border: 1.5px solid var(--gold-300); background: rgba(31, 14, 11, .6); }
+  .photo-alt { color: var(--cream-soft); overflow-wrap: anywhere; }
+  .upload-status { font-size: 14px; color: var(--gold-100); }
   .empty { padding: 22px 16px; border: 1px dashed var(--line); border-radius: var(--radius); color: var(--cream-faint); text-align: center; }
   .loading { padding: 22px 0; color: var(--cream-faint); text-align: center; }
   .load-error { display: grid; gap: 12px; justify-items: center; padding: 20px 16px; border-radius: var(--radius); border: 1px solid var(--danger-line); background: var(--danger-bg); text-align: center; }
@@ -371,6 +412,10 @@
       <span>Reviews</span>
       <span class="badge" id="badge-reviews" hidden></span>
     </button>
+    <button class="tab" role="tab" id="tab-website" data-tab="website" aria-controls="panel-website" aria-selected="false" tabindex="-1" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M3.5 9h17M7 6.75h.01M9.6 6.75h.01"/></svg>
+      <span>Website</span>
+    </button>
   </nav>
 
   <div class="shell">
@@ -449,6 +494,20 @@
         <div id="reviews-pending" class="list"></div>
         <h3 class="sub">On the website</h3>
         <div id="reviews-approved" class="list"></div>
+      </section>
+
+      <section id="panel-website" role="tabpanel" aria-labelledby="tab-website" tabindex="-1" hidden>
+        <div class="panel-head">
+          <h2>Website</h2>
+          <a class="btn btn-ghost small" href="/" target="_blank" rel="noopener">View site</a>
+        </div>
+        <p class="hint">What you change here shows on the website within a few seconds.</p>
+        <div class="subnav" role="group" aria-label="Website sections">
+          <button type="button" data-view="services" aria-pressed="true">Services</button>
+          <button type="button" data-view="photos" aria-pressed="false">Photos</button>
+          <button type="button" data-view="text" aria-pressed="false">Contact &amp; text</button>
+        </div>
+        <div id="site-body"></div>
       </section>
     </main>
   </div>
