@@ -8,6 +8,7 @@ import { addDays, nowInZone } from '../public/js/slots.js';
 import * as admin from './admin.js';
 import * as bookings from './bookings.js';
 import { HttpError, checkOrigin, errorResponse, notFound } from './http.js';
+import * as push from './push.js';
 import { clientId } from './ratelimit.js';
 import * as reviews from './reviews.js';
 import { withSecurityHeaders } from './security.js';
@@ -30,9 +31,14 @@ const ROUTES = [
   ['GET', '/api/admin/reviews', admin.listReviews],
   ['POST', `/api/admin/reviews/${ID}/approve`, admin.approveReview],
   ['DELETE', `/api/admin/reviews/${ID}`, admin.deleteReview],
+  ['GET', '/api/admin/push/key', push.key],
+  ['POST', '/api/admin/push/subscribe', push.subscribe],
+  ['POST', '/api/admin/push/unsubscribe', push.unsubscribe],
+  ['POST', '/api/admin/push/test', push.test],
+  ['GET', '/api/admin/push/latest', push.latest],
 ].map(([method, path, handler]) => ({ method, pattern: new RegExp(`^${path}$`), handler }));
 
-async function api(request, env, url) {
+async function api(request, env, url, ctx) {
   try {
     const candidates = ROUTES.filter((r) => r.pattern.test(url.pathname));
     if (!candidates.length) throw notFound();
@@ -46,7 +52,8 @@ async function api(request, env, url) {
     if (method !== 'GET') checkOrigin(request, url);
     const params = url.pathname.match(route.pattern).slice(1);
     const client = await clientId(env, request);
-    return await route.handler({ request, env, url, params, client });
+    const waitUntil = ctx ? (promise) => ctx.waitUntil(promise) : undefined;
+    return await route.handler({ request, env, url, params, client, waitUntil });
   } catch (error) {
     return errorResponse(error);
   }
@@ -92,10 +99,10 @@ function absoluteShareImage(response, url) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const isApi = url.pathname === '/api' || url.pathname.startsWith('/api/');
-    const response = isApi ? await api(request, env, url) : absoluteShareImage(await env.ASSETS.fetch(request), url);
+    const response = isApi ? await api(request, env, url, ctx) : absoluteShareImage(await env.ASSETS.fetch(request), url);
     return withSecurityHeaders(response, url);
   },
 

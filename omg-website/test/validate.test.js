@@ -38,9 +38,9 @@ test('services, dates and times come from fixed sets', () => {
   rejects(() => V.blockTime('09:03', 'start'), 'start');
 });
 
-test('ratings are the integers 1 to 4, nothing else', () => {
-  for (const ok of [1, 2, 3, 4]) assert.equal(V.rating(ok), ok);
-  for (const bad of [0, 5, 3.5, '4', true, null, NaN, Infinity, -1, [4]]) rejects(() => V.rating(bad), 'rating');
+test('ratings are the integers 1 to 5, nothing else', () => {
+  for (const ok of [1, 2, 3, 4, 5]) assert.equal(V.rating(ok), ok);
+  for (const bad of [0, 6, 4.5, '5', true, null, NaN, Infinity, -1, [5]]) rejects(() => V.rating(bad), 'rating');
 });
 
 test('review names and comments', () => {

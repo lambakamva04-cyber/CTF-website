@@ -9,6 +9,7 @@ import {
   overlaps, parseRanges, toHHMM, toMinutes,
 } from '../public/js/slots.js';
 import { HttpError, invalid, json, readJson } from './http.js';
+import { alertInBackground } from './push.js';
 import { enforce } from './ratelimit.js';
 import { dateValue, looksAutomated, personName, phoneNumber, serviceId, startTime } from './validate.js';
 
@@ -66,7 +67,8 @@ function created(input, service, ref) {
 }
 
 /** POST /api/bookings: stores a pending request and returns the WhatsApp link. */
-export async function create({ env, request, client }) {
+export async function create(ctx) {
+  const { env, request, client } = ctx;
   await enforce(env, 'bookingTry', client);
   const body = await readJson(request);
   const input = {
@@ -121,6 +123,7 @@ export async function create({ env, request, client }) {
       )
         .bind(ref, input.name, input.phone, input.service, input.date, input.time, service.minutes, Date.now())
         .run();
+      alertInBackground(ctx);
       return created(input, service, ref);
     } catch (error) {
       if (!String(error && error.message).includes('UNIQUE')) throw error;
