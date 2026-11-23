@@ -159,16 +159,18 @@ first launch and is safe to run again:
 2. creates the `omg-oh-my-glam` database and writes its id into
    `wrangler.toml`. **Commit that change**, so later deploys use it;
 3. creates the tables;
-4. deploys the site to a `*.workers.dev` address;
+4. deploys the site (to its Custom Domain; see below);
 5. asks for the admin password (at least 12 characters, hidden as you type).
    This is the only login, so keep it somewhere safe;
 6. checks that the live site answers, and prints its address and the admin
    page's.
 
-To use OMG's own domain, attach it in the Cloudflare dashboard (Workers &
-Pages > omg-oh-my-glam > Settings > Domains & Routes). Nothing in the code
-needs to change: the link-preview image follows whichever domain served the
-page.
+The site lives at **https://ohmyglam.online**, a Custom Domain attached in
+the Cloudflare dashboard (Workers & Pages > omg-oh-my-glam > Domains). The code
+follows whichever domain serves it, so nothing in it names the domain.
+`workers_dev = false` and `preview_urls = false` in `wrangler.toml` keep the
+account's `workers.dev` address (which carries the CTF name) switched off, and
+`www.ohmyglam.online` forwards to the bare domain.
 
 ## Deploy changes
 
