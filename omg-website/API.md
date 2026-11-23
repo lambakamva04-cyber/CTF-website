@@ -24,6 +24,7 @@ All times are SAST (UTC+2, no daylight saving). Dates are `YYYY-MM-DD`, times
 | 401 | `unauthorized` | Admin route without a valid session |
 | 401 | `bad_password` | Wrong admin password |
 | 403 | `forbidden` | State-changing request whose `Origin` is missing or not this site |
+| 403 | `bad_code` | Admin setup with a setup code that is wrong, used or expired |
 | 404 | `not_found` | Unknown route or id |
 | 405 | `method_not_allowed` | Wrong method (`Allow` header lists the right ones) |
 | 409 | `taken` | Booking request for a time that is not free |
@@ -32,7 +33,7 @@ All times are SAST (UTC+2, no daylight saving). Dates are `YYYY-MM-DD`, times
 | 415 | `unsupported_media_type` | POST body that is not `application/json` |
 | 429 | `rate_limited` | Limit hit. `Retry-After` header and `retryAfter` (seconds) in the body |
 | 500 | `server_error` | Anything unexpected. No internal detail is ever returned |
-| 503 | `not_configured` | Admin login when `ADMIN_PASSWORD` is missing or shorter than 12 characters |
+| 503 | `not_configured` | Admin login while no password is set (none set with a setup code, and no `ADMIN_PASSWORD` of 12+ characters) |
 
 - `POST`/`DELETE` to `/api/*` must carry an `Origin` header equal to the site's
   own origin, or they are refused with 403 (cross-site request forgery).
@@ -141,6 +142,7 @@ the session cookie, otherwise 401.
 | Method and path | Body | Reply |
 | --- | --- | --- |
 | `POST /api/admin/login` | `{ "password" }` | `{ ok }` and sets the session cookie |
+| `POST /api/admin/setup` | `{ "code", "password" }` | `{ ok }`, sets the password and the session cookie (see Session) |
 | `POST /api/admin/logout` | none | `{ ok }`, clears the cookie |
 | `GET /api/admin/session` | | `{ ok, pending: { requests, reviews } }` |
 | `GET /api/admin/requests` | | `{ ok, requests: [Request] }` pending only, soonest first |
@@ -172,7 +174,17 @@ the session cookie, otherwise 401.
 
 ### Session
 
-- Login compares the password with the `ADMIN_PASSWORD` secret in constant time.
+- The password is set on the admin page with a **one-time setup code**:
+  `npm run admin:setup-code` stores the SHA-256 of 16 random characters (from
+  `ABCDEFGHJKMNPQRSTUVWXYZ23456789`) with a 24-hour expiry in `settings`
+  (`admin_setup`). `POST /api/admin/setup` checks the code in constant time,
+  uses it up (one request wins a race), stores the password as PBKDF2-SHA256
+  (20,000 iterations, random 16-byte salt; about 5 ms, inside the free plan's
+  CPU allowance) in `settings` (`admin_password`), signs every device out and
+  signs this browser in. A wrong, used or expired code is 403 `bad_code`;
+  a password under 12 characters is 400 and leaves the code usable.
+- Login checks the password set that way. Until one is set, it compares with
+  the `ADMIN_PASSWORD` secret in constant time; with neither, it is 503.
 - On success the Worker creates a random 32-byte token, stores only its SHA-256
   hash in D1 with a 14-day expiry, and sets
   `__Host-omg_admin=<token>; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=1209600`.
@@ -301,7 +313,7 @@ created once and kept in the `settings` table.
 | `POST /api/bookings`, requests saved | 5 an hour | 300 a day |
 | `POST /api/reviews`, any attempt | 20 an hour | |
 | `POST /api/reviews`, reviews saved | 3 a day | 100 a day |
-| `POST /api/admin/login` | 5 per 15 minutes | 30 failed logins an hour |
+| `POST /api/admin/login`, `POST /api/admin/setup` | 5 per 15 minutes (shared) | 30 failed logins or setup codes an hour |
 | Other `/api/admin/*` | 300 a minute | |
 | `POST /api/admin/push/test` | 10 an hour | |
 | Website tab edits (services, text, photo descriptions and order, deletes) | 300 an hour | |

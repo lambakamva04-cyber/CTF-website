@@ -1621,6 +1621,40 @@ async function adminAuth() {
     }
     return 'all refused';
   });
+
+  // Setting a password with a one-time setup code. No code exists in this
+  // database, so every attempt must be refused, and none may sign anyone in.
+  const SETUP = { code: 'K7QX-M2PA-9RTV-WHJ3', password: `new-password-${NONCE}` };
+  await check('setup from another site → 403', async () =>
+    expectError(await call('POST', '/api/admin/setup', { ip: freshIp(), origin: 'https://evil.example', json: SETUP }), 403, 'forbidden'));
+  for (const [label, body, field] of [
+    ['no code', { password: SETUP.password }, 'code'],
+    ['a code in the wrong format', { ...SETUP, code: "K7QX' OR 1=1 --" }, 'code'],
+    ['a code that is not a string', { ...SETUP, code: ['K7QXM2PA9RTVWHJ3'] }, 'code'],
+    ['a password under 12 characters', { ...SETUP, password: 'short pw' }, 'password'],
+    ['a password that is not a string', { ...SETUP, password: { $ne: '' } }, 'password'],
+  ]) {
+    await check(`setup with ${label} → 400`, async () => {
+      const r = await call('POST', '/api/admin/setup', { ip: freshIp(), json: body });
+      assert.ok(!sessionCookie(r), 'a session cookie was set');
+      return expectError(r, 400, 'invalid', field);
+    });
+  }
+  await check('setup with a code nobody made → 403, no session, and the old password still works', async () => {
+    const r = await call('POST', '/api/admin/setup', { ip: freshIp(), json: SETUP });
+    expectError(r, 403, 'bad_code');
+    assert.ok(!sessionCookie(r), 'a session cookie was set');
+    expectError(await call('POST', '/api/admin/login', { ip: freshIp(), json: { password: SETUP.password } }), 401, 'bad_password');
+    expectStatus(await call('POST', '/api/admin/login', { ip: freshIp(), json: { password: PASSWORD } }), 200, 'the real password');
+    return '403 bad_code';
+  });
+  await check('setup: 5 tries per 15 minutes per address, then 429', async () => {
+    const ip = freshIp();
+    const statuses = [];
+    for (let i = 0; i < 6; i += 1) statuses.push((await call('POST', '/api/admin/setup', { ip, json: { ...SETUP, password: `${SETUP.password}-${i}` } })).status);
+    assert.deepEqual(statuses, [403, 403, 403, 403, 403, 429], statuses.join(' '));
+    return statuses.join(' ');
+  });
 }
 
 /**
