@@ -83,7 +83,7 @@ A visitor asks for a time. Stored as a **pending request** for OMG to confirm.
 - `date` + `time`: must pass `isBookable` against confirmed bookings and
   blocks for that date, the opening hours, the 30-minute grid, the minimum
   notice and the booking window, all from `catalog.js`.
-- `company`: honeypot, hidden from people. Non-empty → reply 201 as if it
+- `company`: honeypot, hidden from people. The page's field is named and labelled so that browser autofill never fills it (a field called "Company" was filled by Chrome, and the request then looked like a bot's). Non-empty → reply 201 as if it
   worked, store nothing.
 - `elapsed`: milliseconds the form was open. Under 2000 → treated like the
   honeypot.
@@ -124,7 +124,7 @@ there are none. Ratings are out of **5**.
 
 - `name`: 2–40 characters after trimming, letters, spaces, `' - .`.
 - `rating`: the integer 1, 2, 3, 4 or 5 (not `"5"`, not `4.5`).
-- `comment`: 10–500 characters after trimming. Links are refused (`http://`,
+- `comment`: 2–500 characters after trimming (short praise such as "Amazing!" is a review; OMG approves each one). Links are refused (`http://`,
   `https://`, `www.`), so spam cannot advertise through it.
 - `company` / `elapsed`: as for bookings.
 

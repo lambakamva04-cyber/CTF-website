@@ -87,9 +87,9 @@ export function rating(value) {
 
 export function reviewComment(value) {
   const comment = clean(value, { multiline: true });
-  if (charCount(comment) < 10 || charCount(comment) > 500) {
-    throw invalid('comment', 'Please write between 10 and 500 characters.');
-  }
+  // Short praise ("Amazing!") is a real review: OMG approves each one anyway.
+  if (charCount(comment) < 2) throw invalid('comment', 'Please write a few words about your visit.');
+  if (charCount(comment) > 500) throw invalid('comment', 'Please keep it to 500 characters.');
   if (LINK_RE.test(comment)) throw invalid('comment', 'Please leave links out of your review.');
   return comment;
 }
