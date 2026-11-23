@@ -17,7 +17,7 @@ function setUp(section) {
   const el = {
     summary: $('rv-summary'), list: $('rv-list'), more: $('rv-more'), note: $('rv-list-note'),
     form: $('rv-form'), stars: $('rv-stars'), name: $('rv-name'), comment: $('rv-comment'),
-    count: $('rv-count'), company: $('rv-company'), submit: $('rv-submit'), status: $('rv-status'),
+    count: $('rv-count'), company: $('rv-hp'), submit: $('rv-submit'), status: $('rv-status'),
   };
   const startedAt = performance.now();
   let page = 0;
@@ -159,6 +159,13 @@ function setUp(section) {
     fieldError('comment', '');
   });
   el.name.addEventListener('input', () => fieldError('name', ''));
+  // A fixed mistake clears the note by the Send button too.
+  el.form.addEventListener('input', () => {
+    if (el.status.classList.contains('is-bad') && !sending) {
+      el.status.className = 'rv-status';
+      el.status.textContent = '';
+    }
+  });
   updateCount();
 
   function fieldError(field, message) {
@@ -184,14 +191,19 @@ function setUp(section) {
     const errors = {
       rating: rating ? '' : `Please choose 1 to ${MAX_STARS} stars.`,
       name: [...name].length >= 2 && [...name].length <= 40 && NAME_RE.test(name) ? '' : 'Please enter your name (letters only, up to 40 characters).',
-      comment: [...comment].length < 10 || [...comment].length > 500
-        ? 'Please write between 10 and 500 characters.'
-        : /https?:\/\/|www\./i.test(comment) ? 'Please leave links out of your review.' : '',
+      comment: [...comment].length < 2 ? 'Please write a few words about your visit.'
+        : [...comment].length > 500 ? 'Please keep it to 500 characters.'
+          : /https?:\/\/|www\./i.test(comment) ? 'Please leave links out of your review.' : '',
     };
     for (const [field, message] of Object.entries(errors)) fieldError(field, message);
     const first = Object.keys(errors).find((f) => errors[f]);
     if (first) {
-      (first === 'rating' ? ratingInputs[0] : first === 'name' ? el.name : el.comment).focus();
+      // Also by the Send button, where the eye is: on a phone the field's own note can be off screen.
+      el.status.className = 'rv-status is-bad';
+      el.status.textContent = errors[first];
+      const field = first === 'rating' ? ratingInputs[0] : first === 'name' ? el.name : el.comment;
+      field.focus({ preventScroll: true });
+      (first === 'rating' ? el.stars : field).scrollIntoView({ block: 'center', behavior: 'smooth' });
       return;
     }
     sending = true;

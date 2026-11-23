@@ -48,7 +48,9 @@ test('review names and comments', () => {
   assert.equal(V.reviewName('Lerato M.'), 'Lerato M.');
   for (const bad of ['L', 'a'.repeat(41), '<b>Lerato</b>', 'Lerato123']) rejects(() => V.reviewName(bad), 'name');
   assert.equal(V.reviewComment('  Beautiful   work, thank you!  '), 'Beautiful work, thank you!');
-  for (const bad of ['Too short', 'x'.repeat(501), 'Great! see https://spam.example', 'Visit www.spam.example now please', 'Visit HTTP://SPAM.EXAMPLE now']) rejects(() => V.reviewComment(bad), 'comment');
+  assert.equal(V.reviewComment('Amazing!'), 'Amazing!', 'short praise is a review');
+  assert.equal(V.reviewComment('Wow'), 'Wow');
+  for (const bad of ['', ' ', 'x', 'x'.repeat(501), 'Great! see https://spam.example', 'Visit www.spam.example now please', 'Visit HTTP://SPAM.EXAMPLE now']) rejects(() => V.reviewComment(bad), 'comment');
   // 500 characters counted as characters, not UTF-16 units
   assert.equal(V.charCount(V.reviewComment('💄'.repeat(500))), 500);
 });
@@ -67,4 +69,14 @@ test('bot detection: honeypot and speed', () => {
   assert.ok(V.looksAutomated({ company: '', elapsed: 500 }));
   assert.ok(V.looksAutomated({ company: '' }));
   assert.ok(V.looksAutomated({ elapsed: '15000' }));
+});
+
+test('the database takes a short review too (migration 0005), and still refuses an empty one', async () => {
+  const { freshDb } = await import('./d1.js');
+  const { db } = freshDb();
+  const insert = (comment) => db.prepare("INSERT INTO reviews (name, rating, comment, status, created_at) VALUES ('Kamva', 5, ?, 'pending', 1)").run(comment);
+  assert.doesNotThrow(() => insert('Amazing!'));
+  assert.doesNotThrow(() => insert('Wow'));
+  assert.throws(() => insert('x'), /CHECK/);
+  assert.throws(() => insert('y'.repeat(501)), /CHECK/);
 });

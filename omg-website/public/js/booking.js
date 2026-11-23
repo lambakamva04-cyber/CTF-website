@@ -45,7 +45,7 @@ function setUp(root) {
     service: $('bk-service'), serviceInfo: $('bk-service-info'),
     month: $('bk-month'), prev: $('bk-prev'), next: $('bk-next'), days: $('bk-days'), calNote: $('bk-cal-note'),
     timesStep: $('bk-times-step'), timesTitle: $('bk-times-title'), times: $('bk-times'), timesNote: $('bk-times-note'),
-    form: $('bk-form'), summary: $('bk-summary'), name: $('bk-name'), phone: $('bk-phone'), company: $('bk-company'),
+    form: $('bk-form'), summary: $('bk-summary'), name: $('bk-name'), phone: $('bk-phone'), company: $('bk-hp'),
     submit: $('bk-submit'), formNote: $('bk-form-note'), done: $('bk-done'), status: $('bk-status'),
   };
   const OPEN = toMinutes(HOURS.open);

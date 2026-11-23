@@ -1045,7 +1045,8 @@ async function input() {
     ['reviews', 'a 41-character name', review({ name: 'A'.repeat(41) }), 400, 'name'],
     ['reviews', 'a 1-character name', review({ name: 'A' }), 400, 'name'],
     ['reviews', 'a 501-character comment', review({ comment: 'y'.repeat(501) }), 400, 'comment'],
-    ['reviews', 'a 9-character comment', review({ comment: 'Too short' }), 400, 'comment'],
+    ['reviews', 'a 1-character comment', review({ comment: 'x' }), 400, 'comment'],
+    ['reviews', 'a short comment ("Amazing!")', review({ comment: 'Amazing!' }), 201],
     ['reviews', 'a 500-character comment', review({ comment: `${'z'.repeat(490)} ${newMark()}`.slice(0, 500) }), 201],
     ['reviews', 'a comment with an https:// link', review({ comment: 'Visit https://spam.example for deals' }), 400, 'comment'],
     ['reviews', 'a comment with a www. link', review({ comment: 'Cheap lashes at www.spam.example today' }), 400, 'comment'],
@@ -1080,7 +1081,7 @@ async function input() {
   });
 
   await check('length is counted after invisible characters are removed', async () =>
-    expectError(await call('POST', '/api/reviews', { ip: freshIp(), json: review({ comment: `Good${'​'.repeat(12)} job` }) }), 400, 'invalid', 'comment'));
+    expectError(await call('POST', '/api/reviews', { ip: freshIp(), json: review({ comment: `x${'\u200b'.repeat(12)}` }) }), 400, 'invalid', 'comment'));
 
   await check('comment text is normalised to NFC', async () => {
     const mark = newMark();
