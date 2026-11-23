@@ -46,4 +46,5 @@ crons = ["*/15 * * * *"]
 enabled = true
 
 # Secrets, set with `npx wrangler secret put <NAME>`, never in this file:
-#   ADMIN_PASSWORD   the admin page password, at least 12 characters
+#   ADMIN_PASSWORD   optional: the admin password until one is set on the admin
+#                    page with a setup code (`npm run admin:setup-code`)

@@ -50,6 +50,18 @@ message, so a booking is never lost.
 
 Open `/admin/` and sign in with the admin password. It is made for a phone.
 
+**Setting or resetting the password.** The password is set on the admin page
+itself, with a one-time setup code:
+
+1. Whoever runs the site makes a code: `npm run admin:setup-code` (or Claude
+   puts one in the database). It is valid for 24 hours and works once.
+2. On `/admin/`, tap **Have a setup code?** (it opens by itself while no
+   password is set), enter the code and the new password twice.
+3. That browser is signed in; every other device is signed out.
+
+Only a PBKDF2 hash of the password is stored. Until a password is set this
+way, the `ADMIN_PASSWORD` secret (if any) is used instead.
+
 - **Requests**: pending requests, soonest first, with Call and WhatsApp
   buttons. **Confirm** blocks the time on the calendar; **Decline** removes
   the request. If a time clashes with something already booked, the page says

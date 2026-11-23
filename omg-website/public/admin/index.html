@@ -140,6 +140,7 @@
   .login-card .lead { text-align: center; color: var(--cream-faint); font-size: 15px; }
   .login-card form { display: grid; gap: 14px; }
   .login-note { font-size: 14px; color: var(--cream-soft); text-align: center; }
+  .link-btn.centered { justify-self: center; }
 
   /* ===== App frame ===== */
   .topbar {
@@ -404,6 +405,26 @@
       <label class="check"><input type="checkbox" id="show-password"> Show password</label>
       <div id="login-message" class="form-msg" role="alert" hidden></div>
       <button class="btn btn-primary wide" id="login-button" type="submit">Log in</button>
+      <button class="link-btn centered" id="use-setup-code" type="button">Have a setup code?</button>
+    </form>
+    <form id="setup-form" novalidate hidden>
+      <p class="login-note" id="setup-intro">Enter your setup code, then choose the admin password.</p>
+      <div class="field">
+        <label for="setup-code">Setup code</label>
+        <input id="setup-code" name="code" type="text" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX" required>
+      </div>
+      <div class="field">
+        <label for="new-password">New password <span class="opt">(at least 12 characters)</span></label>
+        <input id="new-password" name="password" type="password" autocomplete="new-password" autocapitalize="off" spellcheck="false" required>
+      </div>
+      <div class="field">
+        <label for="new-password-2">Type it again</label>
+        <input id="new-password-2" name="password2" type="password" autocomplete="new-password" autocapitalize="off" spellcheck="false" required>
+      </div>
+      <label class="check"><input type="checkbox" id="show-new-password"> Show password</label>
+      <div id="setup-message" class="form-msg" role="alert" hidden></div>
+      <button class="btn btn-primary wide" id="setup-button" type="submit">Set password and log in</button>
+      <button class="link-btn centered" id="setup-back" type="button">Back to log in</button>
     </form>
   </div>
 </main>

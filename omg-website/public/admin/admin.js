@@ -320,6 +320,8 @@ function showLogin(note) {
   $('login-note').textContent = note || '';
   $('login-note').hidden = !note;
   $('login-message').hidden = true;
+  $('setup-form').hidden = true;
+  $('login-form').hidden = false;
   show('login');
   $('password').focus();
 }
@@ -1208,9 +1210,61 @@ async function login(event) {
       if (!(err instanceof ApiError)) loginError('Something went wrong. Please try again.');
       else if (err.status === 401) loginError("That password isn't right. Please try again.");
       else if (err.status === 429) loginError(`Too many attempts. Please wait ${formatWait(err.retryAfter)} and try again.`);
-      else if (err.status === 503) loginError('Admin login is not switched on yet. Whoever looks after the website needs to set the ADMIN_PASSWORD secret (at least 12 characters) first.');
+      else if (err.status === 503) showSetup('No admin password has been set yet. Enter your setup code, then choose the password.');
       else loginError(err.message);
       input.select();
+    }
+  });
+}
+
+// A new password, set with a one-time setup code (the first one, or a forgotten one).
+function showSetup(intro) {
+  $('login-form').hidden = true;
+  $('setup-form').hidden = false;
+  $('setup-message').hidden = true;
+  $('setup-intro').textContent = intro || 'Enter your setup code, then choose the admin password.';
+  $('setup-code').focus();
+}
+
+function showLoginForm() {
+  $('setup-form').hidden = true;
+  $('login-form').hidden = false;
+  $('login-message').hidden = true;
+  $('password').focus();
+}
+
+function setupError(text, focus) {
+  const box = $('setup-message');
+  box.textContent = text;
+  box.hidden = false;
+  if (focus) $(focus).focus();
+}
+
+async function setPassword(event) {
+  event.preventDefault();
+  const code = $('setup-code').value.trim();
+  const password = $('new-password').value;
+  if (!code) return setupError('Enter the setup code.', 'setup-code');
+  if ([...password].length < 12) return setupError('Choose a password of at least 12 characters.', 'new-password');
+  if (password !== $('new-password-2').value) return setupError("The two passwords don't match. Type them again.", 'new-password-2');
+  return withBusy([$('setup-button')], async () => {
+    try {
+      await api('POST', '/api/admin/setup', { code, password });
+      for (const id of ['setup-code', 'new-password', 'new-password-2']) $(id).value = '';
+      $('show-new-password').checked = false;
+      for (const id of ['new-password', 'new-password-2']) $(id).type = 'password';
+      $('setup-form').hidden = true;
+      $('login-form').hidden = false;
+      const session = await api('GET', '/api/admin/session');
+      state.tab = 'requests';
+      enterApp(session);
+      toast('Password set. Use it to log in on your other devices.');
+    } catch (err) {
+      if (!(err instanceof ApiError)) setupError('Something went wrong. Please try again.');
+      else if (err.status === 429) setupError(`Too many attempts. Please wait ${formatWait(err.retryAfter)} and try again.`);
+      else if (err.status === 400 && err.body.field === 'password') setupError(err.message, 'new-password');
+      else if (err.status === 400 || err.status === 403) setupError(err.message, 'setup-code');
+      else setupError(err.message || 'Something went wrong. Please try again.');
     }
   });
 }
@@ -1738,6 +1792,12 @@ function textForm() {
 
 function wire() {
   $('login-form').addEventListener('submit', login);
+  $('setup-form').addEventListener('submit', setPassword);
+  $('use-setup-code').addEventListener('click', () => showSetup());
+  $('setup-back').addEventListener('click', showLoginForm);
+  $('show-new-password').addEventListener('change', (e) => {
+    for (const id of ['new-password', 'new-password-2']) $(id).type = e.target.checked ? 'text' : 'password';
+  });
   $('show-password').addEventListener('change', (e) => { $('password').type = e.target.checked ? 'text' : 'password'; });
   $('logout').addEventListener('click', logout);
 

@@ -24,6 +24,7 @@ const ROUTES = [
   ['GET', '/api/reviews', reviews.list],
   ['POST', '/api/reviews', reviews.create],
   ['POST', '/api/admin/login', admin.login],
+  ['POST', '/api/admin/setup', admin.setup],
   ['POST', '/api/admin/logout', admin.logout],
   ['GET', '/api/admin/session', admin.session],
   ['GET', '/api/admin/requests', admin.listRequests],

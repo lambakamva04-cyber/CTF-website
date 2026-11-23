@@ -20,6 +20,9 @@ function base64url(bytes) {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+const fromBase64url = (text) =>
+  Uint8Array.from(atob(text.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (text.length % 4)) % 4)), (c) => c.charCodeAt(0));
+
 function sessionToken(request) {
   for (const part of (request.headers.get('cookie') || '').split(';')) {
     const [name, ...rest] = part.trim().split('=');
@@ -87,31 +90,134 @@ const overlapError = (conflicts) =>
 
 // ---- sign-in -----------------------------------------------------------------
 
-export async function login({ env, request, client }) {
-  await enforce(env, 'login', client, 'Too many sign-in attempts. Please wait 15 minutes and try again.');
-  const secret = env.ADMIN_PASSWORD;
-  if (typeof secret !== 'string' || secret.length < 12) {
-    throw new HttpError(503, 'not_configured', 'The admin password has not been set up yet.');
+// ---- the admin password ------------------------------------------------------
+//
+// OMG sets the password herself on the admin page, with a one-time setup code.
+// It is kept only as a PBKDF2 hash in settings ('admin_password'). A setup code
+// is made by whoever runs the site (`npm run admin:setup-code`, or straight in
+// the database): only its SHA-256 and an expiry are stored ('admin_setup'), and
+// it works once. The ADMIN_PASSWORD secret, if set, is used until a password
+// has been set on the page.
+
+/** ~5 ms of CPU: well inside the free plan's 10 ms a request. Stored with each hash, so it can be raised later. */
+export const PBKDF2_ITERATIONS = 20_000;
+/** 16 characters nobody can misread (no 0/O, 1/I/L): about 79 random bits. */
+export const SETUP_CODE = /^[ABCDEFGHJKMNPQRSTUVWXYZ2-9]{16}$/;
+export const SETUP_CODE_MS = 24 * 3_600_000;
+const MIN_PASSWORD = 12;
+const MAX_PASSWORD = 256;
+
+async function pbkdf2(password, salt, iterations) {
+  const key = await crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, ['deriveBits']);
+  return new Uint8Array(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations }, key, 256));
+}
+
+/** A password → what is stored: never the password itself. */
+export async function hashPassword(password, iterations = PBKDF2_ITERATIONS) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  return { alg: 'pbkdf2-sha256', iter: iterations, salt: base64url(salt), hash: base64url(await pbkdf2(password, salt, iterations)) };
+}
+
+/** True only for the password that made `record`; anything damaged or unexpected is false. */
+export async function verifyPassword(password, record) {
+  try {
+    if (!record || record.alg !== 'pbkdf2-sha256' || !Number.isInteger(record.iter) || record.iter < 1000 || record.iter > 100_000) return false;
+    const expected = fromBase64url(record.hash);
+    const actual = await pbkdf2(password, fromBase64url(record.salt), record.iter);
+    return expected.length === actual.length && crypto.subtle.timingSafeEqual(expected, actual);
+  } catch {
+    return false;
   }
+}
+
+/** "k7qx m2pa-9rtv whj3" → "K7QXM2PA9RTVWHJ3"; anything else → ''. */
+export function setupCode(value) {
+  const code = typeof value === 'string' ? value.toUpperCase().replace(/[\s-]/g, '') : '';
+  return SETUP_CODE.test(code) ? code : '';
+}
+
+async function savedJson(env, key) {
+  const row = await env.DB.prepare('SELECT value FROM settings WHERE key = ?1').bind(key).first();
+  if (!row) return { row: null, value: null };
+  try {
+    return { row, value: JSON.parse(row.value) };
+  } catch {
+    return { row, value: null };
+  }
+}
+
+async function failedTry(env, status, code, message, extra) {
+  await hit(env, 'loginFailAll', 'all');
+  throw new HttpError(status, code, message, extra);
+}
+
+async function loginLock(env) {
   const lock = await peek(env, 'loginFailAll', 'all');
   if (!lock.allowed) {
-    throw new HttpError(429, 'rate_limited', 'Sign-in is paused after too many wrong passwords. Please try again later.', {
+    throw new HttpError(429, 'rate_limited', 'Sign-in is paused after too many wrong tries. Please try again later.', {
       retryAfter: lock.retryAfter,
     });
   }
-  const body = await readJson(request);
-  const password = typeof body.password === 'string' ? body.password : '';
-  if (password.length > 256 || !(await sameSecret(password, secret))) {
-    await hit(env, 'loginFailAll', 'all');
-    throw new HttpError(401, 'bad_password', 'That password is not right.');
-  }
+}
+
+/** A new session for this browser, after `first` (more statements in the same batch). */
+async function startSession(env, first = []) {
   const token = base64url(crypto.getRandomValues(new Uint8Array(32)));
   const now = Date.now();
   await env.DB.batch([
+    ...first,
     env.DB.prepare('DELETE FROM sessions WHERE expires_at <= ?1').bind(now),
     env.DB.prepare('INSERT INTO sessions (token_hash, expires_at) VALUES (?1, ?2)').bind(await sha256Hex(token), now + SESSION_MS),
   ]);
   return json({ ok: true }, 200, { 'set-cookie': `${COOKIE}=${token}; ${COOKIE_ATTRS}; Max-Age=${SESSION_MS / 1000}` });
+}
+
+export async function login({ env, request, client }) {
+  await enforce(env, 'login', client, 'Too many sign-in attempts. Please wait 15 minutes and try again.');
+  const stored = (await savedJson(env, 'admin_password')).value;
+  const secret = env.ADMIN_PASSWORD;
+  const hasSecret = typeof secret === 'string' && secret.length >= MIN_PASSWORD;
+  if (!stored && !hasSecret) {
+    throw new HttpError(503, 'not_configured', 'No admin password has been set yet. Set one with a setup code.');
+  }
+  await loginLock(env);
+  const body = await readJson(request);
+  const password = typeof body.password === 'string' ? body.password : '';
+  const right = password.length <= MAX_PASSWORD && (stored ? await verifyPassword(password, stored) : await sameSecret(password, secret));
+  if (!right) await failedTry(env, 401, 'bad_password', 'That password is not right.');
+  return startSession(env);
+}
+
+/**
+ * POST /api/admin/setup { code, password }: sets the admin password with a
+ * one-time setup code, and signs this browser in. Every other device is
+ * signed out. Rate limited with sign-in: 5 tries per 15 minutes per address,
+ * and wrong codes count towards pausing sign-in for everyone.
+ */
+export async function setup({ env, request, client }) {
+  await enforce(env, 'login', client, 'Too many attempts. Please wait 15 minutes and try again.');
+  await loginLock(env);
+  const body = await readJson(request);
+  const code = setupCode(body.code);
+  if (!code) throw invalid('code', 'Enter the setup code exactly as you were given it.');
+  const password = typeof body.password === 'string' ? body.password : '';
+  if ([...password].length < MIN_PASSWORD || password.length > MAX_PASSWORD) {
+    throw invalid('password', `Choose a password of at least ${MIN_PASSWORD} characters.`);
+  }
+  const { row, value: saved } = await savedJson(env, 'admin_setup');
+  const valid = Boolean(saved) && typeof saved.hash === 'string' && Number(saved.expires) > Date.now()
+    && (await sameSecret(await sha256Hex(code), saved.hash));
+  const refused = "That setup code isn't right, or it has expired. Ask for a new one.";
+  if (!valid) await failedTry(env, 403, 'bad_code', refused);
+  // Used up here, so two requests with one code can't both set a password.
+  const claimed = await env.DB.prepare("DELETE FROM settings WHERE key = 'admin_setup' AND value = ?1").bind(row.value).run();
+  if (!claimed.meta.changes) await failedTry(env, 403, 'bad_code', refused);
+  const record = { ...(await hashPassword(password)), setAt: Date.now() };
+  return startSession(env, [
+    env.DB.prepare("INSERT INTO settings (key, value) VALUES ('admin_password', ?1) ON CONFLICT (key) DO UPDATE SET value = excluded.value")
+      .bind(JSON.stringify(record)),
+    env.DB.prepare('DELETE FROM sessions'),
+  ]);
 }
 
 export async function logout({ env, request, client }) {
