@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { HttpError, checkOrigin, errorResponse, json, readJson } from '../src/http.js';
 import { securityHeaders, withSecurityHeaders } from '../src/security.js';
 import { newRef } from '../src/bookings.js';
+import worker from '../src/index.js';
 
 const post = (body, headers = { 'content-type': 'application/json' }) => new Request('https://omg.example/api/x', { method: 'POST', body, headers });
 const status = async (promise) => { try { await promise; return 0; } catch (e) { return e.status; } };
@@ -90,4 +91,11 @@ test('booking references are OMG- and four unambiguous characters', () => {
     refs.add(ref);
   }
   assert.ok(refs.size > 1900);
+});
+
+test('www. addresses forward to the bare domain, keeping the path and query', async () => {
+  const res = await worker.fetch(new Request('https://www.ohmyglam.online/admin/?tab=calendar'), {}, {});
+  assert.equal(res.status, 301);
+  assert.equal(res.headers.get('location'), 'https://ohmyglam.online/admin/?tab=calendar');
+  assert.equal(res.headers.get('x-content-type-options'), 'nosniff', 'security headers on the redirect too');
 });

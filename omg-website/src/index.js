@@ -154,6 +154,11 @@ async function homePage(request, env, url) {
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    // One address for everything: www.ohmyglam.online → ohmyglam.online.
+    if (url.hostname.startsWith('www.')) {
+      url.hostname = url.hostname.slice(4);
+      return withSecurityHeaders(Response.redirect(url.toString(), 301), url);
+    }
     let response;
     if (url.pathname === '/api' || url.pathname.startsWith('/api/')) response = await api(request, env, url, ctx);
     else if (url.pathname.startsWith('/media/')) response = await content.media(request, env, url.pathname.slice('/media/'.length));

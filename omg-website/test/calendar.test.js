@@ -32,6 +32,13 @@ test('feed text is escaped, and long lines fold at 75 octets without splitting a
   assert.equal(K.foldLine('SHORT:x'), 'SHORT:x');
 });
 
+test('with no bookings yet, the feed is still a calendar an iPhone accepts (it has a component)', () => {
+  const ics = K.buildIcs([], NOW);
+  assert.match(ics, /^BEGIN:VCALENDAR\r\n[\s\S]*\r\nBEGIN:VTIMEZONE\r\nTZID:Africa\/Johannesburg\r\nBEGIN:STANDARD\r\n[\s\S]*\r\nEND:VTIMEZONE\r\nEND:VCALENDAR\r\n$/);
+  assert.equal((ics.match(/^BEGIN:VEVENT\r$/gm) || []).length, 0);
+  assert.deepEqual(K.busyFromIcs(ics, NOW), {}, 'our own feed reads back as nothing busy');
+});
+
 test('the feed: bookings in UTC, whole days as dates, only safe text', () => {
   const ics = K.buildIcs([
     { id: 7, date: '2026-12-12', start: '09:00', end: '10:30', kind: 'booking', label: 'Thandi', name: 'Thandi\r\nBEGIN:VEVENT', phone: '0821234567', ref: 'OMG-ABCD', service_name: 'Full Glam; lashes, too' },

@@ -84,6 +84,11 @@ export function buildIcs(blocks, now = Date.now()) {
   const lines = [
     'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//OMG Oh My Glam//Bookings//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
     'X-WR-CALNAME:OMG bookings', 'X-WR-TIMEZONE:Africa/Johannesburg', 'REFRESH-INTERVAL;VALUE=DURATION:PT15M', 'X-PUBLISHED-TTL:PT15M',
+    // A calendar must hold at least one component (RFC 5545), and an iPhone won't
+    // subscribe to one that doesn't ("Validation failed"). Before the first
+    // booking, this time zone is that component.
+    'BEGIN:VTIMEZONE', 'TZID:Africa/Johannesburg', 'BEGIN:STANDARD', 'DTSTART:19700101T000000',
+    'TZOFFSETFROM:+0200', 'TZOFFSETTO:+0200', 'TZNAME:SAST', 'END:STANDARD', 'END:VTIMEZONE',
   ];
   const stamp = icsUtc(now);
   for (const b of blocks) {
