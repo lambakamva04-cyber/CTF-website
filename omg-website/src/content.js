@@ -342,7 +342,8 @@ export function renderPage(response, site, url) {
   const phone = site.text.phone || WHATSAPP_NUMBER;
   const byCard = (card) => visibleServices(site).filter((s) => s.card === card);
   const social = {
-    facebook: site.text.facebook_url || '',
+    // A Facebook search is not her page: shown only once a real page link is set.
+    facebook: site.text.facebook_url && !/\/search\b/.test(site.text.facebook_url) ? site.text.facebook_url : '',
     instagram: instagramUrl(site.text.instagram),
   };
   const texts = {
@@ -387,6 +388,7 @@ export function renderPage(response, site, url) {
     .on('[data-cms-social]', {
       element(el) {
         if (!social[el.getAttribute('data-cms-social')]) el.remove();
+        else el.removeAttribute('hidden');
       },
     })
     .on('[data-cms-href]', {
