@@ -115,13 +115,21 @@ details from the site with OMG's sign-in.
 On the **Calendar** tab, open **Link your phone's calendar**. It works both
 ways, and each half can be used alone:
 
-- **Website bookings in your calendar.** Tap **Add to iPhone Calendar**, then
-  **Subscribe**. Confirmed bookings and time off then appear in her phone's
-  calendar next to her other appointments, with the client's name, service,
-  number and ref. For Google Calendar, **Copy link** and add it on a computer
-  under Other calendars > + > From URL. The link is private: anyone who has it
-  can see the bookings, so **Make a new link** if it is ever shared by mistake
-  (the old one stops working at once).
+- **Website bookings in your calendar.** Confirmed bookings and time off
+  appear in her calendar next to her other appointments, with the client's
+  name, service, number and ref. Each device shows only the buttons that work
+  on it:
+  - **iPhone:** **Add to iPhone Calendar**, then **Subscribe**.
+  - **Mac:** **Add to Apple Calendar** or **Add to Google Calendar**.
+  - **Windows or another computer:** **Add to Google Calendar**, or **Copy
+    link** for Outlook (Add calendar > Subscribe from web).
+  - **Android phone:** Android can't subscribe to a calendar link itself, so
+    it offers **Copy link** and **Share link**. Open the admin on the iPhone
+    to add it there, or add the link to Google Calendar on a computer.
+
+  The link is private: anyone who has it can see the bookings, so **Make a
+  new link** if it is ever shared by mistake (the old one stops working at
+  once).
 - **Your other appointments on the website.** Paste her own calendar's private
   link and tap **Link my calendar**. On iPhone: Calendar > Calendars > ⓘ next
   to her calendar > **Public Calendar** on > **Share Link** > Copy. (Google:
@@ -275,9 +283,9 @@ touches real data. GitHub runs both on every push.
 - **Service durations.** The starting times are estimates. Set each service's
   real length on the Website tab, or the calendar will book clients too close
   together (or too far apart).
-- **Facebook link.** The poster gives only the name "Asanda Tiwani", so the
-  Facebook link is a search for that name. Put the page's real link in on the
-  Website tab (Contact & text).
+- **Facebook link.** The site shows no Facebook link until her page's real
+  link is set on the Website tab (Contact & text). Until then there is no
+  placeholder: a Facebook search is not her page.
 
 ## Images
 

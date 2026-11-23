@@ -394,6 +394,14 @@ function isIos() {
   return /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 }
 
+/** Which calendar apps this device can add a calendar link to, so no button is shown that can't work here. */
+function calendarDevice() {
+  if (isIos()) return 'iphone';
+  if (/Macintosh/.test(navigator.userAgent)) return 'mac';
+  if (/Android/i.test(navigator.userAgent)) return 'android';
+  return 'computer';
+}
+
 function fromBase64url(value) {
   const base64 = value.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (value.length % 4)) % 4);
   return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
@@ -922,17 +930,46 @@ function renderSync(data) {
     : linkedOut && linkedIn ? 'Phone calendar linked both ways'
       : linkedOut || linkedIn ? 'Phone calendar linked one way' : "Link your phone's calendar";
 
+  // Only buttons that work on this device: iPhones and Macs subscribe with a
+  // webcal: link, Google Calendar adds a link on a computer, and an Android
+  // phone can't subscribe to a calendar link at all, so it gets the link to
+  // copy or share instead.
+  const device = calendarDevice();
+  const google = webcal && `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcal)}`;
+  const primary = (on) => `btn ${on && !linkedOut ? 'btn-primary' : 'btn-ghost'} small`;
+  const copy = https && el('button', { class: primary(device === 'android'), type: 'button', id: 'sync-copy', text: 'Copy link', onclick: (e) => copyFeedLink(e.currentTarget, https) });
+  const share = https && device === 'android' && typeof navigator.share === 'function'
+    && el('button', { class: 'btn btn-ghost small', type: 'button', id: 'sync-share', text: 'Share link', onclick: () => navigator.share({ title: 'OMG bookings calendar', url: https }).catch(() => {}) });
+  const apple = webcal && (device === 'iphone' || device === 'mac')
+    && el('a', { class: primary(true), id: 'sync-subscribe', href: webcal, text: device === 'iphone' ? 'Add to iPhone Calendar' : 'Add to Apple Calendar' });
+  const googleBtn = google && (device === 'mac' || device === 'computer')
+    && el('a', { class: primary(device === 'computer'), id: 'sync-google', href: google, target: '_blank', rel: 'noopener noreferrer', text: 'Add to Google Calendar' });
+  const hints = {
+    iphone: [
+      'Tap Add to iPhone Calendar, then Subscribe.',
+      'If nothing opens, tap Copy link, then in Settings go to Calendar, Accounts, Add Account, Other, Add Subscribed Calendar, and paste it.',
+    ],
+    mac: [
+      'Apple Calendar: click Add to Apple Calendar, then Subscribe.',
+      'Google Calendar: click Add to Google Calendar, then Add.',
+    ],
+    computer: [
+      'Google Calendar: click Add to Google Calendar, then Add.',
+      'Outlook: copy the link, then in Outlook choose Add calendar, Subscribe from web, and paste it.',
+    ],
+    android: [
+      "Android phones can't add a calendar link themselves.",
+      "For the bookings to show in an iPhone's calendar, open this page on that iPhone and tap Add to iPhone Calendar there.",
+      'For Google Calendar, copy or share the link, then on a computer open Google Calendar, choose + next to Other calendars, From URL, and paste it.',
+    ],
+  }[device];
   const out = el('section', { class: 'sync-part', 'aria-labelledby': 'sync-out-head' },
     el('h4', { id: 'sync-out-head', text: 'Website bookings in your calendar' }),
     linkedOut
       ? el('p', { class: 'ok', text: `Your calendar app last collected them ${agoText(feed.seenAt)}.` })
-      : el('p', { text: "Confirmed bookings and time off show in your phone's calendar, next to your other appointments, with each client's number." }),
-    el('div', { class: 'row' },
-      webcal && el('a', { class: `btn ${linkedOut ? 'btn-ghost' : 'btn-primary'} small`, id: 'sync-subscribe', href: webcal, text: 'Add to iPhone Calendar' }),
-      https && el('button', { class: 'btn btn-ghost small', type: 'button', id: 'sync-copy', text: 'Copy link', onclick: (e) => copyFeedLink(e.currentTarget, https) }),
-    ),
-    el('p', { class: 'hint', text: "iPhone: tap Add to iPhone Calendar, then Subscribe. If nothing opens, tap Copy link, then in Settings go to Calendar, Accounts, Add Account, Other, Add Subscribed Calendar, and paste it." }),
-    el('p', { class: 'hint', text: "Google Calendar: tap Copy link, then on a computer open Google Calendar, choose + next to Other calendars, From URL, and paste it." }),
+      : el('p', { text: "Confirmed bookings and time off show in your calendar, next to your other appointments, with each client's number." }),
+    el('div', { class: 'row' }, apple, googleBtn, copy, share),
+    hints.map((text) => el('p', { class: 'hint', text })),
     el('p', { class: 'hint', text: "Keep the link to yourself: it shows your clients' names and numbers." }),
     el('button', { class: 'link-btn', type: 'button', id: 'sync-reset', text: 'Make a new link', onclick: (e) => resetFeedLink(e.currentTarget) }),
   );
@@ -977,7 +1014,8 @@ function renderSync(data) {
           el('li', { text: 'Turn on Public Calendar, tap Share Link, then Copy.' }),
           el('li', { text: 'Paste it here.' }),
         ),
-        el('p', { class: 'hint', text: "Only someone with the link can see that calendar, and the website keeps it private. In Google Calendar, use Settings, your calendar, then Secret address in iCal format. Events marked Free don't block anything." }),
+        device !== 'iphone' && el('p', { class: 'hint', text: "Linking from a different phone? Copy the link on the iPhone, send it to yourself on WhatsApp, and paste it here." }),
+        el('p', { class: 'hint', text: "Only someone with the link can see that calendar, and the website keeps it private. In Google Calendar (on a computer), use Settings, your calendar, then Secret address in iCal format. Events marked Free don't block anything." }),
       ),
     );
   }
