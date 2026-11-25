@@ -1788,6 +1788,21 @@ async function content() {
     assert.ok(!html.includes('<b>Lerato</b>'), 'a reviewer name reached the page as markup');
   });
 
+  await check('the bridal page is its own page: its own address, one H1, the bridal prices', async () => {
+    const r = await call('GET', '/bridal');
+    expectStatus(r, 200, 'GET /bridal');
+    const html = r.text;
+    assert.ok(html.includes('<link rel="canonical" href="https://ohmyglam.online/bridal">'), 'canonical');
+    assert.equal((html.match(/<h1[\s>]/g) || []).length, 1, 'one H1');
+    assert.ok(html.includes('<h2 id="bridal-title">Bridal Prices</h2>'), 'the bridal prices are not on it');
+    assert.ok(!html.includes('id="prices"'), 'the general price list is on the home page only');
+    assert.ok(!/data-only=/.test(html), 'a data-only marker was left in');
+    const home = await page();
+    assert.ok(home.includes('href="/bridal"') && !home.includes('id="bridal-title"'), 'the home page should link to /bridal, not list it');
+    assert.ok(!/data-only=/.test(home), 'a data-only marker was left on the home page');
+    expectStatus(await call('GET', '/book'), 301, 'GET /book');
+  });
+
   const badServices = [
     ['price as text', { price: '999' }, 'price'],
     ['a negative price', { price: -5 }, 'price'],

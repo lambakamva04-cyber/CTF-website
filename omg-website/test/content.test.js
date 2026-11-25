@@ -97,7 +97,7 @@ test('the seeded content is what the site showed, and fits the booking rules', a
   const catalog = JSON.parse(C.catalogJson(site));
   assert.deepEqual(catalog.services.map((s) => s.group), ['Makeup', 'Makeup', 'Makeup', 'Hair', 'Hair', 'Bridal', 'Bridal', 'Bridal', 'Bridal', 'Bridal', 'Bridesmaid', 'Bridesmaid']);
   assert.deepEqual(catalog.services.find((s) => s.id === 'full-glam'), { id: 'full-glam', group: 'Makeup', name: 'Full Glam', price: 850, minutes: 90 });
-  assert.equal(C.metaDescription(site), 'OMG – Oh! My Glam: makeup artist & hair stylist. Makeup from R750, Bridal Package R4500, hair from R400, bridesmaids from R850. Book online or on WhatsApp.');
+  assert.equal(C.metaDescription(site), 'Makeup artist & hair stylist Asanda (OMG – Oh! My Glam). Makeup from R750, Bridal Package R4500, hair from R400, bridesmaids from R850. Book online today.');
   assert.equal(C.pageTitle(site), 'Makeup Artist & Hair Stylist | Bridal Makeup – OMG');
   for (const area of ['Soweto', 'Johannesburg', 'Pietermaritzburg', 'Soweto & Johannesburg South']) {
     const withArea = { ...site, text: { ...site.text, area } };
@@ -120,16 +120,16 @@ test('the seeded content is what the site showed, and fits the booking rules', a
   const withArea = JSON.parse(C.jsonLd({ ...site, text: { ...site.text, area: 'Soweto, Johannesburg' } }, 'https://omg.example'))['@graph'][1];
   assert.deepEqual(withArea.address, { '@type': 'PostalAddress', addressLocality: 'Soweto, Johannesburg', addressCountry: 'ZA' });
   assert.equal(withArea.areaServed, 'Soweto, Johannesburg');
-  assert.match(withArea.description, /^Makeup and hair styling in Soweto, Johannesburg,/);
+  assert.match(withArea.description, /^Makeup and hair styling by Asanda in Soweto, Johannesburg,/);
   // The area is escaped wherever it lands.
   const sneaky = { ...site, text: { ...site.text, area: '<b>x</b></script>' } };
   assert.ok(!C.jsonLd(sneaky, 'https://omg.example').includes('</script>'));
   assert.ok(!C.heroLine(sneaky).includes('<b>x</b>'));
   // /llms.txt: the same facts as the page, with the area once it is set.
   const llms = C.llmsTxt(site, 'https://omg.example');
-  assert.match(llms, /^# OMG – Oh! My Glam\n\n> Makeup and hair styling, including bridal/);
+  assert.match(llms, /^# OMG – Oh! My Glam\n\n> Makeup and hair styling by Asanda, including bridal/);
   assert.match(llms, /- Soft Glam: R750/);
-  assert.match(C.llmsTxt({ ...site, text: { ...site.text, area: 'Soweto' } }, 'https://omg.example'), /> Makeup and hair styling in Soweto, including/);
+  assert.match(C.llmsTxt({ ...site, text: { ...site.text, area: 'Soweto' } }, 'https://omg.example'), /> Makeup and hair styling by Asanda in Soweto, including/);
 });
 
 test('hidden services are neither shown nor bookable', async () => {
@@ -170,11 +170,42 @@ test('the area OMG works in can be saved (migration 0006), and every other text 
   assert.equal(site.text.area, 'Soweto, Johannesburg');
   for (const row of before) assert.equal(site.text[row.key], row.value, row.key);
   assert.equal(C.pageTitle(site), 'Makeup Artist in Soweto, Johannesburg | Bridal & Hair – OMG');
-  assert.equal(C.heroLine(site), 'Makeup artist &amp; hair stylist in <b>Soweto, Johannesburg</b>');
+  assert.equal(C.heroLine(site), '<b>Asanda</b> · makeup artist &amp; hair stylist in <b>Soweto, Johannesburg</b>');
 });
 
 test('a photo needs a real description, not its file name', () => {
   for (const bad of ['IMG_2041.jpg', 'IMG_2041', 'dsc 0042', 'photo.HEIC', 'PXL_20261101', 'x']) rejects(() => C.photoAlt(bad), 'alt');
   assert.equal(C.photoAlt('Soft glam with a nude lip'), 'Soft glam with a nude lip');
   assert.equal(C.photoAlt('Bridal look, image 2 of 3'), 'Bridal look, image 2 of 3');
+});
+
+test('the bridal page has its own title, description, H1 and chips, from the same content', async () => {
+  const site = await C.loadSite(freshDb().env);
+  assert.equal(C.pageTitle(site, 'bridal'), 'Bridal Makeup & Hair by Asanda | OMG – Oh! My Glam');
+  assert.equal(C.heroLine(site, 'bridal'), 'Bridal makeup &amp; hair by <b>Asanda</b>');
+  for (const area of ['', 'Soweto', 'Soweto, Johannesburg', 'Soweto & Johannesburg South', 'x'.repeat(28)]) {
+    const s2 = { ...site, text: { ...site.text, area } };
+    for (const page of ['home', 'bridal']) {
+      const title = C.pageTitle(s2, page);
+      const description = C.metaDescription(s2, page);
+      assert.ok([...title].length < 60, `${page} title ${title}`);
+      assert.ok([...description].length >= 150 && [...description].length <= 160, `${page} ${[...description].length}: ${description}`);
+      assert.ok(description.includes('Asanda'), 'the artist is named');
+      if (area) assert.ok(description.includes(` in ${area}.`), description);
+    }
+  }
+  assert.match(C.metaDescription(site, 'bridal'), /^Bridal makeup & hair by Asanda \(OMG – Oh! My Glam\)\. Bridal Package R4500, bride-only options from R750, bridesmaids from R850\./);
+  // Chips on the bridal page stay on the page; the home page's bridal chip goes there.
+  assert.deepEqual([...C.chipsHtml(site, 'bridal').matchAll(/href="([^"]+)"/g)].map((m) => m[1]), ['#bridal', '#bridal', '#bridal']);
+  assert.deepEqual([...C.chipsHtml(site).matchAll(/href="([^"]+)"/g)].map((m) => m[1]), ['#prices', '#prices', '/bridal']);
+  assert.equal(C.bridalTeaser(site), 'The Bridal Package is R4500. More options for the bride from R750 and bridesmaids from R850.');
+  assert.match(C.shareDescription(site, 'bridal'), /^Bridal Package R4500 · Bride from R750 · Bridesmaids from R850\. Book online or on WhatsApp: \+27 78 576 7604\.$/);
+  assert.deepEqual(C.PAGES.bridal, { path: '/bridal', canonical: 'https://ohmyglam.online/bridal' });
+  // Asanda is the person behind the business, wherever the site describes one.
+  const biz = JSON.parse(C.jsonLd(site, 'https://omg.example'))['@graph'][1];
+  assert.deepEqual(biz.founder, { '@type': 'Person', name: 'Asanda', jobTitle: 'Makeup artist and hair stylist' });
+  assert.match(C.aboutText(site), /^OMG – Oh! My Glam is Asanda's makeup and hair business: /);
+  assert.match(C.llmsTxt(site, 'https://omg.example'), /> Makeup and hair styling by Asanda, /);
+  assert.match(C.llmsTxt(site, 'https://omg.example'), /\[Bridal makeup and hair prices\]\(https:\/\/omg\.example\/bridal\)/);
+  assert.match(C.reviewSummaryHtml({ count: 0 }), /Had your glam done by Asanda\?/);
 });

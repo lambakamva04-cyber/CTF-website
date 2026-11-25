@@ -348,7 +348,9 @@ Over HTTPS also `Strict-Transport-Security: max-age=31536000` and
 `https://ohmyglam.online` (in one step), except the calendar feed, which also
 answers on `http://` because iPhones fetch `webcal://` links that way. Local
 development (`localhost`, `127.0.0.1`) is never redirected. `/404` and
-`/404.html` answer `404`, like any unknown address.
+`/404.html` answer `404`, like any unknown address. The pages are `/` and
+`/bridal`; `/bridal/` answers `301` to `/bridal`, and `/book` answers `301` to
+`/#book` (the booking calendar).
 
 `script-src 'self'` means no inline scripts and no inline event handlers:
 every script is a file under `public/js/`. The JSON-LD block is data, not a

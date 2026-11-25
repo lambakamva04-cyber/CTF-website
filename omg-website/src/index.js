@@ -129,25 +129,27 @@ function absoluteShareImage(response, url) {
 }
 
 /**
- * The home page, with the current services, prices, photos and contact
+ * A page of the site (content.PAGES: the home page or the bridal page), made
+ * from public/index.html with the current services, prices, photos and contact
  * details written in (src/content.js). If they can't be read, the file's own
- * content is served, which is complete but may be older.
+ * content is served in the page's shape, which is complete but may be older.
  */
-async function homePage(request, env, url) {
+async function sitePage(request, env, url, page) {
   // The page is rewritten as it is served, so a stored copy's validators say
   // nothing about it: always fetch the file whole.
   const headers = new Headers(request.headers);
   headers.delete('if-none-match');
   headers.delete('if-modified-since');
-  const asset = await env.ASSETS.fetch(new Request(request, { headers }));
+  const asset = await env.ASSETS.fetch(new Request(new URL('/', url), { method: request.method, headers }));
   if (asset.status !== 200 || !asset.body || !(asset.headers.get('content-type') || '').startsWith('text/html')) {
     return absoluteShareImage(asset, url);
   }
+  const shell = content.pageShell(asset, page);
   try {
-    return content.renderPage(asset, await content.loadSite(env), url);
+    return content.renderPage(shell, await content.loadSite(env), url, page);
   } catch (error) {
     console.error('site_content_unavailable', String(error && error.message));
-    return absoluteShareImage(asset, url);
+    return absoluteShareImage(shell, url);
   }
 }
 
@@ -181,7 +183,11 @@ export default {
     let response;
     if (url.pathname === '/api' || url.pathname.startsWith('/api/')) response = await api(request, env, url, ctx);
     else if (url.pathname.startsWith('/media/')) response = await content.media(request, env, url.pathname.slice('/media/'.length));
-    else if (url.pathname === '/') response = await homePage(request, env, url);
+    else if (url.pathname === '/') response = await sitePage(request, env, url, 'home');
+    else if (url.pathname === '/bridal') response = await sitePage(request, env, url, 'bridal');
+    // Short links: /book opens the calendar, /bridal/ is /bridal.
+    else if (url.pathname === '/book') response = Response.redirect(new URL('/#book', url).toString(), 301);
+    else if (url.pathname === '/bridal/') response = Response.redirect(new URL('/bridal', url).toString(), 301);
     else if (FEED.test(url.pathname)) response = await calendarFeed(request, env, url.pathname.match(FEED)[1]);
     else if (url.pathname === '/llms.txt') response = await llmsTxt(env, url);
     else if (url.pathname === '/404' || url.pathname === '/404.html') {
