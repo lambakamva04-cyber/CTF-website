@@ -1781,7 +1781,11 @@ async function content() {
     assert.ok(!html.includes('<b>note</b>'), 'the note was not escaped');
     for (const block of jsonBlocks(html)) assert.ok(!/[<>]/.test(block), 'a raw < or > inside a JSON block');
     assert.ok(html.includes('aria-label="Book Glam &quot;q&quot; &lt;img'), 'quotes not escaped in the Book button label');
-    assert.ok(/<meta name="description" content="[^"]*Glam &quot;q&quot;/.test(html), 'quotes not escaped in the page description');
+    // The description now names prices, not every service, so it only has to stay one clean attribute.
+    assert.ok(/<meta name="description" content="[^"<>]*">/.test(html), 'the page description is not one clean attribute');
+    // Approved reviews are written into the page by the Worker: as text, never markup.
+    assert.ok(/<ul class="rv-list" id="rv-list" data-page="1" data-more="(?:true|false)">/.test(html), 'the first page of reviews is not in the page');
+    assert.ok(!html.includes('<b>Lerato</b>'), 'a reviewer name reached the page as markup');
   });
 
   const badServices = [
@@ -1861,7 +1865,8 @@ async function content() {
     }
     if (created) expectStatus(await admin('DELETE', `/api/admin/site/services/${created.id}`), 200);
     const html = await page();
-    assert.ok(!html.includes(NONCE), 'test content is still on the page');
+    // Approved test reviews stay on the page (they carry the run's marker too), so look for this group's own content.
+    assert.ok(!html.includes('Glam &quot;q&quot;') && !(photo && html.includes(photo.src)), 'test content is still on the page');
   });
   await survival('after the content checks');
 }

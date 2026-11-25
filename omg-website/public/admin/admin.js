@@ -1330,7 +1330,7 @@ const CARD_LABELS = { makeup: 'Makeup', hair: 'Hair', package: 'Bridal package',
 const ALBUM_ORDER = ['looks', 'before_after'];
 const ALBUM_LABELS = { looks: 'Photos', before_after: 'Before & after' };
 const DEFAULT_ALT = { looks: 'Makeup by OMG – Oh! My Glam', before_after: 'Before and after: makeup by OMG – Oh! My Glam' };
-const TEXT_FIELDS = ['phone', 'instagram', 'facebook_url', 'facebook_name', 'tagline', 'home_calls', 'bridal_note'];
+const TEXT_FIELDS = ['phone', 'instagram', 'facebook_url', 'facebook_name', 'area', 'tagline', 'home_calls', 'bridal_note'];
 const DURATIONS = Array.from({ length: 48 }, (_, i) => (i + 1) * 15);
 const site = { data: null, view: 'services', editing: null, describing: null, selected: null, uploading: 0 };
 
@@ -1705,15 +1705,24 @@ async function encodePhoto(img, maxWidth, maxHeight) {
 /**
  * Phone photos are big: they are shrunk here, on the phone, to a sharp
  * website size and a small copy for phones, before anything is uploaded.
+ * The sizes follow how big each album shows a photo: the Photos grid shows
+ * two across on a phone, Before & after one across, so each copy is just
+ * sharp on a phone's screen and no heavier.
  * (Read as a data: URL, which the admin page's Content-Security-Policy allows.)
  */
-async function preparePhoto(file) {
+const PHOTO_BOXES = {
+  looks: { large: [720, 1100], small: [360, 550] },
+  before_after: { large: [1080, 1660], small: [720, 1100] },
+};
+
+async function preparePhoto(file, album) {
   if (file.size > 40 * 1024 * 1024) throw new ApiError(413, { message: 'That file is too large. Choose a photo from your gallery.' });
   const img = new Image();
   img.src = await readAsDataUrl(file);
   await img.decode();
   if (img.naturalWidth < 300 || img.naturalHeight < 300) throw new ApiError(400, { message: 'That photo is too small. Choose one at least 300 pixels across.' });
-  return { large: await encodePhoto(img, 1440, 2200), small: await encodePhoto(img, 720, 1100) };
+  const box = PHOTO_BOXES[album] || PHOTO_BOXES.before_after;
+  return { large: await encodePhoto(img, ...box.large), small: await encodePhoto(img, ...box.small) };
 }
 
 async function sendPhoto(album, prepared, alt) {
@@ -1756,7 +1765,7 @@ async function addPhotos(album, files) {
         status.textContent = files.length > 1 ? `Adding photo ${i + 1} of ${files.length}…` : 'Adding the photo…';
       }
       try {
-        const photo = await sendPhoto(album, await preparePhoto(file), DEFAULT_ALT[album]);
+        const photo = await sendPhoto(album, await preparePhoto(file, album), DEFAULT_ALT[album]);
         site.data.photos.push(photo);
         added += 1;
       } catch (err) {
@@ -1800,6 +1809,7 @@ function textForm() {
     siteField('tf-instagram', 'Instagram username', input('tf-instagram', 'text', t.instagram ? `@${t.instagram}` : '', { autocapitalize: 'off', spellcheck: 'false' }), 'Leave empty to hide Instagram.'),
     siteField('tf-facebook_url', 'Facebook page link', input('tf-facebook_url', 'url', t.facebook_url, { autocapitalize: 'off', spellcheck: 'false' }), 'Leave empty to hide Facebook.'),
     siteField('tf-facebook_name', 'Name shown for Facebook', input('tf-facebook_name', 'text', t.facebook_name, { maxlength: 60 })),
+    siteField('tf-area', 'Area you work in', input('tf-area', 'text', t.area, { maxlength: 28 }), 'Suburb and city, e.g. Soweto, Johannesburg. Shown in Google’s title and at the top of the page.'),
     el('h3', { class: 'sub', text: 'Text' }),
     siteField('tf-tagline', 'Welcome line (top of the page)', area('tf-tagline', t.tagline, 220)),
     siteField('tf-home_calls', 'Home calls note (under the price list)', area('tf-home_calls', t.home_calls, 300)),

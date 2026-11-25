@@ -1,5 +1,6 @@
 // The admin API: sign-in, booking requests, the calendar and reviews.
 
+import { forgetSite } from './content.js';
 import { UTC_OFFSET_MINUTES } from '../public/js/catalog.js';
 import { addDays, daysBetween, formatRanges, isDate, nowInZone, overlaps, toHHMM, toMinutes } from '../public/js/slots.js';
 import { busyOn, externalBusy } from './calendar-busy.js';
@@ -394,6 +395,7 @@ export async function approveReview(ctx) {
     .bind(Date.now(), idParam(ctx.params))
     .run();
   if (!result.meta.changes) throw notFound('That review is no longer waiting.');
+  forgetSite(ctx.env);
   return json({ ok: true });
 }
 
@@ -401,5 +403,6 @@ export async function deleteReview(ctx) {
   await guard(ctx);
   const result = await ctx.env.DB.prepare('DELETE FROM reviews WHERE id = ?1').bind(idParam(ctx.params)).run();
   if (!result.meta.changes) throw notFound('That review no longer exists.');
+  forgetSite(ctx.env);
   return json({ ok: true });
 }

@@ -3,8 +3,9 @@
 const CSP = [
   "default-src 'self'",
   "script-src 'self'",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src 'self' https://fonts.gstatic.com",
+  "style-src 'self' 'unsafe-inline'",
+  // The fonts are this site's own files (public/fonts/): no other server is needed.
+  "font-src 'self'",
   "img-src 'self' data:",
   "media-src 'self'",
   "connect-src 'self'",
@@ -44,7 +45,7 @@ export function securityHeaders(url) {
 export function withSecurityHeaders(response, url) {
   const out = new Response(response.body, response);
   for (const [name, value] of Object.entries(securityHeaders(url))) out.headers.set(name, value);
-  if (url.pathname.startsWith('/img/') && out.status === 200) {
+  if ((url.pathname.startsWith('/img/') || url.pathname.startsWith('/fonts/')) && out.status === 200) {
     out.headers.set('cache-control', 'public, max-age=604800');
   }
   return out;
