@@ -18,6 +18,8 @@ import { withSecurityHeaders } from './security.js';
 const ID = '(\\d{1,9})';
 const SERVICE = '([a-z0-9][a-z0-9-]{0,38}[a-z0-9])';
 const FEED = /^\/calendar\/([^/]{1,100})\.ics$/;
+/** The site's pages by address: '/' → 'home', '/bridal' → 'bridal' (content.PAGES). */
+const PAGE_AT = Object.fromEntries(Object.entries(content.PAGES).map(([page, { path }]) => [path, page]));
 const ROUTES = [
   ['GET', '/api/availability', bookings.availability],
   ['POST', '/api/bookings', bookings.create],
@@ -183,11 +185,10 @@ export default {
     let response;
     if (url.pathname === '/api' || url.pathname.startsWith('/api/')) response = await api(request, env, url, ctx);
     else if (url.pathname.startsWith('/media/')) response = await content.media(request, env, url.pathname.slice('/media/'.length));
-    else if (url.pathname === '/') response = await sitePage(request, env, url, 'home');
-    else if (url.pathname === '/bridal') response = await sitePage(request, env, url, 'bridal');
-    // Short links: /book opens the calendar, /bridal/ is /bridal.
+    else if (PAGE_AT[url.pathname]) response = await sitePage(request, env, url, PAGE_AT[url.pathname]);
+    // Short links: /book opens the calendar, and /makeup/ is /makeup (and so on).
     else if (url.pathname === '/book') response = Response.redirect(new URL('/#book', url).toString(), 301);
-    else if (url.pathname === '/bridal/') response = Response.redirect(new URL('/bridal', url).toString(), 301);
+    else if (PAGE_AT[url.pathname.replace(/\/$/, '')] && url.pathname !== '/') response = Response.redirect(new URL(url.pathname.replace(/\/$/, ''), url).toString(), 301);
     else if (FEED.test(url.pathname)) response = await calendarFeed(request, env, url.pathname.match(FEED)[1]);
     else if (url.pathname === '/llms.txt') response = await llmsTxt(env, url);
     else if (url.pathname === '/404' || url.pathname === '/404.html') {

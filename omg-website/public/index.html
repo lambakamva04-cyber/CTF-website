@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Makeup Artist &amp; Hair Stylist | Bridal Makeup – OMG</title>
-<meta name="description" content="Makeup artist &amp; hair stylist Asanda (OMG – Oh! My Glam). Makeup from R750, Bridal Package R4500, hair from R400, bridesmaids from R850. Book online today.">
+<title>Asanda Tiwani – Makeup Artist &amp; Hair Stylist | OMG</title>
+<meta name="description" content="Asanda Tiwani: makeup artist &amp; hair stylist (OMG – Oh! My Glam). Makeup from R750, hair from R400, Bridal Package R4500, bridesmaids from R850. Book online.">
 <meta name="theme-color" content="#3A1D18">
 <!-- The one address of this page: https, no www, no query string. Fixed, not
      taken from the request, so every other address points back here. -->
@@ -13,7 +13,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="OMG – Oh! My Glam">
 <meta property="og:locale" content="en_ZA">
-<meta property="og:title" content="Makeup Artist &amp; Hair Stylist | Bridal Makeup – OMG">
+<meta property="og:title" content="Asanda Tiwani – Makeup Artist &amp; Hair Stylist | OMG">
 <meta property="og:description" content="Soft Glam R750 · Full Glam R850 · Bold / Dramatic R950 · Hair from R400. Book online or on WhatsApp: +27 78 576 7604.">
 <!-- Share previews need an absolute image URL; the Worker rewrites this one
      for whichever domain served the page (src/index.js). -->
@@ -51,6 +51,19 @@
       }
     },
     {
+      "@type": "Person",
+      "@id": "https://ohmyglam.online/#artist",
+      "name": "Asanda Tiwani",
+      "jobTitle": "Makeup artist and hair stylist",
+      "worksFor": {
+        "@id": "https://ohmyglam.online/#business"
+      },
+      "url": "https://ohmyglam.online/",
+      "sameAs": [
+        "https://www.instagram.com/asanda_tiwani/"
+      ]
+    },
+    {
       "@type": "HealthAndBeautyBusiness",
       "@id": "https://ohmyglam.online/#business",
       "name": "OMG – Oh! My Glam",
@@ -66,11 +79,9 @@
         "https://ohmyglam.online/img/gallery/glam-2.webp",
         "https://ohmyglam.online/img/gallery/glam-3.webp"
       ],
-      "description": "Makeup and hair styling by Asanda, including bridal and bridesmaid packages. Home calls on request; transport is quoted separately.",
+      "description": "Makeup and hair styling by Asanda Tiwani, including bridal and bridesmaid packages. Home calls on request; transport is quoted separately.",
       "founder": {
-        "@type": "Person",
-        "name": "Asanda",
-        "jobTitle": "Makeup artist and hair stylist"
+        "@id": "https://ohmyglam.online/#artist"
       },
       "telephone": "+27785767604",
       "address": {
@@ -349,6 +360,38 @@
   .nav a:hover { color: var(--gold-100); }
   .topbar .btn { min-height: 44px; padding: 0 18px; font-size: 14px; }
   @media (min-width: 820px) { .nav { display: flex; } }
+  .nav a[aria-current="page"] { color: var(--gold-100); }
+  /* Phones: the pages behind a Menu button, next to Book now. */
+  .mnav { margin-left: auto; }
+  .mnav summary {
+    list-style: none; display: inline-flex; align-items: center; gap: 8px;
+    min-height: 44px; padding: 0 16px; border-radius: 999px; cursor: pointer;
+    border: 1.5px solid rgba(241, 217, 154, .55); color: var(--gold-100);
+    font: 600 14px/1 var(--sans);
+  }
+  .mnav summary::-webkit-details-marker { display: none; }
+  .mnav[open] summary { background: rgba(241, 217, 154, .12); }
+  .mnav-panel {
+    position: absolute; left: 0; right: 0; top: 100%;
+    display: grid; padding: 6px 16px 14px;
+    background: var(--cocoa-950); border-bottom: 1px solid var(--line);
+    box-shadow: 0 18px 30px -12px rgba(0, 0, 0, .7);
+  }
+  .mnav-panel a {
+    display: flex; align-items: center; min-height: 48px; padding: 0 6px;
+    border-bottom: 1px solid rgba(230, 194, 122, .14);
+    font: 600 14px/1 var(--sans); letter-spacing: .16em; text-transform: uppercase;
+    color: var(--cream); text-decoration: none;
+  }
+  .mnav-panel a:last-child { border-bottom: 0; }
+  .mnav-panel a[aria-current="page"] { color: var(--gold-200); }
+  @media (max-width: 380px) {
+    .topbar .wrap { gap: 10px; }
+    .mnav summary { width: 44px; padding: 0; justify-content: center; }
+    .mnav-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .topbar .btn { padding: 0 14px; }
+  }
+  @media (min-width: 820px) { .mnav { display: none; } }
 
   /* ===== Hero ===== */
   .hero { text-align: center; padding: 44px 0 64px; }
@@ -463,6 +506,20 @@
     color: var(--gold-200);
   }
   .section-head p { max-width: 46ch; margin: 14px auto 0; color: var(--cream-soft); }
+
+  /* ===== The services menu and "Meet Asanda Tiwani" (home page) ===== */
+  .svc-menu { display: grid; gap: 20px; }
+  @media (min-width: 860px) { .svc-menu { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; } }
+  .svc-card { color: inherit; text-decoration: none; padding-bottom: 24px; transition: transform .15s ease, border-color .15s ease; }
+  .svc-card:hover { transform: translateY(-2px); border-color: rgba(230, 194, 122, .6); }
+  @media (prefers-reduced-motion: reduce) { .svc-card:hover { transform: none; } }
+  .svc-card .card-head h3 { font-size: 30px; }
+  .svc-card-list { margin: 16px 0 20px; color: var(--cream-soft); line-height: 1.5; }
+  .svc-card-go { margin-top: auto; display: inline-flex; align-items: center; gap: 8px; font: 600 14px/1.2 var(--sans); color: var(--gold-200); }
+  .about .section-head { margin-bottom: 0; }
+  .about .section-head p { max-width: 58ch; font-size: 17px; }
+  /* A service page shows one price card: centred, not in half of a two-column grid. */
+  .menu > .card:only-child { grid-column: 1 / -1; justify-self: center; width: 100%; max-width: 680px; }
 
   /* ===== Price list ===== */
   .menu { display: grid; gap: 20px; }
@@ -993,6 +1050,7 @@
   <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9.5Z"/></symbol>
   <symbol id="i-info" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm0 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm0 6.5a1 1 0 0 1 1 1V16a1 1 0 1 1-2 0v-4.5a1 1 0 0 1 1-1Zm0-3.75a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5Z"/></symbol>
   <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M13.2 5.3a1 1 0 0 1 1.4 0l6 6a1 1 0 0 1 0 1.4l-6 6a1 1 0 1 1-1.4-1.4l4.3-4.3H4a1 1 0 1 1 0-2h13.5l-4.3-4.3a1 1 0 0 1 0-1.4Z"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 6a1 1 0 0 1 1-1h16a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1Zm0 6a1 1 0 0 1 1-1h16a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1Zm1 5a1 1 0 1 0 0 2h16a1 1 0 1 0 0-2H4Z"/></symbol>
   <symbol id="i-cal" viewBox="0 0 24 24"><path d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h1V3a1 1 0 0 1 1-1Zm13 8H4v9a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-9ZM8 13h3v3H8v-3Z"/></symbol>
   <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2.4 14.95 8.5l6.65.95-4.8 4.65 1.15 6.6L12 17.55 6.05 20.7l1.15-6.6-4.8-4.65 6.65-.95z"/></symbol>
   <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 0c.8 7.5 4.5 11.2 12 12-7.5.8-11.2 4.5-12 12-.8-7.5-4.5-11.2-12-12 7.5-.8 11.2-4.5 12-12Z"/></symbol>
@@ -1006,12 +1064,26 @@
       <img src="/img/logo-240.webp" srcset="/img/logo-240.webp 240w, /img/logo.webp 560w" sizes="80px" width="80" height="50" alt="">
     </a>
     <nav class="nav" aria-label="Main">
-      <a href="#prices">Prices</a>
-      <a href="/bridal">Bridal</a>
+      <a href="/makeup" data-nav="makeup">Makeup</a>
+      <a href="/hair" data-nav="hair">Hair</a>
+      <a href="/bridal" data-nav="bridal">Bridal</a>
       <a href="#gallery">Gallery</a>
       <a href="#reviews">Reviews</a>
       <a href="#book">Book</a>
     </nav>
+    <!-- Phones: the same pages behind a Menu button (no script needed to open it). -->
+    <details class="mnav">
+      <summary><svg class="icon" aria-hidden="true"><use href="#i-menu"/></svg><span class="mnav-label">Menu</span></summary>
+      <nav class="mnav-panel" aria-label="Pages">
+        <a href="/" data-nav="home">Home</a>
+        <a href="/makeup" data-nav="makeup">Makeup</a>
+        <a href="/hair" data-nav="hair">Hair</a>
+        <a href="/bridal" data-nav="bridal">Bridal</a>
+        <a href="#gallery">Gallery</a>
+        <a href="#reviews">Reviews</a>
+        <a href="#book">Book</a>
+      </nav>
+    </details>
     <a class="btn btn-gold" href="#book">
       <svg class="icon" aria-hidden="true"><use href="#i-cal"/></svg>Book now
     </a>
@@ -1046,25 +1118,49 @@
             <b style="--t:27s;--d:-6s;animation-direction:reverse"><i></i></b>
           </span>
         </span>
-        <span class="kicker" data-cms-hero><b>Asanda</b> · makeup artist &amp; hair stylist</span>
+        <span class="kicker" data-cms-hero><b>Asanda Tiwani</b> · makeup artist &amp; hair stylist</span>
       </h1>
       <p class="lede" data-cms-text="tagline">Glam made for your moment, from soft and subtle to bold and dramatic. Home calls available on request.</p>
       <div class="hero-cta">
         <a class="btn btn-gold" href="#book">
           <svg class="icon" aria-hidden="true"><use href="#i-cal"/></svg>Book an appointment
         </a>
-        <a class="btn btn-ghost" href="#prices">See the price list</a>
+        <a class="btn btn-ghost" href="#services">See the services</a>
       </div>
       <ul class="chips" aria-label="At a glance" data-cms-chips>
-        <li><a href="#prices">Makeup from <b>R750</b></a></li>
-        <li><a href="#prices">Hair from <b>R400</b></a></li>
+        <li><a href="/makeup">Makeup from <b>R750</b></a></li>
+        <li><a href="/hair">Hair from <b>R400</b></a></li>
         <li><a href="/bridal">Bridal Package <b>R4500</b></a></li>
         <li>Home calls on request</li>
       </ul>
     </div>
   </section>
 
-  <section class="section swirl" id="prices" aria-labelledby="prices-title" style="background-color: var(--cocoa-700)" data-only="home">
+  <!-- Home: the services menu (one card per service page) and who Asanda is.
+       Each service has its own page (/makeup, /hair, /bridal): see PAGES in
+       src/content.js, which also explains data-only. -->
+  <section class="section swirl" id="services" aria-labelledby="services-title" style="background-color: var(--cocoa-700)" data-only="home">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow" aria-hidden="true">the menu</span>
+        <h2 id="services-title" class="gold-text">Makeup, Hair &amp; Bridal</h2>
+        <p>Choose a service to see its prices and book a time.</p>
+      </div>
+      <div class="svc-menu" data-cms-menu><a class="card svc-card" href="/makeup"><div class="card-head"><h3 class="gold-text">Makeup</h3><span>From R750</span></div><p class="svc-card-list">Soft Glam · Full Glam · Bold / Dramatic</p><span class="svc-card-go">See the makeup prices <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span></a><a class="card svc-card" href="/hair"><div class="card-head"><h3 class="gold-text">Hair</h3><span>From R400</span></div><p class="svc-card-list">Basic Installation · Curling Long Weave</p><span class="svc-card-go">See the hair prices <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span></a><a class="card svc-card" href="/bridal"><div class="card-head"><h3 class="gold-text">Bridal</h3><span>From R750</span></div><p class="svc-card-list">Bridal Package · Bride options · Bridesmaids</p><span class="svc-card-go">See the bridal prices <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span></a></div>
+    </div>
+  </section>
+
+  <section class="section about" id="about" aria-labelledby="about-title" data-only="home">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow" aria-hidden="true">the artist</span>
+        <h2 id="about-title" class="gold-text">Meet Asanda Tiwani</h2>
+        <p data-cms-bio>Asanda Tiwani is the makeup artist and hair stylist behind OMG – Oh! My Glam. From soft everyday glam to bold looks and whole bridal parties, Asanda does both the makeup and the hair, and comes to you on request.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section swirl" id="prices" aria-labelledby="prices-title" style="background-color: var(--cocoa-700)" data-only="makeup hair">
     <div class="wrap">
       <div class="section-head">
         <span class="eyebrow" aria-hidden="true">the menu</span>
@@ -1073,7 +1169,7 @@
       </div>
 
       <div class="menu">
-        <article class="card" aria-labelledby="makeup-title" data-cms-card="makeup">
+        <article class="card" aria-labelledby="makeup-title" data-cms-card="makeup" data-only="makeup">
           <div class="card-head">
             <h3 id="makeup-title" class="gold-text">Makeup</h3>
             <span>Soft to bold</span>
@@ -1081,7 +1177,7 @@
           <ul class="svc-list" data-cms-list="makeup"><li class="svc"><div class="svc-line"><span class="svc-name">Soft Glam</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R750</span></div><div class="svc-meta"><span class="meter" aria-label="Glam level 1 of 3"><i class="on"></i><i></i><i></i></span><a data-service="soft-glam" class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG!%20I&#39;d%20like%20to%20book%20Soft%20Glam%20(R750).%0A%0ADate%3A%0ATime%3A%0AHome%20call%3F%20(yes%2Fno%2C%20and%20your%20area)%3A" target="_blank" rel="noopener" aria-label="Book Soft Glam, R750">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></div></li><li class="svc"><div class="svc-line"><span class="svc-name">Full Glam</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R850</span></div><div class="svc-meta"><span class="meter" aria-label="Glam level 2 of 3"><i class="on"></i><i class="on"></i><i></i></span><a data-service="full-glam" class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG!%20I&#39;d%20like%20to%20book%20Full%20Glam%20(R850).%0A%0ADate%3A%0ATime%3A%0AHome%20call%3F%20(yes%2Fno%2C%20and%20your%20area)%3A" target="_blank" rel="noopener" aria-label="Book Full Glam, R850">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></div></li><li class="svc"><div class="svc-line"><span class="svc-name">Bold / Dramatic</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R950</span></div><div class="svc-meta"><span class="meter" aria-label="Glam level 3 of 3"><i class="on"></i><i class="on"></i><i class="on"></i></span><a data-service="bold-dramatic" class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG!%20I&#39;d%20like%20to%20book%20Bold%20%2F%20Dramatic%20(R950).%0A%0ADate%3A%0ATime%3A%0AHome%20call%3F%20(yes%2Fno%2C%20and%20your%20area)%3A" target="_blank" rel="noopener" aria-label="Book Bold / Dramatic, R950">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></div></li></ul>
         </article>
 
-        <article class="card" aria-labelledby="hair-title" data-cms-card="hair">
+        <article class="card" aria-labelledby="hair-title" data-cms-card="hair" data-only="hair">
           <div class="card-head">
             <h3 id="hair-title" class="gold-text">Hair</h3>
             <span>Install &amp; curl</span>
@@ -1095,19 +1191,6 @@
         <svg class="icon" aria-hidden="true"><use href="#i-home"/></svg>
         <p data-cms-text="home_calls">Home calls are available upon request. The transport fee is not included in the prices above and depends on where you are.</p>
       </div>
-    </div>
-  </section>
-
-  <!-- The home page shows this card; the bridal page (/bridal) shows the full
-       bridal prices below instead (data-only, see PAGES in src/content.js). -->
-  <section class="section bridal bridal-teaser" id="bridal" aria-labelledby="bridal-teaser-title" data-only="home">
-    <div class="wrap">
-      <div class="section-head">
-        <span class="eyebrow" aria-hidden="true">the big day</span>
-        <h2 id="bridal-teaser-title">Bridal Makeup &amp; Hair</h2>
-        <p data-cms-teaser>The Bridal Package is R4500. More options for the bride from R750 and bridesmaids from R850.</p>
-      </div>
-      <p class="bridal-cta"><a class="btn btn-cocoa" href="/bridal">See the bridal prices <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></p>
     </div>
   </section>
 
@@ -1330,8 +1413,8 @@
 <footer>
   <div class="wrap">
     <img src="/img/logo.webp" srcset="/img/logo-240.webp 240w, /img/logo.webp 560w" sizes="150px" width="150" height="94" loading="lazy" alt="OMG – Oh! My Glam">
-    <p class="foot-about" data-cms-about>OMG – Oh! My Glam is Asanda&#39;s makeup and hair business: soft to bold glam, brides and bridesmaids. Prices are in rand: makeup from R750, hair installation and styling from R400, the Bridal Package for R4500 and bridesmaid makeup from R850. Home calls are available on request; transport is quoted separately. To book, choose a service, a day and a free time in the booking calendar on this page, or WhatsApp or call +27 78 576 7604.</p>
-    <p class="foot-links"><a href="/">Home</a> · <a href="/bridal">Bridal</a> · <a href="#book">Book</a></p>
+    <p class="foot-about" data-cms-about>OMG – Oh! My Glam is Asanda Tiwani&#39;s makeup and hair business: soft to bold glam, brides and bridesmaids. Prices are in rand: makeup from R750, hair installation and styling from R400, the Bridal Package for R4500 and bridesmaid makeup from R850. Home calls are available on request; transport is quoted separately. To book, choose a service, a day and a free time in the booking calendar on this page, or WhatsApp or call +27 78 576 7604.</p>
+    <p class="foot-links"><a href="/">Home</a> · <a href="/makeup">Makeup</a> · <a href="/hair">Hair</a> · <a href="/bridal">Bridal</a> · <a href="#book">Book</a></p>
     <p><a href="https://wa.me/27785767604" target="_blank" rel="noopener">WhatsApp <span data-cms-text="phone">+27 78 576 7604</span></a></p>
     <p>© OMG – Oh! My Glam</p>
   </div>
@@ -1344,5 +1427,6 @@
 <script type="application/json" id="omg-catalog">{"phone":"27785767604","services":[{"id":"soft-glam","group":"Makeup","name":"Soft Glam","price":750,"minutes":90},{"id":"full-glam","group":"Makeup","name":"Full Glam","price":850,"minutes":90},{"id":"bold-dramatic","group":"Makeup","name":"Bold / Dramatic","price":950,"minutes":120},{"id":"basic-installation","group":"Hair","name":"Basic Installation","price":400,"minutes":90},{"id":"curling-long-weave","group":"Hair","name":"Curling Long Weave","price":450,"minutes":90},{"id":"bridal-package","group":"Bridal","name":"Bridal Package","price":4500,"minutes":300},{"id":"bridal-makeup-leave","group":"Bridal","name":"Bridal makeup \u0026 leave immediately","price":1800,"minutes":120},{"id":"bridal-makeup-install-style","group":"Bridal","name":"Bridal makeup, installation + style \u0026 leave","price":2900,"minutes":210},{"id":"bridal-natural-hairstyle","group":"Bridal","name":"Bridal natural hairstyle","price":850,"minutes":90},{"id":"bridal-trial","group":"Bridal","name":"Bridal trial makeup","price":750,"minutes":90},{"id":"bridesmaid-strip-lashes","group":"Bridesmaid","name":"Bridesmaid full glam with strip lashes","price":850,"minutes":90},{"id":"bridesmaid-cut-crease","group":"Bridesmaid","name":"Bridesmaid full glam with cut crease","price":950,"minutes":120}]}</script>
 <script type="module" src="/js/booking.js"></script>
 <script type="module" src="/js/reviews.js"></script>
+<script src="/js/nav.js" defer></script>
 </body>
 </html>

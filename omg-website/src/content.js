@@ -19,18 +19,22 @@ export const ALBUMS = ['looks', 'before_after'];
 const TEXT_KEYS = ['phone', 'instagram', 'facebook_url', 'facebook_name', 'area', 'tagline', 'home_calls', 'bridal_note'];
 /** How long a Worker reuses the content before reading it again. */
 const CACHE_MS = 15_000;
-/** The makeup artist behind OMG – Oh! My Glam. */
-export const ARTIST = 'Asanda';
+/** The makeup artist behind OMG – Oh! My Glam: in full where Google should learn the name. */
+export const ARTIST = 'Asanda Tiwani';
+const FIRST_NAME = 'Asanda';
 const SITE = 'https://ohmyglam.online';
 /**
  * The site's pages, all made from public/index.html: an element marked
- * data-only="home" or data-only="bridal" appears on that page alone.
+ * data-only="…" appears only on the pages it names (pageShell()). Home
+ * introduces OMG and Asanda and lists the services; each service has a page
+ * of its own, made for the searches people do ("bridal makeup in …").
  */
 export const PAGES = {
   home: { path: '/', canonical: `${SITE}/` },
-  bridal: { path: '/bridal', canonical: `${SITE}/bridal` },
+  makeup: { path: '/makeup', canonical: `${SITE}/makeup`, cards: ['makeup'], lede: 'From soft and subtle to bold and dramatic: choose your level of glam, then pick a time. Home calls on request.', pricesTitle: 'Makeup Prices', pricesNote: 'Pick your level of glam, then tap Book to choose a time.' },
+  hair: { path: '/hair', canonical: `${SITE}/hair`, cards: ['hair'], lede: 'Weave installation and curling, on its own or with your makeup. Home calls on request.', pricesTitle: 'Hair Prices', pricesNote: 'Tap Book on a service to choose a time.' },
+  bridal: { path: '/bridal', canonical: `${SITE}/bridal`, cards: ['package', 'bride', 'bridesmaid'], lede: 'Hair and makeup for your wedding day, for the bride and the whole bridal party. Home calls on request.' },
 };
-const BRIDAL_LEDE = 'Hair and makeup for your wedding day, for the bride and the whole bridal party. Home calls on request.';
 const REVIEWS_PAGE = 6; // as src/reviews.js
 const MAX_SERVICES = 60;
 const MAX_PHOTOS = 40; // per album
@@ -339,6 +343,16 @@ export function jsonLd(site, origin) {
     '@graph': [
       { '@type': 'WebSite', '@id': `${home}#website`, url: home, name, alternateName: ['Oh! My Glam', 'OMG'], inLanguage: 'en-ZA', publisher: { '@id': id } },
       {
+        '@type': 'Person',
+        '@id': `${home}#artist`,
+        name: ARTIST,
+        jobTitle: 'Makeup artist and hair stylist',
+        worksFor: { '@id': id },
+        url: home,
+        ...(area ? { workLocation: { '@type': 'Place', name: area } } : {}),
+        ...(sameAs.length ? { sameAs } : {}),
+      },
+      {
         '@type': 'HealthAndBeautyBusiness',
         '@id': id,
         name,
@@ -347,7 +361,7 @@ export function jsonLd(site, origin) {
         logo: `${origin}/img/icon-512.png`,
         image: [`${origin}/og.jpg`, ...photos],
         description: `Makeup and hair styling by ${ARTIST}${area ? ` in ${area}` : ''}, including bridal and bridesmaid packages. Home calls on request; transport is quoted separately.`,
-        founder: { '@type': 'Person', name: ARTIST, jobTitle: 'Makeup artist and hair stylist' },
+        founder: { '@id': `${home}#artist` },
         telephone: `+${site.text.phone || WHATSAPP_NUMBER}`,
         address: { '@type': 'PostalAddress', ...(area ? { addressLocality: area } : {}), addressCountry: 'ZA' },
         ...(area ? { areaServed: area } : {}),
@@ -370,15 +384,16 @@ function fromPrice(services, card) {
   return prices.length ? Math.min(...prices) : null;
 }
 
-/** The <title>: what people search, then the area, under 60 characters. */
+/** Each page's <title>: what people search, the area, then the name, under 60 characters. */
+const TITLES = {
+  home: (area) => [area && `Makeup Artist in ${area} – ${ARTIST} | OMG`, area && `Makeup Artist in ${area} – ${ARTIST}`, area && `Makeup Artist in ${area} – OMG`, `${ARTIST} – Makeup Artist & Hair Stylist | OMG`],
+  makeup: (area) => [area && `Makeup in ${area} – Soft, Full & Bold Glam | OMG`, area && `Makeup in ${area} by ${ARTIST}`, area && `Makeup in ${area} – OMG`, `Makeup by ${ARTIST} – Soft, Full & Bold Glam | OMG`],
+  hair: (area) => [area && `Hair Installation & Styling in ${area} | OMG`, area && `Hair Installation in ${area} – OMG`, area && `Hair in ${area} – OMG`, `Hair Installation & Styling by ${ARTIST} | OMG`],
+  bridal: (area) => [area && `Bridal Makeup & Hair in ${area} | OMG – Oh! My Glam`, area && `Bridal Makeup & Hair in ${area} – OMG`, area && `Bridal Makeup in ${area} – OMG`, `Bridal Makeup & Hair by ${ARTIST} | OMG`],
+};
+
 export function pageTitle(site, page = 'home') {
-  const area = areaOf(site);
-  const options = page === 'bridal'
-    ? [...(area ? [`Bridal Makeup & Hair in ${area} | OMG – Oh! My Glam`, `Bridal Makeup & Hair in ${area} – OMG`, `Bridal Makeup in ${area} – OMG`] : []),
-      `Bridal Makeup & Hair by ${ARTIST} | OMG – Oh! My Glam`]
-    : [...(area ? [`Makeup Artist in ${area} | Bridal Makeup & Hair – OMG`, `Makeup Artist in ${area} | Bridal & Hair – OMG`, `Makeup Artist in ${area} – OMG`] : []),
-      'Makeup Artist & Hair Stylist | Bridal Makeup – OMG'];
-  return options.find((t) => chars(t) < 60);
+  return TITLES[page](areaOf(site)).filter(Boolean).find((t) => chars(t) < 60);
 }
 
 /**
@@ -396,36 +411,50 @@ function fitDescription(lead, prices, tails) {
   return best || lead;
 }
 
-/** The page's description for Google, written from the Website tab's prices. */
+const TAILS = [' Home calls on request. Book your glam online or on WhatsApp.', ' Home calls on request. Book online or on WhatsApp.', ' Home calls on request. Book online.', ' Book online or on WhatsApp.', ' Book your glam online.', ' Book online today.', ' Book online.'];
+const BRIDAL_TAILS = [' Home calls on request. Book your date online or on WhatsApp.', ' Book your wedding date online or on WhatsApp.', ' Book your date online or on WhatsApp.', ' Book your wedding date online.', ' Book your date online.', ' Book online.'];
+
+/** Each page's description for Google, written from the Website tab's prices. */
 export function metaDescription(site, page = 'home') {
   const services = visibleServices(site);
   const area = areaOf(site);
   const where = area ? ` in ${area}` : '';
   const from = (card) => fromPrice(services, card);
+  const each = (card) => services.filter((s) => s.card === card).map((s) => `${s.name} R${s.price}`);
   const pkgs = services.filter((s) => s.card === 'package');
   const pkg = pkgs.length === 1 ? `${pkgs[0].name} R${pkgs[0].price}` : pkgs.length > 1 && `bridal packages from R${from('package')}`;
-  if (page === 'bridal') {
-    return fitDescription(`Bridal makeup & hair by ${ARTIST} (OMG – Oh! My Glam)${where}.`, [
-      pkg,
-      from('bride') !== null && `bride-only options from R${from('bride')}`,
-      from('bridesmaid') !== null && `bridesmaids from R${from('bridesmaid')}`,
-    ].filter(Boolean), [' Home calls on request. Book your date online or on WhatsApp.', ' Book your wedding date online or on WhatsApp.', ' Book your date online or on WhatsApp.', ' Book your wedding date online.', ' Book your date online.', ' Book online.']);
+  switch (page) {
+    case 'makeup':
+      return fitDescription(`Makeup by ${ARTIST} (OMG – Oh! My Glam)${where}.`, each('makeup'), TAILS);
+    case 'hair':
+      return fitDescription(`Hair installation & styling by ${ARTIST} (OMG – Oh! My Glam)${where}.`, [...each('hair'), from('makeup') !== null && `makeup from R${from('makeup')}`].filter(Boolean), TAILS);
+    case 'bridal':
+      return fitDescription(`Bridal makeup & hair by ${ARTIST} (OMG – Oh! My Glam)${where}.`, [
+        pkg,
+        from('bride') !== null && `bride-only options from R${from('bride')}`,
+        from('bridesmaid') !== null && `bridesmaids from R${from('bridesmaid')}`,
+      ].filter(Boolean), BRIDAL_TAILS);
+    default:
+      return fitDescription(`${ARTIST}: makeup artist & hair stylist${where} (OMG – Oh! My Glam).`, [
+        from('makeup') !== null && `makeup from R${from('makeup')}`,
+        from('hair') !== null && `hair from R${from('hair')}`,
+        pkg,
+        from('bridesmaid') !== null && `bridesmaids from R${from('bridesmaid')}`,
+      ].filter(Boolean), TAILS);
   }
-  return fitDescription(`Makeup artist & hair stylist ${ARTIST} (OMG – Oh! My Glam)${where}.`, [
-    from('makeup') !== null && `makeup from R${from('makeup')}`,
-    pkg,
-    from('hair') !== null && `hair from R${from('hair')}`,
-    from('bridesmaid') !== null && `bridesmaids from R${from('bridesmaid')}`,
-  ].filter(Boolean), [' Home calls on request. Book online or on WhatsApp.', ' Home calls on request. Book online.', ' Book online or on WhatsApp.', ' Book online today.', ' Book online.']);
 }
 
 /** The words under the logo in the H1 (HTML): who, what, and where once the area is set. */
+const HERO = {
+  home: `<b>${ARTIST}</b> · makeup artist &amp; hair stylist`,
+  makeup: `Makeup by <b>${ARTIST}</b>`,
+  hair: `Hair installation &amp; styling by <b>${ARTIST}</b>`,
+  bridal: `Bridal makeup &amp; hair by <b>${ARTIST}</b>`,
+};
+
 export function heroLine(site, page = 'home') {
   const area = areaOf(site);
-  const where = area ? ` in <b>${esc(area)}</b>` : '';
-  return page === 'bridal'
-    ? `Bridal makeup &amp; hair by <b>${ARTIST}</b>${where}`
-    : `<b>${ARTIST}</b> · makeup artist &amp; hair stylist${where}`;
+  return HERO[page] + (area ? ` in <b>${esc(area)}</b>` : '');
 }
 
 /** Who, what, where and how to book, in plain words (footer). */
@@ -452,28 +481,51 @@ export function chipsHtml(site, page = 'home') {
   const services = visibleServices(site);
   const from = (card) => fromPrice(services, card);
   const pkg = services.find((s) => s.card === 'package');
-  const chips = page === 'bridal'
-    ? [
+  const each = (card) => services.filter((s) => s.card === card).slice(0, 3).map((s) => `<li><a href="#prices">${esc(s.name)} <b>R${s.price}</b></a></li>`);
+  const chips = {
+    home: () => [
+      from('makeup') !== null && `<li><a href="/makeup">Makeup from <b>R${from('makeup')}</b></a></li>`,
+      from('hair') !== null && `<li><a href="/hair">Hair from <b>R${from('hair')}</b></a></li>`,
+      pkg && `<li><a href="/bridal">${esc(pkg.name)} <b>R${pkg.price}</b></a></li>`,
+    ],
+    makeup: () => each('makeup'),
+    hair: () => each('hair'),
+    bridal: () => [
       pkg && `<li><a href="#bridal">${esc(pkg.name)} <b>R${pkg.price}</b></a></li>`,
       from('bride') !== null && `<li><a href="#bridal">Bride from <b>R${from('bride')}</b></a></li>`,
       from('bridesmaid') !== null && `<li><a href="#bridal">Bridesmaids from <b>R${from('bridesmaid')}</b></a></li>`,
-    ]
-    : [
-      from('makeup') !== null && `<li><a href="#prices">Makeup from <b>R${from('makeup')}</b></a></li>`,
-      from('hair') !== null && `<li><a href="#prices">Hair from <b>R${from('hair')}</b></a></li>`,
-      pkg && `<li><a href="/bridal">${esc(pkg.name)} <b>R${pkg.price}</b></a></li>`,
-    ];
+    ],
+  }[page]();
   return [...chips, '<li>Home calls on request</li>'].filter(Boolean).join('');
 }
 
-/** The home page's bridal card, pointing to the bridal page. */
-export function bridalTeaser(site) {
+/** The home page's menu: one card per service page, with what it offers and from what price. */
+export function menuHtml(site) {
   const services = visibleServices(site);
-  const from = (card) => fromPrice(services, card);
-  const pkg = services.find((s) => s.card === 'package');
-  const more = [from('bride') !== null && `the bride from R${from('bride')}`, from('bridesmaid') !== null && `bridesmaids from R${from('bridesmaid')}`].filter(Boolean);
-  return [pkg && `The ${pkg.name} is R${pkg.price}.`, more.length && `More options for ${more.join(' and ')}.`].filter(Boolean).join(' ')
-    || 'Hair and makeup for the bride and the whole bridal party.';
+  const card = (page, title, go, summary) => {
+    const list = services.filter((s) => PAGES[page].cards.includes(s.card));
+    if (!list.length) return '';
+    return `<a class="card svc-card" href="${PAGES[page].path}"><div class="card-head"><h3 class="gold-text">${title}</h3><span>From R${Math.min(...list.map((s) => s.price))}</span></div>`
+      + `<p class="svc-card-list">${summary(list).map(esc).join(' · ')}</p>`
+      + `<span class="svc-card-go">${go} <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span></a>`;
+  };
+  const names = (list) => list.map((s) => s.name);
+  return [
+    card('makeup', 'Makeup', 'See the makeup prices', names),
+    card('hair', 'Hair', 'See the hair prices', names),
+    card('bridal', 'Bridal', 'See the bridal prices', (list) => [
+      ...list.filter((s) => s.card === 'package').map((s) => s.name),
+      list.some((s) => s.card === 'bride') && 'Bride options',
+      list.some((s) => s.card === 'bridesmaid') && 'Bridesmaids',
+    ].filter(Boolean)),
+  ].join('');
+}
+
+/** Who Asanda is, for the home page's "Meet Asanda Tiwani" (every fact is from the site). */
+export function aboutBio(site) {
+  const area = areaOf(site);
+  return `${ARTIST} is the makeup artist and hair stylist behind OMG – Oh! My Glam${area ? `, based in ${area}` : ''}. `
+    + `From soft everyday glam to bold looks and whole bridal parties, ${FIRST_NAME} does both the makeup and the hair, and comes to you on request.`;
 }
 
 // Reviews, as public/js/reviews.js draws them (card(), starRow(), renderSummary()).
@@ -495,7 +547,7 @@ export function reviewCardHtml(r) {
 }
 
 export function reviewSummaryHtml({ count, average }) {
-  if (!count) return `<p class="rv-empty">No reviews yet. Had your glam done by ${ARTIST}? Be the first to leave one.</p>`;
+  if (!count) return `<p class="rv-empty">No reviews yet. Had your glam done by ${FIRST_NAME}? Be the first to leave one.</p>`;
   const avg = average.toFixed(1);
   return `<span class="rv-score">${avg}</span>${starRowHtml(average, `Average ${avg} out of 5 stars`, 'avg')}`
     + `<span class="rv-outof">out of 5 · ${count} ${count === 1 ? 'review' : 'reviews'}</span>`;
@@ -505,16 +557,15 @@ export function reviewSummaryHtml({ count, average }) {
 export function shareDescription(site, page = 'home') {
   const services = visibleServices(site);
   const phone = formatPhone(site.text.phone || WHATSAPP_NUMBER);
-  let parts;
-  if (page === 'bridal') {
-    const from = (card) => fromPrice(services, card);
-    const pkg = services.find((s) => s.card === 'package');
-    parts = [pkg && `${pkg.name} R${pkg.price}`, from('bride') !== null && `Bride from R${from('bride')}`, from('bridesmaid') !== null && `Bridesmaids from R${from('bridesmaid')}`].filter(Boolean);
-  } else {
-    const makeup = services.filter((s) => s.card === 'makeup').slice(0, 3).map((s) => `${s.name} R${s.price}`);
-    const hair = services.filter((s) => s.card === 'hair').map((s) => s.price);
-    parts = [...makeup, hair.length ? `Hair from R${Math.min(...hair)}` : null].filter(Boolean);
-  }
+  const from = (card) => fromPrice(services, card);
+  const each = (card) => services.filter((s) => s.card === card).slice(0, 3).map((s) => `${s.name} R${s.price}`);
+  const pkg = services.find((s) => s.card === 'package');
+  const parts = {
+    home: () => [...each('makeup'), from('hair') !== null && `Hair from R${from('hair')}`],
+    makeup: () => each('makeup'),
+    hair: () => each('hair'),
+    bridal: () => [pkg && `${pkg.name} R${pkg.price}`, from('bride') !== null && `Bride from R${from('bride')}`, from('bridesmaid') !== null && `Bridesmaids from R${from('bridesmaid')}`],
+  }[page]().filter(Boolean);
   return `${parts.length ? `${parts.join(' · ')}. ` : ''}Book online or on WhatsApp: ${phone}.`.slice(0, 300);
 }
 
@@ -531,7 +582,9 @@ export function llmsTxt(site, origin) {
   const notes = [site.text.home_calls, site.text.bridal_note].filter(Boolean).map((t) => `- ${one(t)}`);
   const facebook = site.text.facebook_url && !/\/search\b/.test(site.text.facebook_url) ? site.text.facebook_url : '';
   const links = [
-    `- [Price list, photos, reviews and online booking](${origin}/)`,
+    `- [${ARTIST} and OMG – Oh! My Glam, photos, reviews and online booking](${origin}/)`,
+    `- [Makeup prices](${origin}/makeup)`,
+    `- [Hair prices](${origin}/hair)`,
     `- [Bridal makeup and hair prices](${origin}/bridal)`,
     `- [WhatsApp ${formatPhone(phone)}](https://wa.me/${phone})`,
     site.text.instagram && `- [Instagram @${one(site.text.instagram)}](${instagramUrl(site.text.instagram)})`,
@@ -553,31 +606,36 @@ export function llmsTxt(site, origin) {
  * database, so a page keeps its shape even if the content can't be read.
  */
 export function pageShell(response, page) {
-  const { canonical } = PAGES[page];
+  const spec = PAGES[page];
   let rewriter = new HTMLRewriter()
     .on('[data-only]', {
       element(el) {
-        if (el.getAttribute('data-only') === page) el.removeAttribute('data-only');
+        if (el.getAttribute('data-only').split(/\s+/).includes(page)) el.removeAttribute('data-only');
         else el.remove();
       },
     })
-    .on('link[rel="canonical"]', { element(el) { el.setAttribute('href', canonical); } })
-    .on('meta[property="og:url"]', { element(el) { el.setAttribute('content', canonical); } });
-  if (page === 'bridal') {
+    .on('link[rel="canonical"]', { element(el) { el.setAttribute('href', spec.canonical); } })
+    .on('meta[property="og:url"]', { element(el) { el.setAttribute('content', spec.canonical); } })
+    .on(`a[data-nav="${page}"]`, { element(el) { el.setAttribute('aria-current', 'page'); } });
+  if (page !== 'home') {
     const bare = { text: {}, services: [] };
-    const description = metaDescription(bare, 'bridal');
+    const description = metaDescription(bare, page);
+    const target = page === 'bridal' ? '#bridal' : '#prices';
     rewriter = rewriter
-      .on('head > title', { element(el) { el.setInnerContent(pageTitle(bare, 'bridal')); } })
-      .on('meta[property="og:title"]', { element(el) { el.setAttribute('content', pageTitle(bare, 'bridal')); } })
+      .on('head > title', { element(el) { el.setInnerContent(pageTitle(bare, page)); } })
+      .on('meta[property="og:title"]', { element(el) { el.setAttribute('content', pageTitle(bare, page)); } })
       .on('meta[name="description"]', { element(el) { el.setAttribute('content', description); } })
       .on('meta[property="og:description"]', { element(el) { el.setAttribute('content', description); } })
-      .on('[data-cms-hero]', { element(el) { el.setInnerContent(heroLine(bare, 'bridal'), { html: true }); } })
-      .on('.hero .lede', { element(el) { el.removeAttribute('data-cms-text'); el.setInnerContent(BRIDAL_LEDE); } })
-      .on('.hero-cta a[href="#prices"]', { element(el) { el.setAttribute('href', '#bridal'); el.setInnerContent('See the bridal prices'); } })
+      .on('[data-cms-hero]', { element(el) { el.setInnerContent(heroLine(bare, page), { html: true }); } })
+      .on('.hero .lede', { element(el) { el.removeAttribute('data-cms-text'); el.setInnerContent(spec.lede); } })
+      .on('.hero-cta a[href="#services"]', { element(el) { el.setAttribute('href', target); el.setInnerContent(page === 'bridal' ? 'See the bridal prices' : 'See the prices'); } })
       .on('[data-cms-chips]', { element(el) { el.setInnerContent(''); } })
-      .on('.nav a[href="#prices"]', { element(el) { el.setAttribute('href', '/#prices'); } })
-      .on('.nav a[href="/bridal"]', { element(el) { el.setAttribute('aria-current', 'page'); } })
       .on('a.brand', { element(el) { el.setAttribute('href', '/'); el.setAttribute('aria-label', 'OMG – Oh! My Glam, home page'); } });
+    if (spec.pricesTitle) {
+      rewriter = rewriter
+        .on('#prices-title', { element(el) { el.setInnerContent(spec.pricesTitle); } })
+        .on('#prices .section-head p', { element(el) { el.setInnerContent(spec.pricesNote); } });
+    }
   }
   return rewriter.transform(response);
 }
@@ -657,7 +715,8 @@ export function renderPage(response, site, url, page = 'home') {
     .on('meta[property="og:title"]', { element(el) { el.setAttribute('content', pageTitle(site, page)); } })
     .on('[data-cms-hero]', { element(el) { el.setInnerContent(heroLine(site, page), { html: true }); } })
     .on('[data-cms-chips]', { element(el) { el.setInnerContent(chipsHtml(site, page), { html: true }); } })
-    .on('[data-cms-teaser]', { element(el) { el.setInnerContent(bridalTeaser(site)); } })
+    .on('[data-cms-menu]', { element(el) { el.setInnerContent(menuHtml(site), { html: true }); } })
+    .on('[data-cms-bio]', { element(el) { el.setInnerContent(aboutBio(site)); } })
     .on('[data-cms-about]', { element(el) { el.setInnerContent(aboutText(site)); } })
     .on('#rv-summary', { element(el) { el.setInnerContent(reviewSummaryHtml(site.reviews), { html: true }); } })
     .on('#rv-list', {
