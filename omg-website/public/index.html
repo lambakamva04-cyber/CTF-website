@@ -385,6 +385,7 @@
   }
   .mnav-panel a:last-child { border-bottom: 0; }
   .mnav-panel a[aria-current="page"] { color: var(--gold-200); }
+  .mnav-panel a.mnav-switch { color: var(--gold-200); letter-spacing: .08em; text-transform: none; font-size: 15px; }
   @media (max-width: 380px) {
     .topbar .wrap { gap: 10px; }
     .mnav summary { width: 44px; padding: 0; justify-content: center; }
@@ -395,6 +396,25 @@
 
   /* ===== Hero ===== */
   .hero { text-align: center; padding: 44px 0 64px; }
+  /* Simple or Full menu: the two ways to view the site. */
+  .view-switch {
+    display: inline-flex; gap: 4px; padding: 3px; margin: 0 0 22px;
+    border: 1px solid var(--line); border-radius: 999px; background: rgba(31, 14, 11, .45);
+  }
+  .view-switch a {
+    display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 999px;
+    font: 600 13px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase;
+    color: var(--cream-soft); text-decoration: none;
+  }
+  .view-switch a:hover { color: var(--gold-100); }
+  .view-switch a[aria-current="page"] { background: var(--gold-fill); color: var(--cocoa-900); }
+  /* Gallery, Reviews and Book: a short header, so the page's own content is on the first screen. */
+  .hero.hero-compact { padding: 22px 0 4px; }
+  .hero-compact .view-switch { margin-bottom: 14px; }
+  .hero-compact .logo-stage { --w: min(210px, 54vw); }
+  .hero-compact .lede { margin-bottom: 0; }
+  .hero-compact + .section { padding-top: 36px; }
+  @media (min-width: 640px) { .hero-compact + .section { padding-top: 48px; } }
   @media (min-width: 640px) { .hero { padding: 64px 0 88px; } }
   .hero h1 { margin: 0; }
   /* --w is the logo's width; --u is a hundredth of it, the unit the sparkles are measured in. */
@@ -1063,25 +1083,42 @@
     <a class="brand" href="#top" aria-label="OMG – Oh! My Glam, back to top">
       <img src="/img/logo-240.webp" srcset="/img/logo-240.webp 240w, /img/logo.webp 560w" sizes="80px" width="80" height="50" alt="">
     </a>
-    <nav class="nav" aria-label="Main">
-      <a href="/makeup" data-nav="makeup">Makeup</a>
-      <a href="/hair" data-nav="hair">Hair</a>
-      <a href="/bridal" data-nav="bridal">Bridal</a>
+    <!-- The simple view's links go down its one page; the full menu's go to its pages. -->
+    <nav class="nav" aria-label="Main" data-only="home">
+      <a href="#prices">Prices</a>
+      <a href="#bridal">Bridal</a>
       <a href="#gallery">Gallery</a>
       <a href="#reviews">Reviews</a>
       <a href="#book">Book</a>
     </nav>
-    <!-- Phones: the same pages behind a Menu button (no script needed to open it). -->
+    <nav class="nav" aria-label="Main" data-only="menu makeup hair bridal gallery reviews book">
+      <a href="/makeup" data-nav="makeup">Makeup</a>
+      <a href="/hair" data-nav="hair">Hair</a>
+      <a href="/bridal" data-nav="bridal">Bridal</a>
+      <a href="/gallery" data-nav="gallery">Gallery</a>
+      <a href="/reviews" data-nav="reviews">Reviews</a>
+      <a href="/book" data-nav="book">Book</a>
+    </nav>
+    <!-- Phones: the same links behind a Menu button (no script needed to open it). -->
     <details class="mnav">
       <summary><svg class="icon" aria-hidden="true"><use href="#i-menu"/></svg><span class="mnav-label">Menu</span></summary>
-      <nav class="mnav-panel" aria-label="Pages">
-        <a href="/" data-nav="home">Home</a>
-        <a href="/makeup" data-nav="makeup">Makeup</a>
-        <a href="/hair" data-nav="hair">Hair</a>
-        <a href="/bridal" data-nav="bridal">Bridal</a>
+      <nav class="mnav-panel" aria-label="Sections" data-only="home">
+        <a href="#prices">Prices</a>
+        <a href="#bridal">Bridal</a>
         <a href="#gallery">Gallery</a>
         <a href="#reviews">Reviews</a>
         <a href="#book">Book</a>
+        <a href="/menu" class="mnav-switch">Full menu view</a>
+      </nav>
+      <nav class="mnav-panel" aria-label="Pages" data-only="menu makeup hair bridal gallery reviews book">
+        <a href="/menu" data-nav="menu">Home</a>
+        <a href="/makeup" data-nav="makeup">Makeup</a>
+        <a href="/hair" data-nav="hair">Hair</a>
+        <a href="/bridal" data-nav="bridal">Bridal</a>
+        <a href="/gallery" data-nav="gallery">Gallery</a>
+        <a href="/reviews" data-nav="reviews">Reviews</a>
+        <a href="/book" data-nav="book">Book</a>
+        <a href="/" class="mnav-switch">Simple view</a>
       </nav>
     </details>
     <a class="btn btn-gold" href="#book">
@@ -1096,6 +1133,12 @@
     <svg class="sparkle" style="right:14%;top:42%;width:16px;height:16px" aria-hidden="true"><use href="#i-spark"/></svg>
     <svg class="sparkle" style="left:22%;bottom:16%;width:14px;height:14px" aria-hidden="true"><use href="#i-spark"/></svg>
     <div class="wrap">
+      <!-- Simple (the whole site on this one page, the default) or the full menu
+           (every option on a page of its own). See PAGES in src/content.js. -->
+      <nav class="view-switch" aria-label="How to view the site">
+        <a href="/" data-view="simple">Simple</a>
+        <a href="/menu" data-view="full">Full menu</a>
+      </nav>
       <h1>
         <span class="logo-stage">
           <img class="hero-logo" src="/img/logo-840.webp" srcset="/img/logo.webp 560w, /img/logo-840.webp 840w" sizes="(max-width: 600px) 88vw, 520px" width="560" height="350" alt="OMG – Oh! My Glam" fetchpriority="high">
@@ -1125,12 +1168,12 @@
         <a class="btn btn-gold" href="#book">
           <svg class="icon" aria-hidden="true"><use href="#i-cal"/></svg>Book an appointment
         </a>
-        <a class="btn btn-ghost" href="#services">See the services</a>
+        <a class="btn btn-ghost" href="#prices">See the price list</a>
       </div>
       <ul class="chips" aria-label="At a glance" data-cms-chips>
-        <li><a href="/makeup">Makeup from <b>R750</b></a></li>
-        <li><a href="/hair">Hair from <b>R400</b></a></li>
-        <li><a href="/bridal">Bridal Package <b>R4500</b></a></li>
+        <li><a href="#prices">Makeup from <b>R750</b></a></li>
+        <li><a href="#prices">Hair from <b>R400</b></a></li>
+        <li><a href="#bridal">Bridal Package <b>R4500</b></a></li>
         <li>Home calls on request</li>
       </ul>
     </div>
@@ -1139,18 +1182,18 @@
   <!-- Home: the services menu (one card per service page) and who Asanda is.
        Each service has its own page (/makeup, /hair, /bridal): see PAGES in
        src/content.js, which also explains data-only. -->
-  <section class="section swirl" id="services" aria-labelledby="services-title" style="background-color: var(--cocoa-700)" data-only="home">
+  <section class="section swirl" id="services" aria-labelledby="services-title" style="background-color: var(--cocoa-700)" data-only="menu">
     <div class="wrap">
       <div class="section-head">
         <span class="eyebrow" aria-hidden="true">the menu</span>
         <h2 id="services-title" class="gold-text">Makeup, Hair &amp; Bridal</h2>
         <p>Choose a service to see its prices and book a time.</p>
       </div>
-      <div class="svc-menu" data-cms-menu><a class="card svc-card" href="/makeup"><div class="card-head"><h3 class="gold-text">Makeup</h3><span>From R750</span></div><p class="svc-card-list">Soft Glam · Full Glam · Bold / Dramatic</p><span class="svc-card-go">See the makeup prices <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span></a><a class="card svc-card" href="/hair"><div class="card-head"><h3 class="gold-text">Hair</h3><span>From R400</span></div><p class="svc-card-list">Basic Installation · Curling Long Weave</p><span class="svc-card-go">See the hair prices <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span></a><a class="card svc-card" href="/bridal"><div class="card-head"><h3 class="gold-text">Bridal</h3><span>From R750</span></div><p class="svc-card-list">Bridal Package · Bride options · Bridesmaids</p><span class="svc-card-go">See the bridal prices <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span></a></div>
+      <div class="svc-menu" data-cms-menu><a class="card svc-card" href="/makeup"><div class="card-head"><h3 class="gold-text">Makeup</h3><span>From R750</span></div><p class="svc-card-list">Soft Glam · Full Glam · Bold / Dramatic</p><span class="svc-card-go">See the makeup prices <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span></a><a class="card svc-card" href="/hair"><div class="card-head"><h3 class="gold-text">Hair</h3><span>From R400</span></div><p class="svc-card-list">Basic Installation · Curling Long Weave</p><span class="svc-card-go">See the hair prices <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span></a><a class="card svc-card" href="/bridal"><div class="card-head"><h3 class="gold-text">Bridal</h3><span>From R750</span></div><p class="svc-card-list">Bridal Package · Bride options · Bridesmaids</p><span class="svc-card-go">See the bridal prices <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span></a><a class="card svc-card" href="/gallery"><div class="card-head"><h3 class="gold-text">Gallery</h3><span>10 photos</span></div><p class="svc-card-list">Looks and before &amp; after</p><span class="svc-card-go">See the photos <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span></a><a class="card svc-card" href="/reviews"><div class="card-head"><h3 class="gold-text">Reviews</h3><span>New</span></div><p class="svc-card-list">What clients say, and room for yours</p><span class="svc-card-go">Read the reviews <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span></a><a class="card svc-card" href="/book"><div class="card-head"><h3 class="gold-text">Book</h3><span>Online</span></div><p class="svc-card-list">Pick a service, a day and a free time</p><span class="svc-card-go">Book an appointment <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span></a></div>
     </div>
   </section>
 
-  <section class="section about" id="about" aria-labelledby="about-title" data-only="home">
+  <section class="section about" id="about" aria-labelledby="about-title" data-only="menu">
     <div class="wrap">
       <div class="section-head">
         <span class="eyebrow" aria-hidden="true">the artist</span>
@@ -1160,7 +1203,7 @@
     </div>
   </section>
 
-  <section class="section swirl" id="prices" aria-labelledby="prices-title" style="background-color: var(--cocoa-700)" data-only="makeup hair">
+  <section class="section swirl" id="prices" aria-labelledby="prices-title" style="background-color: var(--cocoa-700)" data-only="home makeup hair">
     <div class="wrap">
       <div class="section-head">
         <span class="eyebrow" aria-hidden="true">the menu</span>
@@ -1169,7 +1212,7 @@
       </div>
 
       <div class="menu">
-        <article class="card" aria-labelledby="makeup-title" data-cms-card="makeup" data-only="makeup">
+        <article class="card" aria-labelledby="makeup-title" data-cms-card="makeup" data-only="home makeup">
           <div class="card-head">
             <h3 id="makeup-title" class="gold-text">Makeup</h3>
             <span>Soft to bold</span>
@@ -1177,7 +1220,7 @@
           <ul class="svc-list" data-cms-list="makeup"><li class="svc"><div class="svc-line"><span class="svc-name">Soft Glam</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R750</span></div><div class="svc-meta"><span class="meter" aria-label="Glam level 1 of 3"><i class="on"></i><i></i><i></i></span><a data-service="soft-glam" class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG!%20I&#39;d%20like%20to%20book%20Soft%20Glam%20(R750).%0A%0ADate%3A%0ATime%3A%0AHome%20call%3F%20(yes%2Fno%2C%20and%20your%20area)%3A" target="_blank" rel="noopener" aria-label="Book Soft Glam, R750">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></div></li><li class="svc"><div class="svc-line"><span class="svc-name">Full Glam</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R850</span></div><div class="svc-meta"><span class="meter" aria-label="Glam level 2 of 3"><i class="on"></i><i class="on"></i><i></i></span><a data-service="full-glam" class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG!%20I&#39;d%20like%20to%20book%20Full%20Glam%20(R850).%0A%0ADate%3A%0ATime%3A%0AHome%20call%3F%20(yes%2Fno%2C%20and%20your%20area)%3A" target="_blank" rel="noopener" aria-label="Book Full Glam, R850">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></div></li><li class="svc"><div class="svc-line"><span class="svc-name">Bold / Dramatic</span><span class="svc-dots" aria-hidden="true"></span><span class="svc-price gold-text">R950</span></div><div class="svc-meta"><span class="meter" aria-label="Glam level 3 of 3"><i class="on"></i><i class="on"></i><i class="on"></i></span><a data-service="bold-dramatic" class="svc-book" href="https://wa.me/27785767604?text=Hi%20OMG!%20I&#39;d%20like%20to%20book%20Bold%20%2F%20Dramatic%20(R950).%0A%0ADate%3A%0ATime%3A%0AHome%20call%3F%20(yes%2Fno%2C%20and%20your%20area)%3A" target="_blank" rel="noopener" aria-label="Book Bold / Dramatic, R950">Book <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></div></li></ul>
         </article>
 
-        <article class="card" aria-labelledby="hair-title" data-cms-card="hair" data-only="hair">
+        <article class="card" aria-labelledby="hair-title" data-cms-card="hair" data-only="home hair">
           <div class="card-head">
             <h3 id="hair-title" class="gold-text">Hair</h3>
             <span>Install &amp; curl</span>
@@ -1194,7 +1237,7 @@
     </div>
   </section>
 
-  <section class="section bridal" id="bridal" aria-labelledby="bridal-title" data-only="bridal">
+  <section class="section bridal" id="bridal" aria-labelledby="bridal-title" data-only="home bridal">
     <div class="wrap">
       <div class="section-head">
         <span class="eyebrow" aria-hidden="true">the big day</span>
@@ -1236,7 +1279,7 @@
     </div>
   </section>
 
-  <section class="section gallery" id="gallery" aria-labelledby="gallery-title">
+  <section class="section gallery" id="gallery" aria-labelledby="gallery-title" data-only="home gallery">
     <div class="wrap">
       <div class="section-head">
         <h2 id="gallery-title" class="script-title">the glam<span class="sr-only">: makeup and hair photos, before and after</span></h2>
@@ -1267,7 +1310,7 @@
     </div>
   </section>
 
-  <section class="section reviews" id="reviews" aria-labelledby="reviews-title">
+  <section class="section reviews" id="reviews" aria-labelledby="reviews-title" data-only="home reviews">
     <div class="wrap">
       <div class="section-head">
         <span class="eyebrow" aria-hidden="true">kind words</span>
@@ -1316,7 +1359,7 @@
     </div>
   </section>
 
-  <section class="section swirl" id="book" aria-labelledby="book-title">
+  <section class="section swirl" id="book" aria-labelledby="book-title" data-only="home book">
     <div class="wrap">
       <div class="section-head">
         <span class="eyebrow" aria-hidden="true">let's get you ready</span>
@@ -1413,8 +1456,8 @@
 <footer>
   <div class="wrap">
     <img src="/img/logo.webp" srcset="/img/logo-240.webp 240w, /img/logo.webp 560w" sizes="150px" width="150" height="94" loading="lazy" alt="OMG – Oh! My Glam">
-    <p class="foot-about" data-cms-about>OMG – Oh! My Glam is Asanda Tiwani&#39;s makeup and hair business: soft to bold glam, brides and bridesmaids. Prices are in rand: makeup from R750, hair installation and styling from R400, the Bridal Package for R4500 and bridesmaid makeup from R850. Home calls are available on request; transport is quoted separately. To book, choose a service, a day and a free time in the booking calendar on this page, or WhatsApp or call +27 78 576 7604.</p>
-    <p class="foot-links"><a href="/">Home</a> · <a href="/makeup">Makeup</a> · <a href="/hair">Hair</a> · <a href="/bridal">Bridal</a> · <a href="#book">Book</a></p>
+    <p class="foot-about" data-cms-about>OMG – Oh! My Glam is Asanda Tiwani&#39;s makeup and hair business: soft to bold glam, brides and bridesmaids. Prices are in rand: makeup from R750, hair installation and styling from R400, the Bridal Package for R4500 and bridesmaid makeup from R850. Home calls are available on request; transport is quoted separately. To book, choose a service, a day and a free time in the online booking calendar, or WhatsApp or call +27 78 576 7604.</p>
+    <p class="foot-links"><a href="/makeup">Makeup</a> · <a href="/hair">Hair</a> · <a href="/bridal">Bridal</a> · <a href="/gallery">Gallery</a> · <a href="/reviews">Reviews</a> · <a href="/book">Book</a></p>
     <p><a href="https://wa.me/27785767604" target="_blank" rel="noopener">WhatsApp <span data-cms-text="phone">+27 78 576 7604</span></a></p>
     <p>© OMG – Oh! My Glam</p>
   </div>
