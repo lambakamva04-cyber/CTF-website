@@ -186,19 +186,30 @@ Two dashboard settings go with that:
 
 ## The pages
 
-Both pages are made from `public/index.html`: an element marked
-`data-only="home"` or `data-only="bridal"` appears on that page alone (`PAGES`
-and `pageShell()` in `src/content.js`), so the header, footer, styles, gallery,
-reviews and booking calendar are written once.
+Every page is made from `public/index.html`: an element marked
+`data-only="…"` appears only on the pages it names (`PAGES` and `pageShell()`
+in `src/content.js`), so the header, footer, styles, gallery, reviews and
+booking calendar are written once. Each page has its own title, description,
+canonical address and H1, all naming Asanda Tiwani.
 
 | Address | What it has |
 | --- | --- |
-| `/` | Asanda's makeup and hair prices, a bridal card linking to `/bridal`, the gallery, reviews and the booking calendar |
-| `/bridal` | The bridal prices (package, bride, bridesmaids), the gallery, reviews and the booking calendar, with its own title and H1 for searches like "bridal makeup in …". "Book the package" opens the calendar right there |
+| `/` | Who OMG and Asanda Tiwani are: the services menu (a card for Makeup, Hair and Bridal, each with its services and lowest price), "Meet Asanda Tiwani", the gallery, reviews and the booking calendar. Made so that a search for "Asanda Tiwani" finds the site |
+| `/makeup` | The makeup prices, for searches like "makeup artist in …" |
+| `/hair` | The hair prices (installation and curling), for "hair installation in …" |
+| `/bridal` | The bridal prices (package, bride, bridesmaids), for "bridal makeup in …" |
 | `/book` | A short link for an Instagram bio or WhatsApp status: opens the home page at the booking calendar |
 
-Booking stays on every page rather than on a page of its own: each extra
-click between "I want this" and "booked" loses clients.
+The service pages also have the gallery, reviews and the booking calendar, and
+every Book button opens the calendar right there with its service chosen.
+Booking stays on every page rather than on a page of its own: each extra click
+between "I want this" and "booked" loses clients. Pages are per kind of service
+(makeup, hair, bridal), not per single service: people search for those, and a
+page holding one price would be too thin for Google to rank.
+
+On phones the pages are behind the **Menu** button next to Book now
+(`public/js/nav.js` closes it after a choice); wider screens show them in the
+top bar.
 
 ## Google and AI assistants
 
@@ -206,10 +217,10 @@ The site gives search engines and AI assistants everything they read:
 
 | Address | What it is |
 | --- | --- |
-| `/sitemap.xml` | The two pages Google should index: `/` and `/bridal` |
+| `/sitemap.xml` | The four pages Google should index: `/`, `/makeup`, `/hair` and `/bridal` |
 | `/robots.txt` | Everything public may be crawled (AI assistants included); `/api/` is off limits except the reviews the page shows |
 | `/llms.txt` | The price list and how to book, in plain text for AI assistants, built from the same content as the page |
-| Each page | Its own canonical address, a title and description written from the Website tab's prices, one H1, and the business's details as schema.org data (Asanda as the founder) |
+| Each page | Its own canonical address, a title and description written from the Website tab's prices, one H1, and schema.org data: the business, and Asanda Tiwani as a Person (with the Instagram account), so Google can tie the name to the site |
 
 **The area OMG works in** (Website tab > Contact & text > Area you work in,
 e.g. "Soweto, Johannesburg") goes into Google's title, the description, the H1,

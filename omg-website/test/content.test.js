@@ -97,16 +97,18 @@ test('the seeded content is what the site showed, and fits the booking rules', a
   const catalog = JSON.parse(C.catalogJson(site));
   assert.deepEqual(catalog.services.map((s) => s.group), ['Makeup', 'Makeup', 'Makeup', 'Hair', 'Hair', 'Bridal', 'Bridal', 'Bridal', 'Bridal', 'Bridal', 'Bridesmaid', 'Bridesmaid']);
   assert.deepEqual(catalog.services.find((s) => s.id === 'full-glam'), { id: 'full-glam', group: 'Makeup', name: 'Full Glam', price: 850, minutes: 90 });
-  assert.equal(C.metaDescription(site), 'Makeup artist & hair stylist Asanda (OMG – Oh! My Glam). Makeup from R750, Bridal Package R4500, hair from R400, bridesmaids from R850. Book online today.');
-  assert.equal(C.pageTitle(site), 'Makeup Artist & Hair Stylist | Bridal Makeup – OMG');
+  assert.equal(C.metaDescription(site), 'Asanda Tiwani: makeup artist & hair stylist (OMG – Oh! My Glam). Makeup from R750, hair from R400, Bridal Package R4500, bridesmaids from R850. Book online.');
+  assert.equal(C.pageTitle(site), 'Asanda Tiwani – Makeup Artist & Hair Stylist | OMG');
   for (const area of ['Soweto', 'Johannesburg', 'Pietermaritzburg', 'Soweto & Johannesburg South']) {
     const withArea = { ...site, text: { ...site.text, area } };
     const title = C.pageTitle(withArea); const description = C.metaDescription(withArea);
     assert.ok(title.includes(area) && [...title].length < 60, title);
-    assert.ok(description.includes(` in ${area}.`) && [...description].length >= 150 && [...description].length <= 160, description);
+    assert.ok(description.includes(` in ${area}`) && [...description].length >= 150 && [...description].length <= 160, description);
   }
   assert.equal(site.reviews.count, 0);
-  const [website, ld] = JSON.parse(C.jsonLd(site, 'https://omg.example'))['@graph'];
+  const node = (json, type) => JSON.parse(json)['@graph'].find((n) => n['@type'] === type);
+  const website = node(C.jsonLd(site, 'https://omg.example'), 'WebSite');
+  const ld = node(C.jsonLd(site, 'https://omg.example'), 'HealthAndBeautyBusiness');
   assert.equal(website['@type'], 'WebSite');
   assert.deepEqual(website.publisher, { '@id': ld['@id'] });
   assert.equal(ld.telephone, '+27785767604');
@@ -117,19 +119,19 @@ test('the seeded content is what the site showed, and fits the booking rules', a
   assert.deepEqual(ld.address, { '@type': 'PostalAddress', addressCountry: 'ZA' });
   assert.equal(ld.areaServed, undefined);
   assert.ok(ld.image.every((u) => u.startsWith('https://omg.example/')), 'every image is absolute');
-  const withArea = JSON.parse(C.jsonLd({ ...site, text: { ...site.text, area: 'Soweto, Johannesburg' } }, 'https://omg.example'))['@graph'][1];
+  const withArea = node(C.jsonLd({ ...site, text: { ...site.text, area: 'Soweto, Johannesburg' } }, 'https://omg.example'), 'HealthAndBeautyBusiness');
   assert.deepEqual(withArea.address, { '@type': 'PostalAddress', addressLocality: 'Soweto, Johannesburg', addressCountry: 'ZA' });
   assert.equal(withArea.areaServed, 'Soweto, Johannesburg');
-  assert.match(withArea.description, /^Makeup and hair styling by Asanda in Soweto, Johannesburg,/);
+  assert.match(withArea.description, /^Makeup and hair styling by Asanda Tiwani in Soweto, Johannesburg,/);
   // The area is escaped wherever it lands.
   const sneaky = { ...site, text: { ...site.text, area: '<b>x</b></script>' } };
   assert.ok(!C.jsonLd(sneaky, 'https://omg.example').includes('</script>'));
   assert.ok(!C.heroLine(sneaky).includes('<b>x</b>'));
   // /llms.txt: the same facts as the page, with the area once it is set.
   const llms = C.llmsTxt(site, 'https://omg.example');
-  assert.match(llms, /^# OMG – Oh! My Glam\n\n> Makeup and hair styling by Asanda, including bridal/);
+  assert.match(llms, /^# OMG – Oh! My Glam\n\n> Makeup and hair styling by Asanda Tiwani, including bridal/);
   assert.match(llms, /- Soft Glam: R750/);
-  assert.match(C.llmsTxt({ ...site, text: { ...site.text, area: 'Soweto' } }, 'https://omg.example'), /> Makeup and hair styling by Asanda in Soweto, including/);
+  assert.match(C.llmsTxt({ ...site, text: { ...site.text, area: 'Soweto' } }, 'https://omg.example'), /> Makeup and hair styling by Asanda Tiwani in Soweto, including/);
 });
 
 test('hidden services are neither shown nor bookable', async () => {
@@ -169,8 +171,8 @@ test('the area OMG works in can be saved (migration 0006), and every other text 
   const site = await C.loadSite(env);
   assert.equal(site.text.area, 'Soweto, Johannesburg');
   for (const row of before) assert.equal(site.text[row.key], row.value, row.key);
-  assert.equal(C.pageTitle(site), 'Makeup Artist in Soweto, Johannesburg | Bridal & Hair – OMG');
-  assert.equal(C.heroLine(site), '<b>Asanda</b> · makeup artist &amp; hair stylist in <b>Soweto, Johannesburg</b>');
+  assert.equal(C.pageTitle(site), 'Makeup Artist in Soweto, Johannesburg – Asanda Tiwani | OMG');
+  assert.equal(C.heroLine(site), '<b>Asanda Tiwani</b> · makeup artist &amp; hair stylist in <b>Soweto, Johannesburg</b>');
 });
 
 test('a photo needs a real description, not its file name', () => {
@@ -179,33 +181,62 @@ test('a photo needs a real description, not its file name', () => {
   assert.equal(C.photoAlt('Bridal look, image 2 of 3'), 'Bridal look, image 2 of 3');
 });
 
-test('the bridal page has its own title, description, H1 and chips, from the same content', async () => {
+test('every page has its own title, description, H1 and chips, from the same content', async () => {
   const site = await C.loadSite(freshDb().env);
-  assert.equal(C.pageTitle(site, 'bridal'), 'Bridal Makeup & Hair by Asanda | OMG – Oh! My Glam');
-  assert.equal(C.heroLine(site, 'bridal'), 'Bridal makeup &amp; hair by <b>Asanda</b>');
-  for (const area of ['', 'Soweto', 'Soweto, Johannesburg', 'Soweto & Johannesburg South', 'x'.repeat(28)]) {
+  assert.deepEqual(Object.keys(C.PAGES), ['home', 'makeup', 'hair', 'bridal']);
+  assert.deepEqual(Object.values(C.PAGES).map((p) => p.canonical), ['https://ohmyglam.online/', 'https://ohmyglam.online/makeup', 'https://ohmyglam.online/hair', 'https://ohmyglam.online/bridal']);
+  assert.deepEqual(Object.keys(C.PAGES).map((page) => C.pageTitle(site, page)), [
+    'Asanda Tiwani – Makeup Artist & Hair Stylist | OMG',
+    'Makeup by Asanda Tiwani – Soft, Full & Bold Glam | OMG',
+    'Hair Installation & Styling by Asanda Tiwani | OMG',
+    'Bridal Makeup & Hair by Asanda Tiwani | OMG',
+  ]);
+  assert.deepEqual(Object.keys(C.PAGES).map((page) => C.heroLine(site, page)), [
+    '<b>Asanda Tiwani</b> · makeup artist &amp; hair stylist',
+    'Makeup by <b>Asanda Tiwani</b>',
+    'Hair installation &amp; styling by <b>Asanda Tiwani</b>',
+    'Bridal makeup &amp; hair by <b>Asanda Tiwani</b>',
+  ]);
+  for (const area of ['', 'Soweto', 'Johannesburg', 'Soweto, Johannesburg', 'Soweto & Johannesburg South', 'x'.repeat(28)]) {
     const s2 = { ...site, text: { ...site.text, area } };
-    for (const page of ['home', 'bridal']) {
+    for (const page of Object.keys(C.PAGES)) {
       const title = C.pageTitle(s2, page);
       const description = C.metaDescription(s2, page);
       assert.ok([...title].length < 60, `${page} title ${title}`);
       assert.ok([...description].length >= 150 && [...description].length <= 160, `${page} ${[...description].length}: ${description}`);
-      assert.ok(description.includes('Asanda'), 'the artist is named');
-      if (area) assert.ok(description.includes(` in ${area}.`), description);
+      assert.ok(description.includes('Asanda Tiwani'), 'the artist is named');
+      if (area) assert.ok(title.includes(area) && description.includes(` in ${area}`) && C.heroLine(s2, page).endsWith(` in <b>${C.esc(area)}</b>`), `${page}: ${title} | ${description}`);
     }
   }
-  assert.match(C.metaDescription(site, 'bridal'), /^Bridal makeup & hair by Asanda \(OMG – Oh! My Glam\)\. Bridal Package R4500, bride-only options from R750, bridesmaids from R850\./);
-  // Chips on the bridal page stay on the page; the home page's bridal chip goes there.
-  assert.deepEqual([...C.chipsHtml(site, 'bridal').matchAll(/href="([^"]+)"/g)].map((m) => m[1]), ['#bridal', '#bridal', '#bridal']);
-  assert.deepEqual([...C.chipsHtml(site).matchAll(/href="([^"]+)"/g)].map((m) => m[1]), ['#prices', '#prices', '/bridal']);
-  assert.equal(C.bridalTeaser(site), 'The Bridal Package is R4500. More options for the bride from R750 and bridesmaids from R850.');
+  assert.match(C.metaDescription(site, 'makeup'), /^Makeup by Asanda Tiwani \(OMG – Oh! My Glam\)\. Soft Glam R750, Full Glam R850, Bold \/ Dramatic R950\./);
+  assert.match(C.metaDescription(site, 'hair'), /^Hair installation & styling by Asanda Tiwani \(OMG – Oh! My Glam\)\. Basic Installation R400, Curling Long Weave R450/);
+  assert.match(C.metaDescription(site, 'bridal'), /^Bridal makeup & hair by Asanda Tiwani \(OMG – Oh! My Glam\)\. Bridal Package R4500, bride-only options from R750, bridesmaids from R850\./);
+  // Chips: home points at the service pages, each service page at its own prices.
+  const hrefs = (html) => [...html.matchAll(/<a [^>]*href="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(hrefs(C.chipsHtml(site)), ['/makeup', '/hair', '/bridal']);
+  assert.deepEqual(hrefs(C.chipsHtml(site, 'makeup')), ['#prices', '#prices', '#prices']);
+  assert.deepEqual(hrefs(C.chipsHtml(site, 'hair')), ['#prices', '#prices']);
+  assert.deepEqual(hrefs(C.chipsHtml(site, 'bridal')), ['#bridal', '#bridal', '#bridal']);
+  // The home page's menu: one card per service page, with its services and lowest price.
+  const menu = C.menuHtml(site);
+  assert.deepEqual(hrefs(menu), ['/makeup', '/hair', '/bridal']);
+  assert.ok(menu.includes('From R750</span></div><p class="svc-card-list">Soft Glam · Full Glam · Bold / Dramatic</p>'), menu);
+  assert.ok(menu.includes('<p class="svc-card-list">Bridal Package · Bride options · Bridesmaids</p>'), menu);
   assert.match(C.shareDescription(site, 'bridal'), /^Bridal Package R4500 · Bride from R750 · Bridesmaids from R850\. Book online or on WhatsApp: \+27 78 576 7604\.$/);
-  assert.deepEqual(C.PAGES.bridal, { path: '/bridal', canonical: 'https://ohmyglam.online/bridal' });
-  // Asanda is the person behind the business, wherever the site describes one.
-  const biz = JSON.parse(C.jsonLd(site, 'https://omg.example'))['@graph'][1];
-  assert.deepEqual(biz.founder, { '@type': 'Person', name: 'Asanda', jobTitle: 'Makeup artist and hair stylist' });
-  assert.match(C.aboutText(site), /^OMG – Oh! My Glam is Asanda's makeup and hair business: /);
-  assert.match(C.llmsTxt(site, 'https://omg.example'), /> Makeup and hair styling by Asanda, /);
-  assert.match(C.llmsTxt(site, 'https://omg.example'), /\[Bridal makeup and hair prices\]\(https:\/\/omg\.example\/bridal\)/);
+  assert.match(C.shareDescription(site, 'hair'), /^Basic Installation R400 · Curling Long Weave R450\. /);
+  // Asanda Tiwani: a Person of her own, linked to the business, for name searches.
+  const graph = JSON.parse(C.jsonLd({ ...site, text: { ...site.text, area: 'Soweto' } }, 'https://omg.example'))['@graph'];
+  const person = graph.find((n) => n['@type'] === 'Person');
+  const biz = graph.find((n) => n['@type'] === 'HealthAndBeautyBusiness');
+  assert.equal(person.name, 'Asanda Tiwani');
+  assert.deepEqual(person.worksFor, { '@id': biz['@id'] });
+  assert.deepEqual(biz.founder, { '@id': person['@id'] });
+  assert.deepEqual(person.sameAs, ['https://www.instagram.com/asanda_tiwani/']);
+  assert.deepEqual(person.workLocation, { '@type': 'Place', name: 'Soweto' });
+  assert.equal(C.aboutBio(site), 'Asanda Tiwani is the makeup artist and hair stylist behind OMG – Oh! My Glam. From soft everyday glam to bold looks and whole bridal parties, Asanda does both the makeup and the hair, and comes to you on request.');
+  assert.match(C.aboutBio({ ...site, text: { ...site.text, area: 'Soweto' } }), /behind OMG – Oh! My Glam, based in Soweto\. /);
+  assert.match(C.aboutText(site), /^OMG – Oh! My Glam is Asanda Tiwani's makeup and hair business: /);
+  const llms = C.llmsTxt(site, 'https://omg.example');
+  for (const path of ['/makeup', '/hair', '/bridal']) assert.ok(llms.includes(`](https://omg.example${path})`), path);
   assert.match(C.reviewSummaryHtml({ count: 0 }), /Had your glam done by Asanda\?/);
 });

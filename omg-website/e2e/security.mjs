@@ -1775,32 +1775,46 @@ async function content() {
   });
 
   await check('…and reaches the public page only as text', async () => {
-    const html = await page();
+    // The price list (with its Book buttons) is on the service's own page; the home page's menu names it too.
+    const r = await call('GET', '/makeup');
+    expectStatus(r, 200, 'GET /makeup');
+    const html = r.text;
+    const home = await page();
+    assert.ok(home.includes('Glam &quot;q&quot; &lt;img src=x onerror=alert(1)&gt;'), 'the escaped name is not in the home page menu');
+    assert.ok(!/<img src=x onerror/.test(outsideAttributes(home)), 'a raw <img> on the home page');
+    for (const block of jsonBlocks(home)) assert.ok(!/[<>]/.test(block), 'a raw < or > inside a home page JSON block');
     assert.ok(html.includes('Glam &quot;q&quot; &lt;img src=x onerror=alert(1)&gt;'), 'the escaped name is not on the page');
     assert.ok(!/<img src=x onerror/.test(outsideAttributes(html)), 'a raw <img> outside attribute values');
     assert.ok(!html.includes('<b>note</b>'), 'the note was not escaped');
     for (const block of jsonBlocks(html)) assert.ok(!/[<>]/.test(block), 'a raw < or > inside a JSON block');
     assert.ok(html.includes('aria-label="Book Glam &quot;q&quot; &lt;img'), 'quotes not escaped in the Book button label');
-    // The description now names prices, not every service, so it only has to stay one clean attribute.
-    assert.ok(/<meta name="description" content="[^"<>]*">/.test(html), 'the page description is not one clean attribute');
+    // The descriptions name the page's services: they must stay one clean attribute.
+    assert.ok(/<meta name="description" content="[^"<>]*">/.test(html) && /<meta name="description" content="[^"<>]*">/.test(home), 'a page description is not one clean attribute');
     // Approved reviews are written into the page by the Worker: as text, never markup.
-    assert.ok(/<ul class="rv-list" id="rv-list" data-page="1" data-more="(?:true|false)">/.test(html), 'the first page of reviews is not in the page');
-    assert.ok(!html.includes('<b>Lerato</b>'), 'a reviewer name reached the page as markup');
+    assert.ok(/<ul class="rv-list" id="rv-list" data-page="1" data-more="(?:true|false)">/.test(home), 'the first page of reviews is not in the page');
+    assert.ok(!home.includes('<b>Lerato</b>') && !html.includes('<b>Lerato</b>'), 'a reviewer name reached the page as markup');
   });
 
-  await check('the bridal page is its own page: its own address, one H1, the bridal prices', async () => {
-    const r = await call('GET', '/bridal');
-    expectStatus(r, 200, 'GET /bridal');
-    const html = r.text;
-    assert.ok(html.includes('<link rel="canonical" href="https://ohmyglam.online/bridal">'), 'canonical');
-    assert.equal((html.match(/<h1[\s>]/g) || []).length, 1, 'one H1');
-    assert.ok(html.includes('<h2 id="bridal-title">Bridal Prices</h2>'), 'the bridal prices are not on it');
-    assert.ok(!html.includes('id="prices"'), 'the general price list is on the home page only');
-    assert.ok(!/data-only=/.test(html), 'a data-only marker was left in');
-    const home = await page();
-    assert.ok(home.includes('href="/bridal"') && !home.includes('id="bridal-title"'), 'the home page should link to /bridal, not list it');
-    assert.ok(!/data-only=/.test(home), 'a data-only marker was left on the home page');
-    expectStatus(await call('GET', '/book'), 301, 'GET /book');
+  await check('every page is its own: its own address, one H1, only its own sections', async () => {
+    const pages = {
+      '/makeup': { has: ['makeup-title'], not: ['hair-title', 'bridal-title', 'services-title', 'about-title'] },
+      '/hair': { has: ['hair-title'], not: ['makeup-title', 'bridal-title', 'services-title', 'about-title'] },
+      '/bridal': { has: ['bridal-title'], not: ['prices-title', 'services-title', 'about-title'] },
+      '/': { has: ['services-title', 'about-title'], not: ['prices-title', 'bridal-title'] },
+    };
+    for (const [path, { has, not }] of Object.entries(pages)) {
+      const r = await call('GET', path);
+      expectStatus(r, 200, `GET ${path}`);
+      const html = r.text;
+      assert.ok(html.includes(`<link rel="canonical" href="https://ohmyglam.online${path}">`), `${path}: canonical`);
+      assert.equal((html.match(/<h1[\s>]/g) || []).length, 1, `${path}: one H1`);
+      assert.ok(html.includes('Asanda Tiwani'), `${path}: the artist is not named`);
+      for (const id of has) assert.ok(html.includes(`id="${id}"`), `${path}: ${id} missing`);
+      for (const id of not) assert.ok(!html.includes(`id="${id}"`), `${path}: ${id} should not be here`);
+      assert.ok(html.includes('id="book"'), `${path}: no booking calendar`);
+      assert.ok(!/data-only=/.test(html), `${path}: a data-only marker was left in`);
+    }
+    for (const path of ['/book', '/makeup/', '/hair/', '/bridal/']) expectStatus(await call('GET', path), 301, `GET ${path}`);
   });
 
   const badServices = [

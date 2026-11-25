@@ -127,12 +127,15 @@ test('the "not found" page always answers 404, also at its own address', async (
   }
 });
 
-test('short links: /book opens the calendar, /bridal/ is /bridal', async () => {
+test('short links: /book opens the calendar, /bridal/ is /bridal (and /makeup/, /hair/)', async () => {
   const book = await worker.fetch(new Request('https://ohmyglam.online/book'), {}, {});
   assert.equal(book.status, 301);
   assert.equal(book.headers.get('location'), 'https://ohmyglam.online/#book');
+  for (const page of ['bridal', 'makeup', 'hair']) {
+    const res = await worker.fetch(new Request(`https://ohmyglam.online/${page}/`), {}, {});
+    assert.equal(res.status, 301, page);
+    assert.equal(res.headers.get('location'), `https://ohmyglam.online/${page}`);
+  }
   const slash = await worker.fetch(new Request('https://ohmyglam.online/bridal/'), {}, {});
-  assert.equal(slash.status, 301);
-  assert.equal(slash.headers.get('location'), 'https://ohmyglam.online/bridal');
   assert.equal(slash.headers.get('x-content-type-options'), 'nosniff', 'security headers on the redirect too');
 });
