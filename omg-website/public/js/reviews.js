@@ -64,7 +64,7 @@ function setUp(section) {
     if (!data.count) {
       const empty = document.createElement('p');
       empty.className = 'rv-empty';
-      empty.textContent = 'No reviews yet. Had your glam done by OMG? Be the first to leave one.';
+      empty.textContent = 'No reviews yet. Had your glam done by Asanda? Be the first to leave one.';
       el.summary.append(empty);
       return;
     }

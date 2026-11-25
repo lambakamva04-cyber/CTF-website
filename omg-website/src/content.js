@@ -19,6 +19,18 @@ export const ALBUMS = ['looks', 'before_after'];
 const TEXT_KEYS = ['phone', 'instagram', 'facebook_url', 'facebook_name', 'area', 'tagline', 'home_calls', 'bridal_note'];
 /** How long a Worker reuses the content before reading it again. */
 const CACHE_MS = 15_000;
+/** The makeup artist behind OMG – Oh! My Glam. */
+export const ARTIST = 'Asanda';
+const SITE = 'https://ohmyglam.online';
+/**
+ * The site's pages, all made from public/index.html: an element marked
+ * data-only="home" or data-only="bridal" appears on that page alone.
+ */
+export const PAGES = {
+  home: { path: '/', canonical: `${SITE}/` },
+  bridal: { path: '/bridal', canonical: `${SITE}/bridal` },
+};
+const BRIDAL_LEDE = 'Hair and makeup for your wedding day, for the bride and the whole bridal party. Home calls on request.';
 const REVIEWS_PAGE = 6; // as src/reviews.js
 const MAX_SERVICES = 60;
 const MAX_PHOTOS = 40; // per album
@@ -334,7 +346,8 @@ export function jsonLd(site, origin) {
         url: home,
         logo: `${origin}/img/icon-512.png`,
         image: [`${origin}/og.jpg`, ...photos],
-        description: `Makeup and hair styling${area ? ` in ${area}` : ''}, including bridal and bridesmaid packages. Home calls on request; transport is quoted separately.`,
+        description: `Makeup and hair styling by ${ARTIST}${area ? ` in ${area}` : ''}, including bridal and bridesmaid packages. Home calls on request; transport is quoted separately.`,
+        founder: { '@type': 'Person', name: ARTIST, jobTitle: 'Makeup artist and hair stylist' },
         telephone: `+${site.text.phone || WHATSAPP_NUMBER}`,
         address: { '@type': 'PostalAddress', ...(area ? { addressLocality: area } : {}), addressCountry: 'ZA' },
         ...(area ? { areaServed: area } : {}),
@@ -358,31 +371,22 @@ function fromPrice(services, card) {
 }
 
 /** The <title>: what people search, then the area, under 60 characters. */
-export function pageTitle(site) {
+export function pageTitle(site, page = 'home') {
   const area = areaOf(site);
-  const options = area
-    ? [`Makeup Artist in ${area} | Bridal Makeup & Hair – OMG`, `Makeup Artist in ${area} | Bridal & Hair – OMG`, `Makeup Artist in ${area} – OMG`]
-    : [];
-  options.push('Makeup Artist & Hair Stylist | Bridal Makeup – OMG');
+  const options = page === 'bridal'
+    ? [...(area ? [`Bridal Makeup & Hair in ${area} | OMG – Oh! My Glam`, `Bridal Makeup & Hair in ${area} – OMG`, `Bridal Makeup in ${area} – OMG`] : []),
+      `Bridal Makeup & Hair by ${ARTIST} | OMG – Oh! My Glam`]
+    : [...(area ? [`Makeup Artist in ${area} | Bridal Makeup & Hair – OMG`, `Makeup Artist in ${area} | Bridal & Hair – OMG`, `Makeup Artist in ${area} – OMG`] : []),
+      'Makeup Artist & Hair Stylist | Bridal Makeup – OMG'];
   return options.find((t) => chars(t) < 60);
 }
 
-/** 150 to 160 characters when the price lists allow it: Google shows about that many. */
-export function metaDescription(site) {
-  const services = visibleServices(site);
-  const area = areaOf(site);
-  const lead = `OMG – Oh! My Glam: makeup artist & hair stylist${area ? ` in ${area}` : ''}.`;
-  const from = (card) => fromPrice(services, card);
-  const pkgs = services.filter((s) => s.card === 'package');
-  const prices = [
-    from('makeup') !== null && `makeup from R${from('makeup')}`,
-    pkgs.length === 1 ? `${pkgs[0].name} R${pkgs[0].price}` : pkgs.length > 1 && `bridal packages from R${from('package')}`,
-    from('hair') !== null && `hair from R${from('hair')}`,
-    from('bridesmaid') !== null && `bridesmaids from R${from('bridesmaid')}`,
-  ].filter(Boolean);
-  const tails = [' Home calls on request. Book online or on WhatsApp.', ' Home calls on request. Book online.', ' Book online or on WhatsApp.', ' Book online.'];
-  // The first n prices and a closing line: the longest within 160 wins,
-  // and a price is only dropped when all of them can't reach 150.
+/**
+ * The first n prices and a closing line: the longest within 160 characters
+ * wins, and a price is only dropped when all of them can't reach 150. (Google
+ * shows about 155.)
+ */
+function fitDescription(lead, prices, tails) {
   let best = '';
   for (let n = prices.length; n >= 0 && chars(best) < 150; n -= 1) {
     const list = prices.slice(0, n).join(', ');
@@ -392,10 +396,36 @@ export function metaDescription(site) {
   return best || lead;
 }
 
-/** The words under the logo in the H1 (HTML). */
-export function heroLine(site) {
+/** The page's description for Google, written from the Website tab's prices. */
+export function metaDescription(site, page = 'home') {
+  const services = visibleServices(site);
   const area = areaOf(site);
-  return area ? `Makeup artist &amp; hair stylist in <b>${esc(area)}</b>` : 'Makeup artist &amp; <b>hair stylist</b>';
+  const where = area ? ` in ${area}` : '';
+  const from = (card) => fromPrice(services, card);
+  const pkgs = services.filter((s) => s.card === 'package');
+  const pkg = pkgs.length === 1 ? `${pkgs[0].name} R${pkgs[0].price}` : pkgs.length > 1 && `bridal packages from R${from('package')}`;
+  if (page === 'bridal') {
+    return fitDescription(`Bridal makeup & hair by ${ARTIST} (OMG – Oh! My Glam)${where}.`, [
+      pkg,
+      from('bride') !== null && `bride-only options from R${from('bride')}`,
+      from('bridesmaid') !== null && `bridesmaids from R${from('bridesmaid')}`,
+    ].filter(Boolean), [' Home calls on request. Book your date online or on WhatsApp.', ' Book your wedding date online or on WhatsApp.', ' Book your date online or on WhatsApp.', ' Book your wedding date online.', ' Book your date online.', ' Book online.']);
+  }
+  return fitDescription(`Makeup artist & hair stylist ${ARTIST} (OMG – Oh! My Glam)${where}.`, [
+    from('makeup') !== null && `makeup from R${from('makeup')}`,
+    pkg,
+    from('hair') !== null && `hair from R${from('hair')}`,
+    from('bridesmaid') !== null && `bridesmaids from R${from('bridesmaid')}`,
+  ].filter(Boolean), [' Home calls on request. Book online or on WhatsApp.', ' Home calls on request. Book online.', ' Book online or on WhatsApp.', ' Book online today.', ' Book online.']);
+}
+
+/** The words under the logo in the H1 (HTML): who, what, and where once the area is set. */
+export function heroLine(site, page = 'home') {
+  const area = areaOf(site);
+  const where = area ? ` in <b>${esc(area)}</b>` : '';
+  return page === 'bridal'
+    ? `Bridal makeup &amp; hair by <b>${ARTIST}</b>${where}`
+    : `<b>${ARTIST}</b> · makeup artist &amp; hair stylist${where}`;
 }
 
 /** Who, what, where and how to book, in plain words (footer). */
@@ -411,23 +441,39 @@ export function aboutText(site) {
     from('bridesmaid') !== null && `bridesmaid makeup from R${from('bridesmaid')}`,
   ].filter(Boolean);
   const list = offers.length > 1 ? `${offers.slice(0, -1).join(', ')} and ${offers.at(-1)}` : offers.join('');
-  return `OMG – Oh! My Glam is a makeup artist and hair stylist${area ? ` in ${area}` : ''}, for soft to bold glam, brides and bridesmaids. `
+  return `OMG – Oh! My Glam is ${ARTIST}'s makeup and hair business${area ? ` in ${area}` : ''}: soft to bold glam, brides and bridesmaids. `
     + (list ? `Prices are in rand: ${list}. ` : '')
     + 'Home calls are available on request; transport is quoted separately. '
     + `To book, choose a service, a day and a free time in the booking calendar on this page, or WhatsApp or call ${formatPhone(site.text.phone || WHATSAPP_NUMBER)}.`;
 }
 
-/** The hero's "at a glance" chips, each linked to its price list. */
-export function chipsHtml(site) {
+/** The hero's "at a glance" chips, each linked to its prices. */
+export function chipsHtml(site, page = 'home') {
   const services = visibleServices(site);
   const from = (card) => fromPrice(services, card);
   const pkg = services.find((s) => s.card === 'package');
-  return [
-    from('makeup') !== null && `<li><a href="#prices">Makeup from <b>R${from('makeup')}</b></a></li>`,
-    from('hair') !== null && `<li><a href="#prices">Hair from <b>R${from('hair')}</b></a></li>`,
-    pkg && `<li><a href="#bridal">${esc(pkg.name)} <b>R${pkg.price}</b></a></li>`,
-    '<li>Home calls on request</li>',
-  ].filter(Boolean).join('');
+  const chips = page === 'bridal'
+    ? [
+      pkg && `<li><a href="#bridal">${esc(pkg.name)} <b>R${pkg.price}</b></a></li>`,
+      from('bride') !== null && `<li><a href="#bridal">Bride from <b>R${from('bride')}</b></a></li>`,
+      from('bridesmaid') !== null && `<li><a href="#bridal">Bridesmaids from <b>R${from('bridesmaid')}</b></a></li>`,
+    ]
+    : [
+      from('makeup') !== null && `<li><a href="#prices">Makeup from <b>R${from('makeup')}</b></a></li>`,
+      from('hair') !== null && `<li><a href="#prices">Hair from <b>R${from('hair')}</b></a></li>`,
+      pkg && `<li><a href="/bridal">${esc(pkg.name)} <b>R${pkg.price}</b></a></li>`,
+    ];
+  return [...chips, '<li>Home calls on request</li>'].filter(Boolean).join('');
+}
+
+/** The home page's bridal card, pointing to the bridal page. */
+export function bridalTeaser(site) {
+  const services = visibleServices(site);
+  const from = (card) => fromPrice(services, card);
+  const pkg = services.find((s) => s.card === 'package');
+  const more = [from('bride') !== null && `the bride from R${from('bride')}`, from('bridesmaid') !== null && `bridesmaids from R${from('bridesmaid')}`].filter(Boolean);
+  return [pkg && `The ${pkg.name} is R${pkg.price}.`, more.length && `More options for ${more.join(' and ')}.`].filter(Boolean).join(' ')
+    || 'Hair and makeup for the bride and the whole bridal party.';
 }
 
 // Reviews, as public/js/reviews.js draws them (card(), starRow(), renderSummary()).
@@ -449,18 +495,26 @@ export function reviewCardHtml(r) {
 }
 
 export function reviewSummaryHtml({ count, average }) {
-  if (!count) return '<p class="rv-empty">No reviews yet. Had your glam done by OMG? Be the first to leave one.</p>';
+  if (!count) return `<p class="rv-empty">No reviews yet. Had your glam done by ${ARTIST}? Be the first to leave one.</p>`;
   const avg = average.toFixed(1);
   return `<span class="rv-score">${avg}</span>${starRowHtml(average, `Average ${avg} out of 5 stars`, 'avg')}`
     + `<span class="rv-outof">out of 5 · ${count} ${count === 1 ? 'review' : 'reviews'}</span>`;
 }
 
-export function shareDescription(site) {
+/** The text under a shared link's title (WhatsApp, Facebook). */
+export function shareDescription(site, page = 'home') {
   const services = visibleServices(site);
-  const makeup = services.filter((s) => s.card === 'makeup').slice(0, 3).map((s) => `${s.name} R${s.price}`);
-  const hair = services.filter((s) => s.card === 'hair').map((s) => s.price);
-  const parts = [...makeup, hair.length ? `Hair from R${Math.min(...hair)}` : null].filter(Boolean);
   const phone = formatPhone(site.text.phone || WHATSAPP_NUMBER);
+  let parts;
+  if (page === 'bridal') {
+    const from = (card) => fromPrice(services, card);
+    const pkg = services.find((s) => s.card === 'package');
+    parts = [pkg && `${pkg.name} R${pkg.price}`, from('bride') !== null && `Bride from R${from('bride')}`, from('bridesmaid') !== null && `Bridesmaids from R${from('bridesmaid')}`].filter(Boolean);
+  } else {
+    const makeup = services.filter((s) => s.card === 'makeup').slice(0, 3).map((s) => `${s.name} R${s.price}`);
+    const hair = services.filter((s) => s.card === 'hair').map((s) => s.price);
+    parts = [...makeup, hair.length ? `Hair from R${Math.min(...hair)}` : null].filter(Boolean);
+  }
   return `${parts.length ? `${parts.join(' · ')}. ` : ''}Book online or on WhatsApp: ${phone}.`.slice(0, 300);
 }
 
@@ -478,13 +532,14 @@ export function llmsTxt(site, origin) {
   const facebook = site.text.facebook_url && !/\/search\b/.test(site.text.facebook_url) ? site.text.facebook_url : '';
   const links = [
     `- [Price list, photos, reviews and online booking](${origin}/)`,
+    `- [Bridal makeup and hair prices](${origin}/bridal)`,
     `- [WhatsApp ${formatPhone(phone)}](https://wa.me/${phone})`,
     site.text.instagram && `- [Instagram @${one(site.text.instagram)}](${instagramUrl(site.text.instagram)})`,
     facebook && `- [Facebook](${facebook})`,
   ].filter(Boolean);
   return [
     '# OMG – Oh! My Glam', '',
-    `> Makeup and hair styling${areaOf(site) ? ` in ${one(areaOf(site))}` : ''}, including bridal and bridesmaid packages. Home calls available on request. Prices in South African rand (ZAR).`, '',
+    `> Makeup and hair styling by ${ARTIST}${areaOf(site) ? ` in ${one(areaOf(site))}` : ''}, including bridal and bridesmaid packages. Home calls available on request. Prices in South African rand (ZAR).`, '',
     `Book online at ${origin}/#book (pick a service, a day and a free time) or on WhatsApp: ${formatPhone(phone)}.`, '',
     ...groups.flatMap(([group, list]) => [`## ${group}`, '', ...list.map(item), '']),
     ...(notes.length ? ['## Good to know', '', ...notes, ''] : []),
@@ -493,11 +548,46 @@ export function llmsTxt(site, origin) {
 }
 
 /**
- * Writes the content into the home page. The page in public/ holds today's
- * content too, so if the database can't be read the visitor still gets a
- * complete page; this only ever replaces it with the current version.
+ * Turns public/index.html into one of the site's pages (PAGES): keeps that
+ * page's sections, and sets its address, title and opening words. Needs no
+ * database, so a page keeps its shape even if the content can't be read.
  */
-export function renderPage(response, site, url) {
+export function pageShell(response, page) {
+  const { canonical } = PAGES[page];
+  let rewriter = new HTMLRewriter()
+    .on('[data-only]', {
+      element(el) {
+        if (el.getAttribute('data-only') === page) el.removeAttribute('data-only');
+        else el.remove();
+      },
+    })
+    .on('link[rel="canonical"]', { element(el) { el.setAttribute('href', canonical); } })
+    .on('meta[property="og:url"]', { element(el) { el.setAttribute('content', canonical); } });
+  if (page === 'bridal') {
+    const bare = { text: {}, services: [] };
+    const description = metaDescription(bare, 'bridal');
+    rewriter = rewriter
+      .on('head > title', { element(el) { el.setInnerContent(pageTitle(bare, 'bridal')); } })
+      .on('meta[property="og:title"]', { element(el) { el.setAttribute('content', pageTitle(bare, 'bridal')); } })
+      .on('meta[name="description"]', { element(el) { el.setAttribute('content', description); } })
+      .on('meta[property="og:description"]', { element(el) { el.setAttribute('content', description); } })
+      .on('[data-cms-hero]', { element(el) { el.setInnerContent(heroLine(bare, 'bridal'), { html: true }); } })
+      .on('.hero .lede', { element(el) { el.removeAttribute('data-cms-text'); el.setInnerContent(BRIDAL_LEDE); } })
+      .on('.hero-cta a[href="#prices"]', { element(el) { el.setAttribute('href', '#bridal'); el.setInnerContent('See the bridal prices'); } })
+      .on('[data-cms-chips]', { element(el) { el.setInnerContent(''); } })
+      .on('.nav a[href="#prices"]', { element(el) { el.setAttribute('href', '/#prices'); } })
+      .on('.nav a[href="/bridal"]', { element(el) { el.setAttribute('aria-current', 'page'); } })
+      .on('a.brand', { element(el) { el.setAttribute('href', '/'); el.setAttribute('aria-label', 'OMG – Oh! My Glam, home page'); } });
+  }
+  return rewriter.transform(response);
+}
+
+/**
+ * Writes the content into a page (after pageShell). The page in public/ holds
+ * today's content too, so if the database can't be read the visitor still
+ * gets a complete page; this only ever replaces it with the current version.
+ */
+export function renderPage(response, site, url, page = 'home') {
   const phone = site.text.phone || WHATSAPP_NUMBER;
   const byCard = (card) => visibleServices(site).filter((s) => s.card === card);
   const social = {
@@ -563,10 +653,11 @@ export function renderPage(response, site, url) {
     })
     .on('a[href^="tel:"]', { element(el) { el.setAttribute('href', `tel:+${phone}`); } })
     .on('a.phone', { element(el) { el.setAttribute('aria-label', `WhatsApp ${formatPhone(phone)}`); } })
-    .on('head > title', { element(el) { el.setInnerContent(pageTitle(site)); } })
-    .on('meta[property="og:title"]', { element(el) { el.setAttribute('content', pageTitle(site)); } })
-    .on('[data-cms-hero]', { element(el) { el.setInnerContent(heroLine(site), { html: true }); } })
-    .on('[data-cms-chips]', { element(el) { el.setInnerContent(chipsHtml(site), { html: true }); } })
+    .on('head > title', { element(el) { el.setInnerContent(pageTitle(site, page)); } })
+    .on('meta[property="og:title"]', { element(el) { el.setAttribute('content', pageTitle(site, page)); } })
+    .on('[data-cms-hero]', { element(el) { el.setInnerContent(heroLine(site, page), { html: true }); } })
+    .on('[data-cms-chips]', { element(el) { el.setInnerContent(chipsHtml(site, page), { html: true }); } })
+    .on('[data-cms-teaser]', { element(el) { el.setInnerContent(bridalTeaser(site)); } })
     .on('[data-cms-about]', { element(el) { el.setInnerContent(aboutText(site)); } })
     .on('#rv-summary', { element(el) { el.setInnerContent(reviewSummaryHtml(site.reviews), { html: true }); } })
     .on('#rv-list', {
@@ -576,8 +667,8 @@ export function renderPage(response, site, url) {
         el.setAttribute('data-more', String(site.reviews.hasMore));
       },
     })
-    .on('meta[name="description"]', { element(el) { el.setAttribute('content', metaDescription(site)); } })
-    .on('meta[property="og:description"]', { element(el) { el.setAttribute('content', shareDescription(site)); } })
+    .on('meta[name="description"]', { element(el) { el.setAttribute('content', metaDescription(site, page)); } })
+    .on('meta[property="og:description"]', { element(el) { el.setAttribute('content', shareDescription(site, page)); } })
     .on('meta[property="og:image"]', absolute)
     .on('meta[name="twitter:image"]', absolute)
     .on('script[type="application/ld+json"]', { element(el) { el.setInnerContent(jsonLd(site, url.origin), { html: true }); } })

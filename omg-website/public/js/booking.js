@@ -375,7 +375,7 @@ function setUp(root) {
     el.formNote.hidden = false;
     el.formNote.replaceChildren();
     const text = document.createElement('p');
-    text.textContent = `${message || 'We could not send your request just now.'} Send it on WhatsApp instead and OMG will confirm your time there.`;
+    text.textContent = `${message || 'We could not send your request just now.'} Send it on WhatsApp instead and Asanda will confirm your time there.`;
     const link = whatsappLink('Send on WhatsApp', bookingMessage({ ...request, service: state.service }));
     el.formNote.append(text, link);
     link.focus();
@@ -388,7 +388,7 @@ function setUp(root) {
     const title = document.createElement('h3');
     title.textContent = 'Almost done: send it on WhatsApp';
     const lead = document.createElement('p');
-    lead.textContent = 'Tap the button to send your request to OMG. Your time is confirmed once OMG replies.';
+    lead.textContent = 'Tap the button to send your request to Asanda. Your time is confirmed once Asanda replies.';
     const list = document.createElement('dl');
     for (const [term, value] of [
       ['Name and Surname', data.summary.name],

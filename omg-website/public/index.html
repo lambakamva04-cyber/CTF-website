@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Makeup Artist &amp; Hair Stylist | Bridal Makeup – OMG</title>
-<meta name="description" content="OMG – Oh! My Glam: makeup artist &amp; hair stylist. Makeup from R750, Bridal Package R4500, hair from R400, bridesmaids from R850. Book online or on WhatsApp.">
+<meta name="description" content="Makeup artist &amp; hair stylist Asanda (OMG – Oh! My Glam). Makeup from R750, Bridal Package R4500, hair from R400, bridesmaids from R850. Book online today.">
 <meta name="theme-color" content="#3A1D18">
 <!-- The one address of this page: https, no www, no query string. Fixed, not
      taken from the request, so every other address points back here. -->
@@ -66,7 +66,12 @@
         "https://ohmyglam.online/img/gallery/glam-2.webp",
         "https://ohmyglam.online/img/gallery/glam-3.webp"
       ],
-      "description": "Makeup and hair styling, including bridal and bridesmaid packages. Home calls on request; transport is quoted separately.",
+      "description": "Makeup and hair styling by Asanda, including bridal and bridesmaid packages. Home calls on request; transport is quoted separately.",
+      "founder": {
+        "@type": "Person",
+        "name": "Asanda",
+        "jobTitle": "Makeup artist and hair stylist"
+      },
       "telephone": "+27785767604",
       "address": {
         "@type": "PostalAddress",
@@ -1002,7 +1007,7 @@
     </a>
     <nav class="nav" aria-label="Main">
       <a href="#prices">Prices</a>
-      <a href="#bridal">Bridal</a>
+      <a href="/bridal">Bridal</a>
       <a href="#gallery">Gallery</a>
       <a href="#reviews">Reviews</a>
       <a href="#book">Book</a>
@@ -1041,7 +1046,7 @@
             <b style="--t:27s;--d:-6s;animation-direction:reverse"><i></i></b>
           </span>
         </span>
-        <span class="kicker" data-cms-hero>Makeup artist &amp; <b>hair stylist</b></span>
+        <span class="kicker" data-cms-hero><b>Asanda</b> · makeup artist &amp; hair stylist</span>
       </h1>
       <p class="lede" data-cms-text="tagline">Glam made for your moment, from soft and subtle to bold and dramatic. Home calls available on request.</p>
       <div class="hero-cta">
@@ -1053,13 +1058,13 @@
       <ul class="chips" aria-label="At a glance" data-cms-chips>
         <li><a href="#prices">Makeup from <b>R750</b></a></li>
         <li><a href="#prices">Hair from <b>R400</b></a></li>
-        <li><a href="#bridal">Bridal Package <b>R4500</b></a></li>
+        <li><a href="/bridal">Bridal Package <b>R4500</b></a></li>
         <li>Home calls on request</li>
       </ul>
     </div>
   </section>
 
-  <section class="section swirl" id="prices" aria-labelledby="prices-title" style="background-color: var(--cocoa-700)">
+  <section class="section swirl" id="prices" aria-labelledby="prices-title" style="background-color: var(--cocoa-700)" data-only="home">
     <div class="wrap">
       <div class="section-head">
         <span class="eyebrow" aria-hidden="true">the menu</span>
@@ -1093,11 +1098,24 @@
     </div>
   </section>
 
-  <section class="section bridal" id="bridal" aria-labelledby="bridal-title">
+  <!-- The home page shows this card; the bridal page (/bridal) shows the full
+       bridal prices below instead (data-only, see PAGES in src/content.js). -->
+  <section class="section bridal bridal-teaser" id="bridal" aria-labelledby="bridal-teaser-title" data-only="home">
     <div class="wrap">
       <div class="section-head">
         <span class="eyebrow" aria-hidden="true">the big day</span>
-        <h2 id="bridal-title">Bridal Makeup &amp; Hair</h2>
+        <h2 id="bridal-teaser-title">Bridal Makeup &amp; Hair</h2>
+        <p data-cms-teaser>The Bridal Package is R4500. More options for the bride from R750 and bridesmaids from R850.</p>
+      </div>
+      <p class="bridal-cta"><a class="btn btn-cocoa" href="/bridal">See the bridal prices <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></p>
+    </div>
+  </section>
+
+  <section class="section bridal" id="bridal" aria-labelledby="bridal-title" data-only="bridal">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow" aria-hidden="true">the big day</span>
+        <h2 id="bridal-title">Bridal Prices</h2>
         <p>Hair and makeup for the bride and her bridesmaids. Tap Book on any option to choose a time.</p>
       </div>
 
@@ -1208,7 +1226,7 @@
           </div>
           <button class="btn btn-gold" type="submit" id="rv-submit">Send review</button>
           <p class="rv-status" id="rv-status" role="status" aria-live="polite"></p>
-          <p class="bk-privacy">Your name and review are shown on this page once OMG has approved them.</p>
+          <p class="bk-privacy">Your name and review are shown on this page once Asanda has approved them.</p>
         </form>
       </div>
       <noscript><p class="rv-empty">Leaving a review needs JavaScript.</p></noscript>
@@ -1220,7 +1238,7 @@
       <div class="section-head">
         <span class="eyebrow" aria-hidden="true">let's get you ready</span>
         <h2 id="book-title" class="gold-text">Book an Appointment</h2>
-        <p>Pick a service, a day and a free time. Your request goes straight to OMG on WhatsApp.</p>
+        <p>Pick a service, a day and a free time. Your request goes straight to Asanda on WhatsApp.</p>
       </div>
       <div class="book-layout">
         <div class="booker" id="booker" hidden>
@@ -1312,7 +1330,8 @@
 <footer>
   <div class="wrap">
     <img src="/img/logo.webp" srcset="/img/logo-240.webp 240w, /img/logo.webp 560w" sizes="150px" width="150" height="94" loading="lazy" alt="OMG – Oh! My Glam">
-    <p class="foot-about" data-cms-about>OMG – Oh! My Glam is a makeup artist and hair stylist, for soft to bold glam, brides and bridesmaids. Prices are in rand: makeup from R750, hair installation and styling from R400, the Bridal Package for R4500 and bridesmaid makeup from R850. Home calls are available on request; transport is quoted separately. To book, choose a service, a day and a free time in the booking calendar on this page, or WhatsApp or call +27 78 576 7604.</p>
+    <p class="foot-about" data-cms-about>OMG – Oh! My Glam is Asanda&#39;s makeup and hair business: soft to bold glam, brides and bridesmaids. Prices are in rand: makeup from R750, hair installation and styling from R400, the Bridal Package for R4500 and bridesmaid makeup from R850. Home calls are available on request; transport is quoted separately. To book, choose a service, a day and a free time in the booking calendar on this page, or WhatsApp or call +27 78 576 7604.</p>
+    <p class="foot-links"><a href="/">Home</a> · <a href="/bridal">Bridal</a> · <a href="#book">Book</a></p>
     <p><a href="https://wa.me/27785767604" target="_blank" rel="noopener">WhatsApp <span data-cms-text="phone">+27 78 576 7604</span></a></p>
     <p>© OMG – Oh! My Glam</p>
   </div>

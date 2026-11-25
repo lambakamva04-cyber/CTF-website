@@ -184,16 +184,32 @@ Two dashboard settings go with that:
   omg-oh-my-glam > Settings > Domains & Routes), so www addresses reach the
   Worker and forward to the bare domain instead of not answering.
 
+## The pages
+
+Both pages are made from `public/index.html`: an element marked
+`data-only="home"` or `data-only="bridal"` appears on that page alone (`PAGES`
+and `pageShell()` in `src/content.js`), so the header, footer, styles, gallery,
+reviews and booking calendar are written once.
+
+| Address | What it has |
+| --- | --- |
+| `/` | Asanda's makeup and hair prices, a bridal card linking to `/bridal`, the gallery, reviews and the booking calendar |
+| `/bridal` | The bridal prices (package, bride, bridesmaids), the gallery, reviews and the booking calendar, with its own title and H1 for searches like "bridal makeup in …". "Book the package" opens the calendar right there |
+| `/book` | A short link for an Instagram bio or WhatsApp status: opens the home page at the booking calendar |
+
+Booking stays on every page rather than on a page of its own: each extra
+click between "I want this" and "booked" loses clients.
+
 ## Google and AI assistants
 
 The site gives search engines and AI assistants everything they read:
 
 | Address | What it is |
 | --- | --- |
-| `/sitemap.xml` | The one page Google should index |
+| `/sitemap.xml` | The two pages Google should index: `/` and `/bridal` |
 | `/robots.txt` | Everything public may be crawled (AI assistants included); `/api/` is off limits except the reviews the page shows |
 | `/llms.txt` | The price list and how to book, in plain text for AI assistants, built from the same content as the page |
-| The page itself | One canonical address, a title and description written from the Website tab's prices, one H1, and the business's details as schema.org data |
+| Each page | Its own canonical address, a title and description written from the Website tab's prices, one H1, and the business's details as schema.org data (Asanda as the founder) |
 
 **The area OMG works in** (Website tab > Contact & text > Area you work in,
 e.g. "Soweto, Johannesburg") goes into Google's title, the description, the H1,
