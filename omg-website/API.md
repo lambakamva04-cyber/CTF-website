@@ -194,7 +194,7 @@ the session cookie, otherwise 401.
 
 | Method and path | Body | Reply |
 | --- | --- | --- |
-| `GET /api/admin/site` | | `{ ok, services: [Service], text: { phone, instagram, facebook_url, facebook_name, tagline, home_calls, bridal_note }, photos: [Photo] }`, hidden services included |
+| `GET /api/admin/site` | | `{ ok, services: [Service], text: { phone, instagram, facebook_url, facebook_name, area, tagline, home_calls, bridal_note }, photos: [Photo] }`, hidden services included |
 | `POST /api/admin/site/services` | `ServiceInput` | `201 { ok, service }`, last in its card, id made from the name (`lash-lift-k3f9`) |
 | `POST /api/admin/site/services/:id` | `ServiceInput` | `{ ok, service }`, every field replaced; a new card puts it last there |
 | `DELETE /api/admin/site/services/:id` | | `{ ok }`. Requests already made keep their details |
@@ -214,11 +214,16 @@ the session cookie, otherwise 401.
 - Text: `phone` is stored as country code and digits (`078 576 7604` →
   `27785767604`); `instagram` as a username (`@name` or a profile link is
   accepted); `facebook_url` must be on `facebook.com`, `fb.com` or `fb.me` and is
-  stored as `https`; empty `instagram` or `facebook_url` hides it. `tagline`
-  10–220 characters, `home_calls` and `bridal_note` 5–300.
-- Photos: `album` is `looks` or `before_after`; `alt` 3–160 characters; the
-  admin page shrinks each photo before sending (at most 1440×2200, and a 720px
-  copy). Only JPEG and WebP are accepted, recognised by their first bytes (not
+  stored as `https`; empty `instagram` or `facebook_url` hides it. `area` (the
+  place OMG works in, e.g. `Soweto, Johannesburg`) 0–28 characters: it goes into
+  the page title, the H1, the description, the schema.org address and
+  `/llms.txt`, and empty names no place. `tagline` 10–220 characters,
+  `home_calls` and `bridal_note` 5–300.
+- Photos: `album` is `looks` or `before_after`; `alt` 3–160 characters that
+  describe the photo (a camera file name such as `IMG_2041.jpg` is refused); the
+  admin page shrinks each photo before sending, to the size its album shows it
+  (`looks` at most 720×1100 with a 360px copy, `before_after` 1080×1660 with a
+  720px copy). Only JPEG and WebP are accepted, recognised by their first bytes (not
   the declared type): large at most 3 MB, small 1 MB, the whole upload 6 MB,
   40 photos per album.
 - `GET /media/<32 hex>-<l|s>.<webp|jpg>` serves an uploaded photo from KV with
@@ -326,7 +331,7 @@ created once and kept in the `settings` table.
 On every response (pages, files and API):
 
 ```
-Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; media-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'; manifest-src 'self'
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; media-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'; manifest-src 'self'
 X-Content-Type-Options: nosniff
 Referrer-Policy: strict-origin-when-cross-origin
 X-Frame-Options: DENY
@@ -337,6 +342,13 @@ Cross-Origin-Opener-Policy: same-origin
 Over HTTPS also `Strict-Transport-Security: max-age=31536000` and
 `upgrade-insecure-requests` in the CSP. `/admin/` and `/api/` also get
 `X-Robots-Tag: noindex, nofollow`, and `/admin/` gets `Cache-Control: no-store`.
+`/img/` and `/fonts/` are cached for a week.
+
+`http://` and `www.` addresses answer `301` to the same path on
+`https://ohmyglam.online` (in one step), except the calendar feed, which also
+answers on `http://` because iPhones fetch `webcal://` links that way. Local
+development (`localhost`, `127.0.0.1`) is never redirected. `/404` and
+`/404.html` answer `404`, like any unknown address.
 
 `script-src 'self'` means no inline scripts and no inline event handlers:
 every script is a file under `public/js/`. The JSON-LD block is data, not a

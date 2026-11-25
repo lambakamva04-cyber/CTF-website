@@ -151,12 +151,31 @@ async function homePage(request, env, url) {
   }
 }
 
+/** /llms.txt: the page's facts for AI assistants, from the same rows as the page. */
+async function llmsTxt(env, url) {
+  try {
+    return new Response(content.llmsTxt(await content.loadSite(env), url.origin), {
+      headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-cache', 'x-robots-tag': 'noindex' },
+    });
+  } catch (error) {
+    console.error('llms_txt_unavailable', String(error && error.message));
+    return new Response('Try again later', { status: 503, headers: { 'content-type': 'text/plain; charset=utf-8', 'retry-after': '300' } });
+  }
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    // One address for everything: www.ohmyglam.online → ohmyglam.online.
-    if (url.hostname.startsWith('www.')) {
-      url.hostname = url.hostname.slice(4);
+    // One address for everything: https://ohmyglam.online. http:// and www.
+    // go there in one permanent redirect; local development stays on http.
+    // The calendar feed is the one exception to https: an iPhone turns the
+    // webcal:// link OMG subscribed with into http://, and a calendar app that
+    // doesn't follow the redirect would silently stop showing her bookings.
+    const local = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+    const upgrade = url.protocol === 'http:' && !local && !FEED.test(url.pathname);
+    if (url.hostname.startsWith('www.') || upgrade) {
+      url.hostname = url.hostname.replace(/^www\./, '');
+      if (upgrade) url.protocol = 'https:';
       return withSecurityHeaders(Response.redirect(url.toString(), 301), url);
     }
     let response;
@@ -164,6 +183,12 @@ export default {
     else if (url.pathname.startsWith('/media/')) response = await content.media(request, env, url.pathname.slice('/media/'.length));
     else if (url.pathname === '/') response = await homePage(request, env, url);
     else if (FEED.test(url.pathname)) response = await calendarFeed(request, env, url.pathname.match(FEED)[1]);
+    else if (url.pathname === '/llms.txt') response = await llmsTxt(env, url);
+    else if (url.pathname === '/404' || url.pathname === '/404.html') {
+      // The "not found" page is not a page of its own: always answer 404.
+      const page = await env.ASSETS.fetch(new URL('/404', url));
+      response = new Response(page.body, { status: 404, headers: page.headers });
+    }
     else response = absoluteShareImage(await env.ASSETS.fetch(request), url);
     return withSecurityHeaders(response, url);
   },

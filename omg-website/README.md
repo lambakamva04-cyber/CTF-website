@@ -170,7 +170,49 @@ the Cloudflare dashboard (Workers & Pages > omg-oh-my-glam > Domains). The code
 follows whichever domain serves it, so nothing in it names the domain.
 `workers_dev = false` and `preview_urls = false` in `wrangler.toml` keep the
 account's `workers.dev` address (which carries the CTF name) switched off, and
-`www.ohmyglam.online` forwards to the bare domain.
+`www.ohmyglam.online` and `http://` forward to `https://ohmyglam.online` in one
+redirect. The calendar feed is the one exception to the https redirect: an
+iPhone turns the `webcal://` link into `http://`, and a calendar app that
+doesn't follow the redirect would stop showing bookings.
+
+Two dashboard settings go with that:
+
+- **Leave "Always Use HTTPS" off** (ohmyglam.online > SSL/TLS > Edge
+  Certificates). The Worker already sends http:// to https://; Cloudflare's
+  switch would do it before the Worker runs, the calendar feed included.
+- **Attach `www.ohmyglam.online` as a second Custom Domain** (Workers & Pages >
+  omg-oh-my-glam > Settings > Domains & Routes), so www addresses reach the
+  Worker and forward to the bare domain instead of not answering.
+
+## Google and AI assistants
+
+The site gives search engines and AI assistants everything they read:
+
+| Address | What it is |
+| --- | --- |
+| `/sitemap.xml` | The one page Google should index |
+| `/robots.txt` | Everything public may be crawled (AI assistants included); `/api/` is off limits except the reviews the page shows |
+| `/llms.txt` | The price list and how to book, in plain text for AI assistants, built from the same content as the page |
+| The page itself | One canonical address, a title and description written from the Website tab's prices, one H1, and the business's details as schema.org data |
+
+**The area OMG works in** (Website tab > Contact & text > Area you work in,
+e.g. "Soweto, Johannesburg") goes into Google's title, the description, the H1,
+the schema.org address and the AI summary. Until it is set, the site names no
+place, and searches like "makeup artist in Soweto" can't find it.
+
+**Search Console (one time).** At https://search.google.com/search-console add
+a **Domain** property for `ohmyglam.online`. Google recognises Cloudflare and
+offers to add its DNS record for you (otherwise copy the TXT record it shows into
+Cloudflare > DNS > Records): no file to upload. Then, under
+Sitemaps, submit `https://ohmyglam.online/sitemap.xml`, and use URL inspection
+> Request indexing on `https://ohmyglam.online/`. Bing Webmaster Tools can import
+the property from Search Console in one step; Bing feeds Copilot and ChatGPT
+search.
+
+**AI crawlers.** New Cloudflare domains allow AI crawlers. To check, in the
+Cloudflare dashboard open ohmyglam.online > Security > Settings > AI Crawler and
+Agent access policies: Search and Agents should say Allow (and Training too,
+if OMG is happy for AI models to learn from the site).
 
 ## Deploy changes
 
@@ -288,21 +330,34 @@ touches real data. GitHub runs both on every push.
 - **Facebook link.** The site shows no Facebook link until her page's real
   link is set on the Website tab (Contact & text). Until then there is no
   placeholder: a Facebook search is not her page.
+- **Area you work in.** Website tab > Contact & text. Google and AI assistants
+  only find the site for searches with a place in them once it is set (see
+  Google and AI assistants above).
 
 ## Images
 
 | File | What it is |
 | --- | --- |
-| `img/logo-240.webp`, `img/logo.webp`, `img/logo-840.webp`, `img/logo@2x.webp`, `img/logo.png` | The OMG logo at four widths (240, 560, 840 and 1120px) plus a PNG copy. It is OMG's own logo artwork, cut out of its brown satin background so it sits on any of the site's backgrounds |
+| `img/logo-240.webp`, `img/logo.webp`, `img/logo-840.webp` | The OMG logo at three widths (240, 560 and 840px), WebP at quality 80 (alpha 80; lower bands the glow). It is OMG's own logo artwork, cut out of its brown satin background so it sits on any of the site's backgrounds. The masters they are made from are in `brand/` (`logo-1120.webp`, `logo-560.png`), outside the website |
 | `img/gallery/glam-*.webp` | The five starting looks supplied by OMG, 720px wide, each with a 360px copy for phones. Photos added on the Website tab are stored in KV instead |
 | `img/before-after/ba-*.webp` | The five starting before-and-after pictures supplied by OMG, used whole. 720px wide, each with a larger `-lg` copy for sharp phone screens |
 | `og.jpg` | 1200×630 link-preview card. It names no prices or number, so it stays true whatever is changed on the Website tab |
 | `favicon.png`, `apple-touch-icon.png`, `img/icon-*.png` | The swirled "O" from the logo |
-| `img/contours.svg` | The swirled background pattern, redrawn as vector |
+| `img/contours.svg` | The swirled background pattern, redrawn as vector. It is the largest thing on a phone's first screen, so the page preloads it |
+| `fonts/*.woff2` | Montserrat, Cormorant Garamond and Great Vibes (Google Fonts, SIL Open Font License), latin characters, served from the site itself so the page waits for no other server |
 
 The logo and icons come from the logo artwork OMG supplied (1362×768). The
 top bar and footer load the smallest file; the big logo at the top of the page
-picks a width to suit the screen.
+picks a width to suit the screen, at most 840px (sharp on any phone, and half
+the weight of a 1120px copy). To remake them from the master:
+
+```bash
+node -e "const s=require('sharp');for(const[w,n]of[[840,'logo-840'],[560,'logo'],[240,'logo-240']])s('brand/logo-1120.webp').resize({width:w}).webp({quality:80,alphaQuality:80,effort:6,smartSubsample:true}).toFile('public/img/'+n+'.webp')"
+```
+
+Photos added on the Website tab are shrunk on the phone before upload to the
+size each album shows them: Photos 720px (360px copy), Before & after 1080px
+(720px copy).
 
 ## The logo's sparkles
 
@@ -337,9 +392,10 @@ Add, remove, reorder and describe them on the admin page's Website tab.
 wider screens. Also managed on the Website tab. A slide with no photos is
 hidden.
 
-**Videos.** The slide and its tab are built but stay hidden while the list is
-empty, so visitors never land on an empty tab. Adding the first video switches
-them on. For each video:
+**Videos.** The slide is built but commented out in `index.html` while there
+are no videos, so visitors (and Google) never meet an empty slide. With the
+first video, remove the comment marks around the Videos panel; its tab then
+appears on its own. For each video:
 
 1. Put the video in `public/video/` as an MP4 (H.264), with a still image of
    the same name as its cover, e.g. `soft-glam.mp4` and `soft-glam.jpg`.

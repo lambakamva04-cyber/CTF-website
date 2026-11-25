@@ -20,7 +20,7 @@ function setUp(section) {
     count: $('rv-count'), company: $('rv-hp'), submit: $('rv-submit'), status: $('rv-status'),
   };
   const startedAt = performance.now();
-  let page = 0;
+  let page = Number(el.list.dataset.page) || 0; // the Worker may have written page 1 already
   let loading = false;
   let sending = false;
 
@@ -118,7 +118,9 @@ function setUp(section) {
   }
   el.more.addEventListener('click', loadMore);
 
-  if ('IntersectionObserver' in window) {
+  if (page) {
+    el.more.hidden = el.list.dataset.more !== 'true';
+  } else if ('IntersectionObserver' in window) {
     const watcher = new IntersectionObserver((entries) => {
       if (entries.some((e) => e.isIntersecting)) {
         watcher.disconnect();

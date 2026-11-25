@@ -97,12 +97,39 @@ test('the seeded content is what the site showed, and fits the booking rules', a
   const catalog = JSON.parse(C.catalogJson(site));
   assert.deepEqual(catalog.services.map((s) => s.group), ['Makeup', 'Makeup', 'Makeup', 'Hair', 'Hair', 'Bridal', 'Bridal', 'Bridal', 'Bridal', 'Bridal', 'Bridesmaid', 'Bridesmaid']);
   assert.deepEqual(catalog.services.find((s) => s.id === 'full-glam'), { id: 'full-glam', group: 'Makeup', name: 'Full Glam', price: 850, minutes: 90 });
-  assert.match(C.metaDescription(site), /^OMG – Oh! My Glam price list: Soft Glam R750, Full Glam R850, Bold \/ Dramatic R950, Basic Installation R400, Curling Long Weave R450\. Bridal Package R4500, bridesmaids from R850\./);
-  const ld = JSON.parse(C.jsonLd(site, 'https://omg.example'));
+  assert.equal(C.metaDescription(site), 'OMG – Oh! My Glam: makeup artist & hair stylist. Makeup from R750, Bridal Package R4500, hair from R400, bridesmaids from R850. Book online or on WhatsApp.');
+  assert.equal(C.pageTitle(site), 'Makeup Artist & Hair Stylist | Bridal Makeup – OMG');
+  for (const area of ['Soweto', 'Johannesburg', 'Pietermaritzburg', 'Soweto & Johannesburg South']) {
+    const withArea = { ...site, text: { ...site.text, area } };
+    const title = C.pageTitle(withArea); const description = C.metaDescription(withArea);
+    assert.ok(title.includes(area) && [...title].length < 60, title);
+    assert.ok(description.includes(` in ${area}.`) && [...description].length >= 150 && [...description].length <= 160, description);
+  }
+  assert.equal(site.reviews.count, 0);
+  const [website, ld] = JSON.parse(C.jsonLd(site, 'https://omg.example'))['@graph'];
+  assert.equal(website['@type'], 'WebSite');
+  assert.deepEqual(website.publisher, { '@id': ld['@id'] });
   assert.equal(ld.telephone, '+27785767604');
   assert.equal(ld.priceRange, 'R400 – R4500');
   assert.equal(ld.hasOfferCatalog.itemListElement.length, 12);
   assert.deepEqual(ld.sameAs, ['https://www.instagram.com/asanda_tiwani/'], 'a Facebook search link is not a profile');
+  // No area set: a country-only address, no areaServed, no "in …".
+  assert.deepEqual(ld.address, { '@type': 'PostalAddress', addressCountry: 'ZA' });
+  assert.equal(ld.areaServed, undefined);
+  assert.ok(ld.image.every((u) => u.startsWith('https://omg.example/')), 'every image is absolute');
+  const withArea = JSON.parse(C.jsonLd({ ...site, text: { ...site.text, area: 'Soweto, Johannesburg' } }, 'https://omg.example'))['@graph'][1];
+  assert.deepEqual(withArea.address, { '@type': 'PostalAddress', addressLocality: 'Soweto, Johannesburg', addressCountry: 'ZA' });
+  assert.equal(withArea.areaServed, 'Soweto, Johannesburg');
+  assert.match(withArea.description, /^Makeup and hair styling in Soweto, Johannesburg,/);
+  // The area is escaped wherever it lands.
+  const sneaky = { ...site, text: { ...site.text, area: '<b>x</b></script>' } };
+  assert.ok(!C.jsonLd(sneaky, 'https://omg.example').includes('</script>'));
+  assert.ok(!C.heroLine(sneaky).includes('<b>x</b>'));
+  // /llms.txt: the same facts as the page, with the area once it is set.
+  const llms = C.llmsTxt(site, 'https://omg.example');
+  assert.match(llms, /^# OMG – Oh! My Glam\n\n> Makeup and hair styling, including bridal/);
+  assert.match(llms, /- Soft Glam: R750/);
+  assert.match(C.llmsTxt({ ...site, text: { ...site.text, area: 'Soweto' } }, 'https://omg.example'), /> Makeup and hair styling in Soweto, including/);
 });
 
 test('hidden services are neither shown nor bookable', async () => {
@@ -132,4 +159,22 @@ test('only JPEG and WebP files are taken as photos', () => {
   assert.equal(C.imageType(new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>')), null, 'SVG');
   assert.equal(C.imageType(bytes(0x47, 0x49, 0x46, 0x38)), null, 'GIF');
   assert.equal(C.imageType(new Uint8Array(2)), null);
+});
+
+test('the area OMG works in can be saved (migration 0006), and every other text is kept', async () => {
+  const { db, env } = freshDb();
+  const before = db.prepare('SELECT key, value FROM site_text ORDER BY key').all();
+  db.prepare("INSERT INTO site_text (key, value) VALUES ('area', 'Soweto, Johannesburg')").run();
+  assert.throws(() => db.prepare("INSERT INTO site_text (key, value) VALUES ('nonsense', 'x')").run(), /CHECK/);
+  const site = await C.loadSite(env);
+  assert.equal(site.text.area, 'Soweto, Johannesburg');
+  for (const row of before) assert.equal(site.text[row.key], row.value, row.key);
+  assert.equal(C.pageTitle(site), 'Makeup Artist in Soweto, Johannesburg | Bridal & Hair – OMG');
+  assert.equal(C.heroLine(site), 'Makeup artist &amp; hair stylist in <b>Soweto, Johannesburg</b>');
+});
+
+test('a photo needs a real description, not its file name', () => {
+  for (const bad of ['IMG_2041.jpg', 'IMG_2041', 'dsc 0042', 'photo.HEIC', 'PXL_20261101', 'x']) rejects(() => C.photoAlt(bad), 'alt');
+  assert.equal(C.photoAlt('Soft glam with a nude lip'), 'Soft glam with a nude lip');
+  assert.equal(C.photoAlt('Bridal look, image 2 of 3'), 'Bridal look, image 2 of 3');
 });

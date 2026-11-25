@@ -1,4 +1,9 @@
+# Search engines and AI assistants are welcome on the whole public site.
+# /admin/ is kept out of results by its noindex header (src/security.js); it is
+# not disallowed here, because a crawler that may not fetch it never sees that.
+# The page's reviews load from /api/reviews, so that one stays crawlable.
 User-agent: *
-Allow: /
-Disallow: /admin/
+Allow: /api/reviews
 Disallow: /api/
+
+Sitemap: https://ohmyglam.online/sitemap.xml

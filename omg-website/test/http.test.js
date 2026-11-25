@@ -99,3 +99,30 @@ test('www. addresses forward to the bare domain, keeping the path and query', as
   assert.equal(res.headers.get('location'), 'https://ohmyglam.online/admin/?tab=calendar');
   assert.equal(res.headers.get('x-content-type-options'), 'nosniff', 'security headers on the redirect too');
 });
+
+test('http:// goes to https:// in one redirect, www. included; local development stays on http', async () => {
+  const res = await worker.fetch(new Request('http://ohmyglam.online/?utm_source=ig'), {}, {});
+  assert.equal(res.status, 301);
+  assert.equal(res.headers.get('location'), 'https://ohmyglam.online/?utm_source=ig');
+  const www = await worker.fetch(new Request('http://www.ohmyglam.online/admin/'), {}, {});
+  assert.equal(www.headers.get('location'), 'https://ohmyglam.online/admin/', 'one hop, not two');
+  const { freshDb } = await import('./d1.js');
+  const assets = { fetch: async () => new Response('page', { status: 200, headers: { 'content-type': 'text/plain' } }) };
+  const local = await worker.fetch(new Request('http://127.0.0.1:8787/robots.txt'), { ...freshDb().env, ASSETS: assets }, {});
+  assert.equal(local.status, 200, 'no redirect on 127.0.0.1');
+});
+
+test('the calendar feed still answers on http://: an iPhone turns webcal:// into http://', async () => {
+  const { freshDb } = await import('./d1.js');
+  const res = await worker.fetch(new Request(`http://ohmyglam.online/calendar/${'a'.repeat(48)}.ics`), freshDb().env, {});
+  assert.notEqual(res.status, 301, 'not redirected');
+  assert.equal(res.status, 404, 'answered by the feed (an unknown link)');
+});
+
+test('the "not found" page always answers 404, also at its own address', async () => {
+  const assets = { fetch: async () => new Response('<h1>That page isn’t here</h1>', { status: 200, headers: { 'content-type': 'text/html' } }) };
+  for (const path of ['/404', '/404.html']) {
+    const res = await worker.fetch(new Request(`https://ohmyglam.online${path}`), { ASSETS: assets }, {});
+    assert.equal(res.status, 404, path);
+  }
+});

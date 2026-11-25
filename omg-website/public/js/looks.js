@@ -25,7 +25,7 @@
     tab.type = 'button';
     tab.className = 'looks-tab';
     tab.id = 'tab-' + panel.id;
-    tab.textContent = panel.querySelector('.looks-heading').textContent;
+    tab.textContent = panel.dataset.tab || panel.querySelector('.looks-heading').textContent;
     tab.setAttribute('role', 'tab');
     tab.setAttribute('aria-controls', panel.id);
     tab.setAttribute('aria-selected', i === 0);
