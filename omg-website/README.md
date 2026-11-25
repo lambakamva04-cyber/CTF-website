@@ -175,6 +175,15 @@ redirect. The calendar feed is the one exception to the https redirect: an
 iPhone turns the `webcal://` link into `http://`, and a calendar app that
 doesn't follow the redirect would stop showing bookings.
 
+Two dashboard settings go with that:
+
+- **Leave "Always Use HTTPS" off** (ohmyglam.online > SSL/TLS > Edge
+  Certificates). The Worker already sends http:// to https://; Cloudflare's
+  switch would do it before the Worker runs, the calendar feed included.
+- **Attach `www.ohmyglam.online` as a second Custom Domain** (Workers & Pages >
+  omg-oh-my-glam > Settings > Domains & Routes), so www addresses reach the
+  Worker and forward to the bare domain instead of not answering.
+
 ## Google and AI assistants
 
 The site gives search engines and AI assistants everything they read:
