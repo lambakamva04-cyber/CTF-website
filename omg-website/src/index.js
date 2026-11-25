@@ -147,12 +147,21 @@ async function sitePage(request, env, url, page) {
     return absoluteShareImage(asset, url);
   }
   const shell = content.pageShell(asset, page);
+  let out;
   try {
-    return content.renderPage(shell, await content.loadSite(env), url, page);
+    out = content.renderPage(shell, await content.loadSite(env), url, page);
   } catch (error) {
     console.error('site_content_unavailable', String(error && error.message));
-    return absoluteShareImage(shell, url);
+    out = absoluteShareImage(shell, url);
   }
+  out = content.pageLinks(out, page);
+  // The full menu's extra pages repeat what the one-page site shows: Google
+  // gets the one-page site and the service pages, not two copies of each.
+  if (!content.PAGES[page].index) {
+    out = new Response(out.body, out);
+    out.headers.set('x-robots-tag', 'noindex, follow');
+  }
+  return out;
 }
 
 /** /llms.txt: the page's facts for AI assistants, from the same rows as the page. */
@@ -186,8 +195,7 @@ export default {
     if (url.pathname === '/api' || url.pathname.startsWith('/api/')) response = await api(request, env, url, ctx);
     else if (url.pathname.startsWith('/media/')) response = await content.media(request, env, url.pathname.slice('/media/'.length));
     else if (PAGE_AT[url.pathname]) response = await sitePage(request, env, url, PAGE_AT[url.pathname]);
-    // Short links: /book opens the calendar, and /makeup/ is /makeup (and so on).
-    else if (url.pathname === '/book') response = Response.redirect(new URL('/#book', url).toString(), 301);
+    // /makeup/ is /makeup, and so on.
     else if (PAGE_AT[url.pathname.replace(/\/$/, '')] && url.pathname !== '/') response = Response.redirect(new URL(url.pathname.replace(/\/$/, ''), url).toString(), 301);
     else if (FEED.test(url.pathname)) response = await calendarFeed(request, env, url.pathname.match(FEED)[1]);
     else if (url.pathname === '/llms.txt') response = await llmsTxt(env, url);

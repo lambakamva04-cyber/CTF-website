@@ -1795,26 +1795,38 @@ async function content() {
     assert.ok(!home.includes('<b>Lerato</b>') && !html.includes('<b>Lerato</b>'), 'a reviewer name reached the page as markup');
   });
 
-  await check('every page is its own: its own address, one H1, only its own sections', async () => {
+  await check('the simple view and every page of the full menu: own address, one H1, only its own sections', async () => {
+    const ALL = ['services-title', 'about-title', 'prices-title', 'makeup-title', 'hair-title', 'bridal-title', 'gallery-title', 'reviews-title', 'book-title'];
     const pages = {
-      '/makeup': { has: ['makeup-title'], not: ['hair-title', 'bridal-title', 'services-title', 'about-title'] },
-      '/hair': { has: ['hair-title'], not: ['makeup-title', 'bridal-title', 'services-title', 'about-title'] },
-      '/bridal': { has: ['bridal-title'], not: ['prices-title', 'services-title', 'about-title'] },
-      '/': { has: ['services-title', 'about-title'], not: ['prices-title', 'bridal-title'] },
+      '/': ['prices-title', 'makeup-title', 'hair-title', 'bridal-title', 'gallery-title', 'reviews-title', 'book-title'],
+      '/menu': ['services-title', 'about-title'],
+      '/makeup': ['prices-title', 'makeup-title'],
+      '/hair': ['prices-title', 'hair-title'],
+      '/bridal': ['bridal-title'],
+      '/gallery': ['gallery-title'],
+      '/reviews': ['reviews-title'],
+      '/book': ['book-title'],
     };
-    for (const [path, { has, not }] of Object.entries(pages)) {
+    const indexed = ['/', '/makeup', '/hair', '/bridal'];
+    for (const [path, has] of Object.entries(pages)) {
       const r = await call('GET', path);
       expectStatus(r, 200, `GET ${path}`);
       const html = r.text;
       assert.ok(html.includes(`<link rel="canonical" href="https://ohmyglam.online${path}">`), `${path}: canonical`);
       assert.equal((html.match(/<h1[\s>]/g) || []).length, 1, `${path}: one H1`);
       assert.ok(html.includes('Asanda Tiwani'), `${path}: the artist is not named`);
-      for (const id of has) assert.ok(html.includes(`id="${id}"`), `${path}: ${id} missing`);
-      for (const id of not) assert.ok(!html.includes(`id="${id}"`), `${path}: ${id} should not be here`);
-      assert.ok(html.includes('id="book"'), `${path}: no booking calendar`);
+      for (const id of ALL) assert.equal(html.includes(`id="${id}"`), has.includes(id), `${path}: ${id} ${has.includes(id) ? 'missing' : 'should not be here'}`);
       assert.ok(!/data-only=/.test(html), `${path}: a data-only marker was left in`);
+      assert.ok(html.includes(`<a href="${path === '/' ? '/' : '/menu'}" data-view="${path === '/' ? 'simple' : 'full'}" aria-current="page">`), `${path}: the view switch does not mark its view`);
+      assert.equal(r.headers.get('x-robots-tag'), indexed.includes(path) ? null : 'noindex, follow', `${path}: robots header`);
+      // Without the calendar on the page, every Book link opens /book with its service chosen.
+      if (!['/', '/book'].includes(path)) {
+        assert.ok(!html.includes('data-service=') && !html.includes('href="#book"'), `${path}: a Book link still points at a calendar that is not there`);
+      }
     }
-    for (const path of ['/book', '/makeup/', '/hair/', '/bridal/']) expectStatus(await call('GET', path), 301, `GET ${path}`);
+    const makeup = (await call('GET', '/makeup')).text;
+    assert.ok(/href="\/book\?service=soft-glam"/.test(makeup), 'the Soft Glam Book link does not open /book with it chosen');
+    for (const path of ['/menu/', '/makeup/', '/hair/', '/bridal/', '/gallery/', '/reviews/', '/book/']) expectStatus(await call('GET', path), 301, `GET ${path}`);
   });
 
   const badServices = [

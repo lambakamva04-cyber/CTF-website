@@ -25,15 +25,29 @@ const FIRST_NAME = 'Asanda';
 const SITE = 'https://ohmyglam.online';
 /**
  * The site's pages, all made from public/index.html: an element marked
- * data-only="…" appears only on the pages it names (pageShell()). Home
- * introduces OMG and Asanda and lists the services; each service has a page
- * of its own, made for the searches people do ("bridal makeup in …").
+ * data-only="…" appears only on the pages it names (pageShell()).
+ *
+ * Two views of the same content. The simple view (home, at /) is the whole
+ * site on one page, and the default. The full menu (/menu) introduces OMG and
+ * Asanda and gives every option a page of its own. A switch at the top of
+ * every page moves between them.
+ *
+ * index: false keeps a page out of Google (X-Robots-Tag), so the views don't
+ * compete with each other: Google sees the one-page site and the three
+ * service pages, which are made for searches like "bridal makeup in …".
+ * calendar: the page has the booking calendar; elsewhere Book links open
+ * /book with their service chosen (pageLinks()).
  */
 export const PAGES = {
-  home: { path: '/', canonical: `${SITE}/` },
-  makeup: { path: '/makeup', canonical: `${SITE}/makeup`, cards: ['makeup'], lede: 'From soft and subtle to bold and dramatic: choose your level of glam, then pick a time. Home calls on request.', pricesTitle: 'Makeup Prices', pricesNote: 'Pick your level of glam, then tap Book to choose a time.' },
-  hair: { path: '/hair', canonical: `${SITE}/hair`, cards: ['hair'], lede: 'Weave installation and curling, on its own or with your makeup. Home calls on request.', pricesTitle: 'Hair Prices', pricesNote: 'Tap Book on a service to choose a time.' },
-  bridal: { path: '/bridal', canonical: `${SITE}/bridal`, cards: ['package', 'bride', 'bridesmaid'], lede: 'Hair and makeup for your wedding day, for the bride and the whole bridal party. Home calls on request.' },
+  home: { path: '/', canonical: `${SITE}/`, index: true, calendar: true },
+  menu: { path: '/menu', canonical: `${SITE}/menu`, cta: ['#services', 'See the services'] },
+  makeup: { path: '/makeup', canonical: `${SITE}/makeup`, index: true, cards: ['makeup'], cta: ['#prices', 'See the prices'], lede: 'From soft and subtle to bold and dramatic: choose your level of glam, then pick a time. Home calls on request.', pricesTitle: 'Makeup Prices', pricesNote: 'Pick your level of glam, then tap Book to choose a time.' },
+  hair: { path: '/hair', canonical: `${SITE}/hair`, index: true, cards: ['hair'], cta: ['#prices', 'See the prices'], lede: 'Weave installation and curling, on its own or with your makeup. Home calls on request.', pricesTitle: 'Hair Prices', pricesNote: 'Tap Book on a service to choose a time.' },
+  bridal: { path: '/bridal', canonical: `${SITE}/bridal`, index: true, cards: ['package', 'bride', 'bridesmaid'], cta: ['#bridal', 'See the bridal prices'], lede: 'Hair and makeup for your wedding day, for the bride and the whole bridal party. Home calls on request.' },
+  gallery: { path: '/gallery', canonical: `${SITE}/gallery`, compact: true, lede: 'Looks and before-and-after pictures of makeup and hair done by Asanda.' },
+  reviews: { path: '/reviews', canonical: `${SITE}/reviews`, compact: true, lede: 'What clients say about their glam. Had yours done? Leave a review below.' },
+  // The booking section says how it works, so its page needs no second line.
+  book: { path: '/book', canonical: `${SITE}/book`, calendar: true, compact: true, lede: '' },
 };
 const REVIEWS_PAGE = 6; // as src/reviews.js
 const MAX_SERVICES = 60;
@@ -390,6 +404,10 @@ const TITLES = {
   makeup: (area) => [area && `Makeup in ${area} – Soft, Full & Bold Glam | OMG`, area && `Makeup in ${area} by ${ARTIST}`, area && `Makeup in ${area} – OMG`, `Makeup by ${ARTIST} – Soft, Full & Bold Glam | OMG`],
   hair: (area) => [area && `Hair Installation & Styling in ${area} | OMG`, area && `Hair Installation in ${area} – OMG`, area && `Hair in ${area} – OMG`, `Hair Installation & Styling by ${ARTIST} | OMG`],
   bridal: (area) => [area && `Bridal Makeup & Hair in ${area} | OMG – Oh! My Glam`, area && `Bridal Makeup & Hair in ${area} – OMG`, area && `Bridal Makeup in ${area} – OMG`, `Bridal Makeup & Hair by ${ARTIST} | OMG`],
+  menu: () => [`${ARTIST} – Makeup, Hair & Bridal | OMG – Oh! My Glam`],
+  gallery: () => [`Photos – Makeup & Hair by ${ARTIST} | OMG`],
+  reviews: () => [`Client Reviews – ${ARTIST} | OMG – Oh! My Glam`],
+  book: () => [`Book an Appointment with ${ARTIST} | OMG`],
 };
 
 export function pageTitle(site, page = 'home') {
@@ -434,6 +452,12 @@ export function metaDescription(site, page = 'home') {
         from('bride') !== null && `bride-only options from R${from('bride')}`,
         from('bridesmaid') !== null && `bridesmaids from R${from('bridesmaid')}`,
       ].filter(Boolean), BRIDAL_TAILS);
+    case 'gallery':
+      return fitDescription(`Photos of makeup and hair by ${ARTIST} (OMG – Oh! My Glam)${where}.`, [from('makeup') !== null && `makeup from R${from('makeup')}`, from('hair') !== null && `hair from R${from('hair')}`, pkg].filter(Boolean), TAILS);
+    case 'reviews':
+      return fitDescription(`Client reviews for ${ARTIST}, makeup artist & hair stylist${where} (OMG – Oh! My Glam).`, [from('makeup') !== null && `makeup from R${from('makeup')}`, from('hair') !== null && `hair from R${from('hair')}`, pkg].filter(Boolean), TAILS);
+    case 'book':
+      return fitDescription(`Book makeup, hair or bridal glam with ${ARTIST} (OMG – Oh! My Glam)${where}.`, [from('makeup') !== null && `makeup from R${from('makeup')}`, from('hair') !== null && `hair from R${from('hair')}`, pkg].filter(Boolean), [' Pick a day and a free time online, or book on WhatsApp.', ...TAILS]);
     default:
       return fitDescription(`${ARTIST}: makeup artist & hair stylist${where} (OMG – Oh! My Glam).`, [
         from('makeup') !== null && `makeup from R${from('makeup')}`,
@@ -450,6 +474,10 @@ const HERO = {
   makeup: `Makeup by <b>${ARTIST}</b>`,
   hair: `Hair installation &amp; styling by <b>${ARTIST}</b>`,
   bridal: `Bridal makeup &amp; hair by <b>${ARTIST}</b>`,
+  menu: `<b>${ARTIST}</b> · makeup artist &amp; hair stylist`,
+  gallery: `Makeup &amp; hair photos by <b>${ARTIST}</b>`,
+  reviews: `Client reviews for <b>${ARTIST}</b>`,
+  book: `Book your glam with <b>${ARTIST}</b>`,
 };
 
 export function heroLine(site, page = 'home') {
@@ -473,7 +501,7 @@ export function aboutText(site) {
   return `OMG – Oh! My Glam is ${ARTIST}'s makeup and hair business${area ? ` in ${area}` : ''}: soft to bold glam, brides and bridesmaids. `
     + (list ? `Prices are in rand: ${list}. ` : '')
     + 'Home calls are available on request; transport is quoted separately. '
-    + `To book, choose a service, a day and a free time in the booking calendar on this page, or WhatsApp or call ${formatPhone(site.text.phone || WHATSAPP_NUMBER)}.`;
+    + `To book, choose a service, a day and a free time in the online booking calendar, or WhatsApp or call ${formatPhone(site.text.phone || WHATSAPP_NUMBER)}.`;
 }
 
 /** The hero's "at a glance" chips, each linked to its prices. */
@@ -482,12 +510,15 @@ export function chipsHtml(site, page = 'home') {
   const from = (card) => fromPrice(services, card);
   const pkg = services.find((s) => s.card === 'package');
   const each = (card) => services.filter((s) => s.card === card).slice(0, 3).map((s) => `<li><a href="#prices">${esc(s.name)} <b>R${s.price}</b></a></li>`);
+  const overview = (makeup, hair, bridal) => [
+    from('makeup') !== null && `<li><a href="${makeup}">Makeup from <b>R${from('makeup')}</b></a></li>`,
+    from('hair') !== null && `<li><a href="${hair}">Hair from <b>R${from('hair')}</b></a></li>`,
+    pkg && `<li><a href="${bridal}">${esc(pkg.name)} <b>R${pkg.price}</b></a></li>`,
+  ];
+  if (PAGES[page].compact) return '';
   const chips = {
-    home: () => [
-      from('makeup') !== null && `<li><a href="/makeup">Makeup from <b>R${from('makeup')}</b></a></li>`,
-      from('hair') !== null && `<li><a href="/hair">Hair from <b>R${from('hair')}</b></a></li>`,
-      pkg && `<li><a href="/bridal">${esc(pkg.name)} <b>R${pkg.price}</b></a></li>`,
-    ],
+    home: () => overview('#prices', '#prices', '#bridal'),
+    menu: () => overview('/makeup', '/hair', '/bridal'),
     makeup: () => each('makeup'),
     hair: () => each('hair'),
     bridal: () => [
@@ -499,7 +530,7 @@ export function chipsHtml(site, page = 'home') {
   return [...chips, '<li>Home calls on request</li>'].filter(Boolean).join('');
 }
 
-/** The home page's menu: one card per service page, with what it offers and from what price. */
+/** The full menu's cards: one per page, the services with what they offer and from what price. */
 export function menuHtml(site) {
   const services = visibleServices(site);
   const card = (page, title, go, summary) => {
@@ -510,6 +541,8 @@ export function menuHtml(site) {
       + `<span class="svc-card-go">${go} <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span></a>`;
   };
   const names = (list) => list.map((s) => s.name);
+  const option = (href, title, label, text, go) => `<a class="card svc-card" href="${href}"><div class="card-head"><h3 class="gold-text">${title}</h3><span>${esc(label)}</span></div>`
+    + `<p class="svc-card-list">${esc(text)}</p><span class="svc-card-go">${go} <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span></a>`;
   return [
     card('makeup', 'Makeup', 'See the makeup prices', names),
     card('hair', 'Hair', 'See the hair prices', names),
@@ -518,6 +551,9 @@ export function menuHtml(site) {
       list.some((s) => s.card === 'bride') && 'Bride options',
       list.some((s) => s.card === 'bridesmaid') && 'Bridesmaids',
     ].filter(Boolean)),
+    option('/gallery', 'Gallery', site.photos.length ? `${site.photos.length} photos` : 'Photos', 'Looks and before & after', 'See the photos'),
+    option('/reviews', 'Reviews', site.reviews?.count ? `${site.reviews.count} ${site.reviews.count === 1 ? 'review' : 'reviews'}` : 'New', 'What clients say, and room for yours', 'Read the reviews'),
+    option('/book', 'Book', 'Online', 'Pick a service, a day and a free time', 'Book an appointment'),
   ].join('');
 }
 
@@ -562,6 +598,10 @@ export function shareDescription(site, page = 'home') {
   const pkg = services.find((s) => s.card === 'package');
   const parts = {
     home: () => [...each('makeup'), from('hair') !== null && `Hair from R${from('hair')}`],
+    menu: () => [...each('makeup'), from('hair') !== null && `Hair from R${from('hair')}`],
+    gallery: () => [from('makeup') !== null && `Makeup from R${from('makeup')}`, from('hair') !== null && `Hair from R${from('hair')}`],
+    reviews: () => [from('makeup') !== null && `Makeup from R${from('makeup')}`, from('hair') !== null && `Hair from R${from('hair')}`],
+    book: () => [from('makeup') !== null && `Makeup from R${from('makeup')}`, from('hair') !== null && `Hair from R${from('hair')}`, pkg && `${pkg.name} R${pkg.price}`],
     makeup: () => each('makeup'),
     hair: () => each('hair'),
     bridal: () => [pkg && `${pkg.name} R${pkg.price}`, from('bride') !== null && `Bride from R${from('bride')}`, from('bridesmaid') !== null && `Bridesmaids from R${from('bridesmaid')}`],
@@ -607,6 +647,7 @@ export function llmsTxt(site, origin) {
  */
 export function pageShell(response, page) {
   const spec = PAGES[page];
+  const full = page !== 'home';
   let rewriter = new HTMLRewriter()
     .on('[data-only]', {
       element(el) {
@@ -616,28 +657,56 @@ export function pageShell(response, page) {
     })
     .on('link[rel="canonical"]', { element(el) { el.setAttribute('href', spec.canonical); } })
     .on('meta[property="og:url"]', { element(el) { el.setAttribute('content', spec.canonical); } })
-    .on(`a[data-nav="${page}"]`, { element(el) { el.setAttribute('aria-current', 'page'); } });
-  if (page !== 'home') {
-    const bare = { text: {}, services: [] };
-    const description = metaDescription(bare, page);
-    const target = page === 'bridal' ? '#bridal' : '#prices';
+    .on(`a[data-nav="${page}"]`, { element(el) { el.setAttribute('aria-current', 'page'); } })
+    .on(`.view-switch a[data-view="${full ? 'full' : 'simple'}"]`, { element(el) { el.setAttribute('aria-current', 'page'); } });
+  if (!full) return rewriter.transform(response);
+
+  const bare = { text: {}, services: [], photos: [], reviews: { count: 0 } };
+  const description = metaDescription(bare, page);
+  rewriter = rewriter
+    .on('head > title', { element(el) { el.setInnerContent(pageTitle(bare, page)); } })
+    .on('meta[property="og:title"]', { element(el) { el.setAttribute('content', pageTitle(bare, page)); } })
+    .on('meta[name="description"]', { element(el) { el.setAttribute('content', description); } })
+    .on('meta[property="og:description"]', { element(el) { el.setAttribute('content', description); } })
+    .on('[data-cms-hero]', { element(el) { el.setInnerContent(heroLine(bare, page), { html: true }); } })
+    .on('[data-cms-chips]', { element(el) { el.setInnerContent(''); } })
+    .on('a.brand', { element(el) { el.setAttribute('href', '/menu'); el.setAttribute('aria-label', 'OMG – Oh! My Glam, full menu'); } });
+  if (spec.lede) rewriter = rewriter.on('.hero .lede', { element(el) { el.removeAttribute('data-cms-text'); el.setInnerContent(spec.lede); } });
+  if (spec.lede === '') rewriter = rewriter.on('.hero .lede', { element(el) { el.remove(); } });
+  if (spec.cta) rewriter = rewriter.on('.hero-cta a.btn-ghost', { element(el) { el.setAttribute('href', spec.cta[0]); el.setInnerContent(spec.cta[1]); } });
+  if (spec.compact) {
+    // Gallery, Reviews and Book: a short header, so the page's own content is on the first screen.
     rewriter = rewriter
-      .on('head > title', { element(el) { el.setInnerContent(pageTitle(bare, page)); } })
-      .on('meta[property="og:title"]', { element(el) { el.setAttribute('content', pageTitle(bare, page)); } })
-      .on('meta[name="description"]', { element(el) { el.setAttribute('content', description); } })
-      .on('meta[property="og:description"]', { element(el) { el.setAttribute('content', description); } })
-      .on('[data-cms-hero]', { element(el) { el.setInnerContent(heroLine(bare, page), { html: true }); } })
-      .on('.hero .lede', { element(el) { el.removeAttribute('data-cms-text'); el.setInnerContent(spec.lede); } })
-      .on('.hero-cta a[href="#services"]', { element(el) { el.setAttribute('href', target); el.setInnerContent(page === 'bridal' ? 'See the bridal prices' : 'See the prices'); } })
-      .on('[data-cms-chips]', { element(el) { el.setInnerContent(''); } })
-      .on('a.brand', { element(el) { el.setAttribute('href', '/'); el.setAttribute('aria-label', 'OMG – Oh! My Glam, home page'); } });
-    if (spec.pricesTitle) {
-      rewriter = rewriter
-        .on('#prices-title', { element(el) { el.setInnerContent(spec.pricesTitle); } })
-        .on('#prices .section-head p', { element(el) { el.setInnerContent(spec.pricesNote); } });
-    }
+      .on('section.hero', { element(el) { el.setAttribute('class', `${el.getAttribute('class')} hero-compact`); } })
+      .on('.hero-cta', { element(el) { el.remove(); } })
+      .on('[data-cms-chips]', { element(el) { el.remove(); } });
+  }
+  if (spec.pricesTitle) {
+    rewriter = rewriter
+      .on('#prices-title', { element(el) { el.setInnerContent(spec.pricesTitle); } })
+      .on('#prices .section-head p', { element(el) { el.setInnerContent(spec.pricesNote); } });
   }
   return rewriter.transform(response);
+}
+
+/**
+ * Last step for every page (after renderPage). On a page without the booking
+ * calendar, Book links open the booking page with their service chosen
+ * (/book?service=…), and links to #book go to /book.
+ */
+export function pageLinks(response, page) {
+  if (PAGES[page].calendar) return response;
+  return new HTMLRewriter()
+    .on('a[href="#book"]', { element(el) { el.setAttribute('href', '/book'); } })
+    .on('a[data-service]', {
+      element(el) {
+        el.setAttribute('href', `/book?service=${encodeURIComponent(el.getAttribute('data-service'))}`);
+        el.removeAttribute('data-service');
+        el.removeAttribute('target');
+        el.removeAttribute('rel');
+      },
+    })
+    .transform(response);
 }
 
 /**

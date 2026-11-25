@@ -186,30 +186,38 @@ Two dashboard settings go with that:
 
 ## The pages
 
+The site has two views, and a **Simple · Full menu** switch at the top of
+every page moves between them.
+
+- **Simple** (the default, at `/`): the whole site on one page, as it first
+  launched: prices, bridal prices, the gallery, reviews and the booking
+  calendar. Its links scroll down the page.
+- **Full menu** (`/menu`): every option is a page of its own. `/menu`
+  introduces OMG and Asanda Tiwani and has a card for each page.
+
+| Address | View | What it has | Google |
+| --- | --- | --- | --- |
+| `/` | Simple | Everything, on one page | Indexed: the main page, for searches like "Asanda Tiwani" and "makeup artist in …" |
+| `/menu` | Full menu | Who OMG and Asanda Tiwani are, and a card for every page | Hidden |
+| `/makeup` | Full menu | The makeup prices | Indexed: "makeup artist in …" |
+| `/hair` | Full menu | The hair prices | Indexed: "hair installation in …" |
+| `/bridal` | Full menu | The bridal prices | Indexed: "bridal makeup in …" |
+| `/gallery` | Full menu | Photos and before & after | Hidden |
+| `/reviews` | Full menu | Reviews, and the form to leave one | Hidden |
+| `/book` | Full menu | The booking calendar (also the short link for an Instagram bio) | Hidden |
+
+"Hidden" pages answer `X-Robots-Tag: noindex, follow`: they repeat what the
+one-page site shows, and two copies of the same content would compete in
+Google. The sitemap lists the four indexed pages.
+
 Every page is made from `public/index.html`: an element marked
 `data-only="…"` appears only on the pages it names (`PAGES` and `pageShell()`
-in `src/content.js`), so the header, footer, styles, gallery, reviews and
-booking calendar are written once. Each page has its own title, description,
-canonical address and H1, all naming Asanda Tiwani.
-
-| Address | What it has |
-| --- | --- |
-| `/` | Who OMG and Asanda Tiwani are: the services menu (a card for Makeup, Hair and Bridal, each with its services and lowest price), "Meet Asanda Tiwani", the gallery, reviews and the booking calendar. Made so that a search for "Asanda Tiwani" finds the site |
-| `/makeup` | The makeup prices, for searches like "makeup artist in …" |
-| `/hair` | The hair prices (installation and curling), for "hair installation in …" |
-| `/bridal` | The bridal prices (package, bride, bridesmaids), for "bridal makeup in …" |
-| `/book` | A short link for an Instagram bio or WhatsApp status: opens the home page at the booking calendar |
-
-The service pages also have the gallery, reviews and the booking calendar, and
-every Book button opens the calendar right there with its service chosen.
-Booking stays on every page rather than on a page of its own: each extra click
-between "I want this" and "booked" loses clients. Pages are per kind of service
-(makeup, hair, bridal), not per single service: people search for those, and a
-page holding one price would be too thin for Google to rank.
-
-On phones the pages are behind the **Menu** button next to Book now
-(`public/js/nav.js` closes it after a choice); wider screens show them in the
-top bar.
+in `src/content.js`), so the header, footer, styles and sections are written
+once. On a page without the booking calendar, every Book button opens `/book`
+with its service already chosen (`/book?service=soft-glam`, `pageLinks()`).
+Gallery, Reviews and Book have a short header, so their own content is on the
+first screen. On phones the links sit behind the **Menu** button next to
+Book now (`public/js/nav.js` closes it after a choice).
 
 ## Google and AI assistants
 
@@ -217,7 +225,7 @@ The site gives search engines and AI assistants everything they read:
 
 | Address | What it is |
 | --- | --- |
-| `/sitemap.xml` | The four pages Google should index: `/`, `/makeup`, `/hair` and `/bridal` |
+| `/sitemap.xml` | The four pages Google should index: `/`, `/makeup`, `/hair` and `/bridal` (the full menu's other pages repeat the one-page site and are kept out) |
 | `/robots.txt` | Everything public may be crawled (AI assistants included); `/api/` is off limits except the reviews the page shows |
 | `/llms.txt` | The price list and how to book, in plain text for AI assistants, built from the same content as the page |
 | Each page | Its own canonical address, a title and description written from the Website tab's prices, one H1, and schema.org data: the business, and Asanda Tiwani as a Person (with the Instagram account), so Google can tie the name to the site |

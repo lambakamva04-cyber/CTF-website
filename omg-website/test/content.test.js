@@ -183,19 +183,32 @@ test('a photo needs a real description, not its file name', () => {
 
 test('every page has its own title, description, H1 and chips, from the same content', async () => {
   const site = await C.loadSite(freshDb().env);
-  assert.deepEqual(Object.keys(C.PAGES), ['home', 'makeup', 'hair', 'bridal']);
-  assert.deepEqual(Object.values(C.PAGES).map((p) => p.canonical), ['https://ohmyglam.online/', 'https://ohmyglam.online/makeup', 'https://ohmyglam.online/hair', 'https://ohmyglam.online/bridal']);
+  // The simple view (/, the whole site on one page) and the full menu (every option a page).
+  assert.deepEqual(Object.keys(C.PAGES), ['home', 'menu', 'makeup', 'hair', 'bridal', 'gallery', 'reviews', 'book']);
+  assert.deepEqual(Object.values(C.PAGES).map((p) => p.path), ['/', '/menu', '/makeup', '/hair', '/bridal', '/gallery', '/reviews', '/book']);
+  assert.ok(Object.values(C.PAGES).every((p) => p.canonical === `https://ohmyglam.online${p.path}`));
+  // Google gets the one-page site and the service pages; the rest repeat it.
+  assert.deepEqual(Object.keys(C.PAGES).filter((page) => C.PAGES[page].index), ['home', 'makeup', 'hair', 'bridal']);
+  assert.deepEqual(Object.keys(C.PAGES).filter((page) => C.PAGES[page].calendar), ['home', 'book']);
   assert.deepEqual(Object.keys(C.PAGES).map((page) => C.pageTitle(site, page)), [
     'Asanda Tiwani – Makeup Artist & Hair Stylist | OMG',
+    'Asanda Tiwani – Makeup, Hair & Bridal | OMG – Oh! My Glam',
     'Makeup by Asanda Tiwani – Soft, Full & Bold Glam | OMG',
     'Hair Installation & Styling by Asanda Tiwani | OMG',
     'Bridal Makeup & Hair by Asanda Tiwani | OMG',
+    'Photos – Makeup & Hair by Asanda Tiwani | OMG',
+    'Client Reviews – Asanda Tiwani | OMG – Oh! My Glam',
+    'Book an Appointment with Asanda Tiwani | OMG',
   ]);
   assert.deepEqual(Object.keys(C.PAGES).map((page) => C.heroLine(site, page)), [
+    '<b>Asanda Tiwani</b> · makeup artist &amp; hair stylist',
     '<b>Asanda Tiwani</b> · makeup artist &amp; hair stylist',
     'Makeup by <b>Asanda Tiwani</b>',
     'Hair installation &amp; styling by <b>Asanda Tiwani</b>',
     'Bridal makeup &amp; hair by <b>Asanda Tiwani</b>',
+    'Makeup &amp; hair photos by <b>Asanda Tiwani</b>',
+    'Client reviews for <b>Asanda Tiwani</b>',
+    'Book your glam with <b>Asanda Tiwani</b>',
   ]);
   for (const area of ['', 'Soweto', 'Johannesburg', 'Soweto, Johannesburg', 'Soweto & Johannesburg South', 'x'.repeat(28)]) {
     const s2 = { ...site, text: { ...site.text, area } };
@@ -205,21 +218,25 @@ test('every page has its own title, description, H1 and chips, from the same con
       assert.ok([...title].length < 60, `${page} title ${title}`);
       assert.ok([...description].length >= 150 && [...description].length <= 160, `${page} ${[...description].length}: ${description}`);
       assert.ok(description.includes('Asanda Tiwani'), 'the artist is named');
-      if (area) assert.ok(title.includes(area) && description.includes(` in ${area}`) && C.heroLine(s2, page).endsWith(` in <b>${C.esc(area)}</b>`), `${page}: ${title} | ${description}`);
+      if (area) assert.ok(description.includes(` in ${area}`) && C.heroLine(s2, page).endsWith(` in <b>${C.esc(area)}</b>`), `${page}: ${description}`);
+      if (area && C.PAGES[page].index) assert.ok(title.includes(area), `${page}: ${title}`);
     }
   }
   assert.match(C.metaDescription(site, 'makeup'), /^Makeup by Asanda Tiwani \(OMG – Oh! My Glam\)\. Soft Glam R750, Full Glam R850, Bold \/ Dramatic R950\./);
   assert.match(C.metaDescription(site, 'hair'), /^Hair installation & styling by Asanda Tiwani \(OMG – Oh! My Glam\)\. Basic Installation R400, Curling Long Weave R450/);
   assert.match(C.metaDescription(site, 'bridal'), /^Bridal makeup & hair by Asanda Tiwani \(OMG – Oh! My Glam\)\. Bridal Package R4500, bride-only options from R750, bridesmaids from R850\./);
-  // Chips: home points at the service pages, each service page at its own prices.
+  // Chips: the simple view points down its page, the full menu at its pages.
   const hrefs = (html) => [...html.matchAll(/<a [^>]*href="([^"]+)"/g)].map((m) => m[1]);
-  assert.deepEqual(hrefs(C.chipsHtml(site)), ['/makeup', '/hair', '/bridal']);
+  assert.deepEqual(hrefs(C.chipsHtml(site)), ['#prices', '#prices', '#bridal']);
+  assert.deepEqual(hrefs(C.chipsHtml(site, 'menu')), ['/makeup', '/hair', '/bridal']);
+  for (const page of ['gallery', 'reviews', 'book']) assert.equal(C.chipsHtml(site, page), '', `${page} has a short header`);
   assert.deepEqual(hrefs(C.chipsHtml(site, 'makeup')), ['#prices', '#prices', '#prices']);
   assert.deepEqual(hrefs(C.chipsHtml(site, 'hair')), ['#prices', '#prices']);
   assert.deepEqual(hrefs(C.chipsHtml(site, 'bridal')), ['#bridal', '#bridal', '#bridal']);
-  // The home page's menu: one card per service page, with its services and lowest price.
+  // The full menu: a card for every option, each to its own page.
   const menu = C.menuHtml(site);
-  assert.deepEqual(hrefs(menu), ['/makeup', '/hair', '/bridal']);
+  assert.deepEqual(hrefs(menu), ['/makeup', '/hair', '/bridal', '/gallery', '/reviews', '/book']);
+  assert.ok(menu.includes('<h3 class="gold-text">Gallery</h3><span>10 photos</span>'), menu);
   assert.ok(menu.includes('From R750</span></div><p class="svc-card-list">Soft Glam · Full Glam · Bold / Dramatic</p>'), menu);
   assert.ok(menu.includes('<p class="svc-card-list">Bridal Package · Bride options · Bridesmaids</p>'), menu);
   assert.match(C.shareDescription(site, 'bridal'), /^Bridal Package R4500 · Bride from R750 · Bridesmaids from R850\. Book online or on WhatsApp: \+27 78 576 7604\.$/);

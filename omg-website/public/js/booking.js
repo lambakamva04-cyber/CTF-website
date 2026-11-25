@@ -460,4 +460,12 @@ function setUp(root) {
   document.addEventListener('click', (event) => {
     if (event.target.closest('a[href="#book"]')) start();
   });
+
+  // Arriving from a Book link on a page without the calendar (/book?service=…):
+  // that service is already chosen.
+  const wanted = new URLSearchParams(location.search).get('service');
+  if (wanted && findService(wanted)) {
+    start();
+    chooseService(wanted, { announce: true });
+  }
 }
