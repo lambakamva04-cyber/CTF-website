@@ -4,6 +4,7 @@
 // migrations/.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import * as C from '../src/content.js';
 import { HOURS } from '../public/js/catalog.js';
 import { toMinutes } from '../public/js/slots.js';
@@ -187,6 +188,15 @@ test('a Facebook link, once saved, shows everywhere Instagram does', async () =>
     assert.deepEqual(graph.find((n) => n['@type'] === type).sameAs, [instagram, link], `${type}: Google links both profiles to the site`);
   }
   assert.ok(C.llmsTxt(site, 'https://omg.example').includes(`- [Facebook](${link})`));
+});
+
+test('every image in the page has alt text (Bing flags an empty one)', () => {
+  const html = readFileSync(new URL('../public/index.html', import.meta.url), 'utf8');
+  const images = html.match(/<img\b[^>]*>/g);
+  assert.ok(images.length >= 13, `${images.length} images`);
+  for (const img of images) assert.match(img, /\salt="[^"]+"/, img.slice(0, 90));
+  // The top-bar logo names its link through its alt text, not an aria-label on the link.
+  assert.match(html, /<a class="brand" href="#top">\s*<img [^>]*alt="OMG – Oh! My Glam, back to top">/);
 });
 
 test('a photo needs a real description, not its file name', () => {
