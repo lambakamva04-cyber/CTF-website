@@ -197,11 +197,11 @@ every page moves between them.
 
 | Address | View | What it has | Google |
 | --- | --- | --- | --- |
-| `/` | Simple | Everything, on one page | Indexed: the main page, for searches like "Asanda Tiwani" and "makeup artist in …" |
+| `/` | Simple | Everything, on one page | Indexed: the main page, for searches like "Asanda Tiwani" and "bridal hair and makeup artist in …" |
 | `/menu` | Full menu | Who OMG and Asanda Tiwani are, and a card for every page | Hidden |
 | `/makeup` | Full menu | The makeup prices | Indexed: "makeup artist in …" |
 | `/hair` | Full menu | The hair prices | Indexed: "hair installation in …" |
-| `/bridal` | Full menu | The bridal prices | Indexed: "bridal makeup in …" |
+| `/bridal` | Full menu | The bridal prices | Indexed: "bridal hair and makeup packages in …" |
 | `/gallery` | Full menu | Photos and before & after | Hidden |
 | `/reviews` | Full menu | Reviews, and the form to leave one | Hidden |
 | `/book` | Full menu | The booking calendar (also the short link for an Instagram bio) | Hidden |
@@ -228,7 +228,28 @@ The site gives search engines and AI assistants everything they read:
 | `/sitemap.xml` | The four pages Google should index: `/`, `/makeup`, `/hair` and `/bridal` (the full menu's other pages repeat the one-page site and are kept out) |
 | `/robots.txt` | Everything public may be crawled (AI assistants included); `/api/` is off limits except the reviews the page shows |
 | `/llms.txt` | The price list and how to book, in plain text for AI assistants, built from the same content as the page |
-| Each page | Its own canonical address, a title and description written from the Website tab's prices, one H1, and schema.org data: the business, and Asanda Tiwani as a Person (with the Instagram account), so Google can tie the name to the site |
+| Each page | Its own canonical address, a title and description written from the Website tab's prices, one H1, and schema.org data: the business, and Asanda Tiwani as a Person (with her Instagram and Facebook links), so Google can tie the name to the site |
+
+**Asanda's title: "Bridal Hair & Makeup Artist".** It's in Google's title, the
+H1, the description, the bio, the footer, the AI summary and the schema.org
+`jobTitle` (`TITLES`, `HERO` and `jsonLd()` in `src/content.js`). "Makeup
+artist" and "hair stylist" on their own are the most crowded words in beauty,
+so the site can't stand out with them. Few artists do both the hair and the
+makeup, which is what a bride wants from one booking (the Bridal Package is the
+weave installation, the hairstyle and the makeup). One wedding with three
+bridesmaids is worth about nine Soft Glam appointments. With a short area the
+title still holds "Makeup Artist in {area}" word for word, and her name stays in
+it, so a search for "Asanda Tiwani" finds the site. Use the same words on her
+Instagram and Facebook bios and her Google Business Profile: Google and AI
+assistants trust a title they see everywhere. The bridal page is titled
+"Bridal Hair & Makeup Packages", so the two pages don't compete for the same
+search.
+
+**Her Facebook link** goes in Website tab > Contact & text > Facebook page link.
+It must be the exact address of her profile or page (on Facebook: the profile,
+then ⋯ > Copy link), not a search. Once saved, it shows beside Instagram in the
+footer, in the schema.org `sameAs` of Asanda and the business, and in
+`/llms.txt`.
 
 **The area OMG works in** (Website tab > Contact & text > Area you work in,
 e.g. "Soweto, Johannesburg") goes into Google's title, the description, the H1,
