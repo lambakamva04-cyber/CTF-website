@@ -360,7 +360,7 @@ export function jsonLd(site, origin) {
         '@type': 'Person',
         '@id': `${home}#artist`,
         name: ARTIST,
-        jobTitle: 'Makeup artist and hair stylist',
+        jobTitle: 'Bridal hair and makeup artist',
         worksFor: { '@id': id },
         url: home,
         ...(area ? { workLocation: { '@type': 'Place', name: area } } : {}),
@@ -374,7 +374,7 @@ export function jsonLd(site, origin) {
         url: home,
         logo: `${origin}/img/icon-512.png`,
         image: [`${origin}/og.jpg`, ...photos],
-        description: `Makeup and hair styling by ${ARTIST}${area ? ` in ${area}` : ''}, including bridal and bridesmaid packages. Home calls on request; transport is quoted separately.`,
+        description: `Bridal hair and makeup for brides and bridesmaids by ${ARTIST}${area ? ` in ${area}` : ''}, plus soft to bold glam and weave installation for any occasion. Home calls on request; transport is quoted separately.`,
         founder: { '@id': `${home}#artist` },
         telephone: `+${site.text.phone || WHATSAPP_NUMBER}`,
         address: { '@type': 'PostalAddress', ...(area ? { addressLocality: area } : {}), addressCountry: 'ZA' },
@@ -398,12 +398,28 @@ function fromPrice(services, card) {
   return prices.length ? Math.min(...prices) : null;
 }
 
-/** Each page's <title>: what people search, the area, then the name, under 60 characters. */
+/**
+ * Each page's <title>: what people search, the area, then the name, under 60 characters.
+ *
+ * Asanda's title is "Bridal Hair & Makeup Artist", not "makeup artist & hair
+ * stylist": those are the two most crowded words in beauty, while few artists
+ * do both the hair and the makeup, which is what a bride wants from one booking
+ * (the Bridal Package is weave installation, hairstyle and makeup). With a
+ * short area it still holds "Makeup Artist in {area}" word for word; with a
+ * longer one her name stays in, so a search for Asanda Tiwani finds the site.
+ * The bridal page is about the packages, so the two pages don't compete.
+ */
 const TITLES = {
-  home: (area) => [area && `Makeup Artist in ${area} – ${ARTIST} | OMG`, area && `Makeup Artist in ${area} – ${ARTIST}`, area && `Makeup Artist in ${area} – OMG`, `${ARTIST} – Makeup Artist & Hair Stylist | OMG`],
+  home: (area) => [
+    area && `Bridal Hair & Makeup Artist in ${area} – ${ARTIST}`,
+    area && `${ARTIST} – Bridal Hair & Makeup in ${area}`,
+    area && `${ARTIST} – Bridal Hair & Makeup, ${area}`,
+    area && `Bridal Hair & Makeup Artist in ${area}`,
+    `${ARTIST} – Bridal Hair & Makeup Artist | OMG`,
+  ],
   makeup: (area) => [area && `Makeup in ${area} – Soft, Full & Bold Glam | OMG`, area && `Makeup in ${area} by ${ARTIST}`, area && `Makeup in ${area} – OMG`, `Makeup by ${ARTIST} – Soft, Full & Bold Glam | OMG`],
   hair: (area) => [area && `Hair Installation & Styling in ${area} | OMG`, area && `Hair Installation in ${area} – OMG`, area && `Hair in ${area} – OMG`, `Hair Installation & Styling by ${ARTIST} | OMG`],
-  bridal: (area) => [area && `Bridal Makeup & Hair in ${area} | OMG – Oh! My Glam`, area && `Bridal Makeup & Hair in ${area} – OMG`, area && `Bridal Makeup in ${area} – OMG`, `Bridal Makeup & Hair by ${ARTIST} | OMG`],
+  bridal: (area) => [area && `Bridal Hair & Makeup Packages in ${area} | OMG`, area && `Bridal Hair & Makeup Packages in ${area}`, area && `Bridal Packages in ${area} – OMG`, `Bridal Hair & Makeup Packages – ${ARTIST} | OMG`],
   menu: () => [`${ARTIST} – Makeup, Hair & Bridal | OMG – Oh! My Glam`],
   gallery: () => [`Photos – Makeup & Hair by ${ARTIST} | OMG`],
   reviews: () => [`Client Reviews – ${ARTIST} | OMG – Oh! My Glam`],
@@ -447,7 +463,7 @@ export function metaDescription(site, page = 'home') {
     case 'hair':
       return fitDescription(`Hair installation & styling by ${ARTIST} (OMG – Oh! My Glam)${where}.`, [...each('hair'), from('makeup') !== null && `makeup from R${from('makeup')}`].filter(Boolean), TAILS);
     case 'bridal':
-      return fitDescription(`Bridal makeup & hair by ${ARTIST} (OMG – Oh! My Glam)${where}.`, [
+      return fitDescription(`Bridal hair & makeup packages by ${ARTIST} (OMG – Oh! My Glam)${where}.`, [
         pkg,
         from('bride') !== null && `bride-only options from R${from('bride')}`,
         from('bridesmaid') !== null && `bridesmaids from R${from('bridesmaid')}`,
@@ -455,26 +471,27 @@ export function metaDescription(site, page = 'home') {
     case 'gallery':
       return fitDescription(`Photos of makeup and hair by ${ARTIST} (OMG – Oh! My Glam)${where}.`, [from('makeup') !== null && `makeup from R${from('makeup')}`, from('hair') !== null && `hair from R${from('hair')}`, pkg].filter(Boolean), TAILS);
     case 'reviews':
-      return fitDescription(`Client reviews for ${ARTIST}, makeup artist & hair stylist${where} (OMG – Oh! My Glam).`, [from('makeup') !== null && `makeup from R${from('makeup')}`, from('hair') !== null && `hair from R${from('hair')}`, pkg].filter(Boolean), TAILS);
+      return fitDescription(`Client reviews for ${ARTIST}, bridal hair & makeup artist${where} (OMG – Oh! My Glam).`, [from('makeup') !== null && `makeup from R${from('makeup')}`, from('hair') !== null && `hair from R${from('hair')}`, pkg].filter(Boolean), TAILS);
     case 'book':
       return fitDescription(`Book makeup, hair or bridal glam with ${ARTIST} (OMG – Oh! My Glam)${where}.`, [from('makeup') !== null && `makeup from R${from('makeup')}`, from('hair') !== null && `hair from R${from('hair')}`, pkg].filter(Boolean), [' Pick a day and a free time online, or book on WhatsApp.', ...TAILS]);
     default:
-      return fitDescription(`${ARTIST}: makeup artist & hair stylist${where} (OMG – Oh! My Glam).`, [
-        from('makeup') !== null && `makeup from R${from('makeup')}`,
-        from('hair') !== null && `hair from R${from('hair')}`,
+      // Bridal first, as in the title: the price a bride is looking for.
+      return fitDescription(`${ARTIST}: bridal hair & makeup artist${where} (OMG – Oh! My Glam).`, [
         pkg,
         from('bridesmaid') !== null && `bridesmaids from R${from('bridesmaid')}`,
+        from('makeup') !== null && `makeup from R${from('makeup')}`,
+        from('hair') !== null && `hair from R${from('hair')}`,
       ].filter(Boolean), TAILS);
   }
 }
 
 /** The words under the logo in the H1 (HTML): who, what, and where once the area is set. */
 const HERO = {
-  home: `<b>${ARTIST}</b> · makeup artist &amp; hair stylist`,
+  home: `<b>${ARTIST}</b> · bridal hair &amp; makeup artist`,
   makeup: `Makeup by <b>${ARTIST}</b>`,
   hair: `Hair installation &amp; styling by <b>${ARTIST}</b>`,
-  bridal: `Bridal makeup &amp; hair by <b>${ARTIST}</b>`,
-  menu: `<b>${ARTIST}</b> · makeup artist &amp; hair stylist`,
+  bridal: `Bridal hair &amp; makeup by <b>${ARTIST}</b>`,
+  menu: `<b>${ARTIST}</b> · bridal hair &amp; makeup artist`,
   gallery: `Makeup &amp; hair photos by <b>${ARTIST}</b>`,
   reviews: `Client reviews for <b>${ARTIST}</b>`,
   book: `Book your glam with <b>${ARTIST}</b>`,
@@ -498,7 +515,7 @@ export function aboutText(site) {
     from('bridesmaid') !== null && `bridesmaid makeup from R${from('bridesmaid')}`,
   ].filter(Boolean);
   const list = offers.length > 1 ? `${offers.slice(0, -1).join(', ')} and ${offers.at(-1)}` : offers.join('');
-  return `OMG – Oh! My Glam is ${ARTIST}'s makeup and hair business${area ? ` in ${area}` : ''}: soft to bold glam, brides and bridesmaids. `
+  return `OMG – Oh! My Glam is ${ARTIST}'s bridal hair and makeup business${area ? ` in ${area}` : ''}: brides and bridesmaids, and soft to bold glam for any occasion. `
     + (list ? `Prices are in rand: ${list}. ` : '')
     + 'Home calls are available on request; transport is quoted separately. '
     + `To book, choose a service, a day and a free time in the online booking calendar, or WhatsApp or call ${formatPhone(site.text.phone || WHATSAPP_NUMBER)}.`;
@@ -560,7 +577,7 @@ export function menuHtml(site) {
 /** Who Asanda is, for the home page's "Meet Asanda Tiwani" (every fact is from the site). */
 export function aboutBio(site) {
   const area = areaOf(site);
-  return `${ARTIST} is the makeup artist and hair stylist behind OMG – Oh! My Glam${area ? `, based in ${area}` : ''}. `
+  return `${ARTIST} is the bridal hair and makeup artist behind OMG – Oh! My Glam${area ? `, based in ${area}` : ''}. `
     + `From soft everyday glam to bold looks and whole bridal parties, ${FIRST_NAME} does both the makeup and the hair, and comes to you on request.`;
 }
 
@@ -625,14 +642,14 @@ export function llmsTxt(site, origin) {
     `- [${ARTIST} and OMG – Oh! My Glam, photos, reviews and online booking](${origin}/)`,
     `- [Makeup prices](${origin}/makeup)`,
     `- [Hair prices](${origin}/hair)`,
-    `- [Bridal makeup and hair prices](${origin}/bridal)`,
+    `- [Bridal hair and makeup packages](${origin}/bridal)`,
     `- [WhatsApp ${formatPhone(phone)}](https://wa.me/${phone})`,
     site.text.instagram && `- [Instagram @${one(site.text.instagram)}](${instagramUrl(site.text.instagram)})`,
     facebook && `- [Facebook](${facebook})`,
   ].filter(Boolean);
   return [
     '# OMG – Oh! My Glam', '',
-    `> Makeup and hair styling by ${ARTIST}${areaOf(site) ? ` in ${one(areaOf(site))}` : ''}, including bridal and bridesmaid packages. Home calls available on request. Prices in South African rand (ZAR).`, '',
+    `> Bridal hair and makeup for brides and bridesmaids by ${ARTIST}${areaOf(site) ? ` in ${one(areaOf(site))}` : ''}, plus soft to bold glam and weave installation for any occasion. Home calls available on request. Prices in South African rand (ZAR).`, '',
     `Book online at ${origin}/#book (pick a service, a day and a free time) or on WhatsApp: ${formatPhone(phone)}.`, '',
     ...groups.flatMap(([group, list]) => [`## ${group}`, '', ...list.map(item), '']),
     ...(notes.length ? ['## Good to know', '', ...notes, ''] : []),
