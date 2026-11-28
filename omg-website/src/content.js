@@ -687,7 +687,9 @@ export function pageShell(response, page) {
     .on('meta[property="og:description"]', { element(el) { el.setAttribute('content', description); } })
     .on('[data-cms-hero]', { element(el) { el.setInnerContent(heroLine(bare, page), { html: true }); } })
     .on('[data-cms-chips]', { element(el) { el.setInnerContent(''); } })
-    .on('a.brand', { element(el) { el.setAttribute('href', '/menu'); el.setAttribute('aria-label', 'OMG – Oh! My Glam, full menu'); } });
+    // The logo's alt text names the link (search engines flag an empty alt).
+    .on('a.brand', { element(el) { el.setAttribute('href', '/menu'); } })
+    .on('a.brand img', { element(el) { el.setAttribute('alt', 'OMG – Oh! My Glam, full menu'); } });
   if (spec.lede) rewriter = rewriter.on('.hero .lede', { element(el) { el.removeAttribute('data-cms-text'); el.setInnerContent(spec.lede); } });
   if (spec.lede === '') rewriter = rewriter.on('.hero .lede', { element(el) { el.remove(); } });
   if (spec.cta) rewriter = rewriter.on('.hero-cta a.btn-ghost', { element(el) { el.setAttribute('href', spec.cta[0]); el.setInnerContent(spec.cta[1]); } });
